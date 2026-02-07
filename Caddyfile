@@ -1,0 +1,8 @@
+victorpatrin.dev {
+    root * /srv/homepage
+    file_server
+}
+
+s.victorpatrin.dev {
+    reverse_proxy url-shortener:8000
+}
