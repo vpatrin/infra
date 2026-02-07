@@ -24,12 +24,12 @@ const content = {
   ],
 
   stack: [
-    { label: "languages", value: "Python, Node.js, Bash" },
+    { label: "languages", value: "Python, Node.js" },
     { label: "cloud", value: "GCP, GKE, Pub/Sub, Cloud Storage" },
     { label: "devops", value: "Docker, Kubernetes, Helm, CI/CD" },
-    { label: "data", value: "PostgreSQL, ETL pipelines, microservices" },
+    { label: "data", value: "PostgreSQL, MongoDB, ETL pipelines" },
     { label: "security", value: "InfoSec, access control, web app security" },
-    { label: "infra", value: "Linux, Terraform, Nginx, Caddy, Let's Encrypt" },
+    { label: "infra", value: "Terraform, haproxy, Caddy, Let's Encrypt & cert-manager" },
     { label: "other", value: "Blockchain, distributed systems, cryptography" },
   ],
 
