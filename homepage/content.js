@@ -18,7 +18,7 @@ const content = {
   },
 
   about: [
-    'Engineer with a dual Master\'s from <span class="highlight">Mines de Nancy</span> and a specialization in <span class="highlight">Information & Systems Security</span>. Spent 6 years at a Montreal AI startup — started as an intern, left as Senior Engineer and de facto technical lead after our CTO departed.',
+    'Senior Software Engineer with a dual Master\'s from <span class="highlight">Mines de Nancy</span> and a specialization in <span class="highlight">Information & Systems Security</span>. Spent 6 years at a Montreal AI startup — started as an intern, left as Senior Engineer and de facto technical lead after our CTO departed.',
     "Built search engines from scratch, migrated monoliths to microservices, managed production Kubernetes clusters on GCP, and designed deployment systems that replaced expensive third-party tools.",
   ],
 
@@ -28,7 +28,6 @@ const content = {
     { label: "devops", value: "Docker, Kubernetes, Helm, CI/CD" },
     { label: "data", value: "PostgreSQL, ETL pipelines, microservices" },
     { label: "security", value: "InfoSec, access control, web app security" },
-    { label: "infra", value: "Debian, Caddy, ufw, SSH hardening" },
   ],
 
   projects: [
@@ -52,13 +51,6 @@ const content = {
       status: "planned",
       desc: "REST API for wine collection management with JWT auth",
       stack: "FastAPI / PostgreSQL / JWT",
-    },
-    {
-      name: "vinmind",
-      url: "#",
-      status: "planned",
-      desc: "AI sommelier agent — RAG-powered wine recommendations",
-      stack: "LangChain / ChromaDB / FastAPI / Claude API",
     },
     {
       name: "ask-my-docs",
