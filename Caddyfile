@@ -4,5 +4,5 @@ victorpatrin.dev {
 }
 
 s.victorpatrin.dev {
-    reverse_proxy url-shortener:8000
+    reverse_proxy url-shortener-api:8000
 }
