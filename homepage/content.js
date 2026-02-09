@@ -37,14 +37,14 @@ const content = {
     {
       name: "url-shortener",
       url: "https://s.victorpatrin.dev",
-      status: "soon",
+      status: "live",
       desc: "High-performance link shortener with click analytics",
       stack: "FastAPI / PostgreSQL / Redis / Docker",
     },
     {
       name: "saq-watcher",
       url: "#",
-      status: "planned",
+      status: "soon",
       desc: "Automated scraper for SAQ new arrivals with notifications",
       stack: "Python / BeautifulSoup / Cron / Telegram",
     },
