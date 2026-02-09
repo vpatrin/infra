@@ -285,7 +285,7 @@
             <h1 class="name">${content.name} <span>${content.surname}</span></h1>
             <div class="tagline">${content.tagline}<span class="cursor"></span></div>
             <div class="links">
-                ${content.links.map(l => `<a href="${l.url}">${l.label}</a>`).join("")}
+                ${content.links.map(l => `<a href="${l.url}" data-umami-event="click-${l.label}" target="_blank" rel="noopener">${l.label}</a>`).join("")}
             </div>
         `;
 
@@ -313,7 +313,7 @@
         document.getElementById("projects-section").innerHTML = `
             <h2>Projects</h2>
             ${content.projects.map(p => `
-                <a class="project" href="${p.url}" target="_blank">
+                <a class="project" href="${p.url}" data-umami-event="project-view" data-umami-event-project="${p.name}" target="_blank" rel="noopener">
                     <div class="project-header">
                         <span class="project-name">${p.name}</span>
                         <span class="project-status ${p.status === "live" ? "live" : "wip"}">${p.status}</span>
