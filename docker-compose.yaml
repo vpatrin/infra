@@ -11,12 +11,13 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     networks:
-      - web
+      - internal
 
 volumes:
   caddy_data:
   caddy_config:
 
 networks:
-  web:
+  internal:
+    # Docker Compose expects the network to already exist - won't create or delete it after docker compose up/down
     external: true
