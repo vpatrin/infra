@@ -1,0 +1,20 @@
+# Local development configuration for Caddy
+# Serves on localhost without TLS
+services:
+  caddy:
+    image: caddy:2
+    container_name: caddy-local
+    restart: unless-stopped
+    ports:
+      - "8080:8080"  # Main website
+      - "8081:8081"  # URL shortener
+    volumes:
+      - ./Caddyfile.local:/etc/caddy/Caddyfile
+      - ./homepage:/srv/homepage
+    networks:
+      - internal
+
+networks:
+  internal:
+    # Docker Compose expects the network to already exist - won't create or delete it after docker compose up/down
+    external: true

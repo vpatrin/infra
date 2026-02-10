@@ -1,0 +1,14 @@
+# Local development Caddyfile (no TLS)
+
+# Main website
+:8080 {
+    root * /srv/homepage
+    file_server
+    log
+}
+
+# URL shortener proxy
+:8081 {
+    reverse_proxy url-shortener-api:8000
+    log
+}
