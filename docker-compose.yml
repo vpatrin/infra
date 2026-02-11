@@ -1,6 +1,7 @@
 services:
   caddy:
     image: caddy:2
+    container_name: caddy
     restart: unless-stopped
     ports:
       - "80:80"
@@ -19,5 +20,4 @@ volumes:
 
 networks:
   internal:
-    # Docker Compose expects the network to already exist - won't create or delete it after docker compose up/down
     external: true
