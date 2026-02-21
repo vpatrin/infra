@@ -160,7 +160,7 @@
             gap: 16px;
             margin-top: 12px;
             padding-top: 12px;
-            border-top: 1px solid var(--border);
+            border-top: 1px solid #1a1a1a;
         }
 
         .project-link {
@@ -354,7 +354,7 @@
                     <div class="project-desc">${p.desc}</div>
                     <div class="project-stack">${p.stack}</div>
                     <div class="project-links">
-                        ${p.links.map(l => l.soon
+                        ${(p.links || []).map(l => l.soon
                             ? `<span class="project-link soon">${l.icon || ""}${l.label}</span>`
                             : `<a class="project-link" href="${l.url}" data-umami-event="project-click-${p.name}-${l.label}" target="_blank" rel="noopener">${l.icon || ""}${l.label}</a>`
                         ).join("")}
