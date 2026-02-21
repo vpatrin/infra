@@ -9,6 +9,7 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - ./homepage:/srv/homepage
+      - ./wine-placeholder:/srv/wine
       - caddy_data:/data
       - caddy_config:/config
     networks:
