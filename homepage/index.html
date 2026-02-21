@@ -119,9 +119,6 @@
             padding: 20px;
             margin-bottom: 12px;
             transition: border-color 0.2s;
-            text-decoration: none;
-            display: block;
-            color: var(--fg);
         }
 
         .project:hover { border-color: var(--accent); }
@@ -156,6 +153,42 @@
             color: var(--accent);
             font-size: 11px;
             margin-top: 8px;
+        }
+
+        .project-links {
+            display: flex;
+            gap: 16px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #1a1a1a;
+        }
+
+        .project-link {
+            font-size: 12px;
+            color: var(--fg);
+            text-decoration: none;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 2px;
+            transition: border-color 0.2s, color 0.2s;
+        }
+
+        .project-link:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .link-icon {
+            width: 14px;
+            height: 14px;
+            vertical-align: -2px;
+            margin-right: 4px;
+        }
+
+        .project-link.soon,
+        .project-link.soon:hover {
+            color: var(--muted);
+            border-bottom: 1px dashed var(--border);
+            cursor: default;
         }
 
         .exp-item { margin-bottom: 24px; }
@@ -313,14 +346,20 @@
         document.getElementById("projects-section").innerHTML = `
             <h2>Projects</h2>
             ${content.projects.map(p => `
-                <a class="project" href="${p.url}" data-umami-event="project-view" data-umami-event-project="${p.name}" target="_blank" rel="noopener">
+                <div class="project" data-umami-event="project-view" data-umami-event-project="${p.name}">
                     <div class="project-header">
                         <span class="project-name">${p.name}</span>
                         <span class="project-status ${p.status === "live" ? "live" : "wip"}">${p.status}</span>
                     </div>
                     <div class="project-desc">${p.desc}</div>
                     <div class="project-stack">${p.stack}</div>
-                </a>
+                    <div class="project-links">
+                        ${(p.links || []).map(l => l.soon
+                            ? `<span class="project-link soon">${l.icon || ""}${l.label}</span>`
+                            : `<a class="project-link" href="${l.url}" data-umami-event="project-click-${p.name}-${l.label}" target="_blank" rel="noopener">${l.icon || ""}${l.label}</a>`
+                        ).join("")}
+                    </div>
+                </div>
             `).join("")}
         `;
 

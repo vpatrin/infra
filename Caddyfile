@@ -14,3 +14,14 @@ analytics.victorpatrin.dev {
 status.victorpatrin.dev {
     reverse_proxy uptime-kuma:3001
 }
+
+wine.victorpatrin.dev {
+    handle /api/* {
+        reverse_proxy saq-backend:8001
+    }
+    handle {
+        root * /srv/wine
+        file_server
+        try_files {path} /index.html
+    }
+}
