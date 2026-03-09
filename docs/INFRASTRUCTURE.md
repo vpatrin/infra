@@ -72,7 +72,7 @@ Applied to all sites via a shared Caddyfile snippet ([#12](https://github.com/vp
 
 ## Backups
 
-**Status: not yet automated** (tracked in [#6](https://github.com/vpatrin/infra/issues/6)).
+Weekly automated backups via systemd timer ([#6](https://github.com/vpatrin/infra/issues/6)).
 
 ### What's stateful
 
@@ -86,11 +86,27 @@ Applied to all sites via a shared Caddyfile snippet ([#12](https://github.com/vp
 
 Everything else. All service containers can be rebuilt from their repos. Static sites are in git.
 
-### Planned strategy
+### Strategy
 
-- Daily `pg_dump` of all databases (compressed), retained for 30 days.
-- systemd timer at 3:00 AM.
-- ~150MB disk budget (50MB DB × ~5MB compressed × 30 days).
+- Weekly `pg_dump` per database (compressed), retained for 30 days
+- systemd timer: Monday 02:00 (before scraper at 03:00)
+- Pre-deploy dumps via `./backup/backup.sh <db_name>` (called by deploy scripts)
+- Storage: `/var/backups/postgres/` (~2MB per dump × 3 DBs × 4 weeks = ~24MB)
+
+### Setup on VPS
+
+```bash
+sudo cp backup/pg-backup.service backup/pg-backup.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now pg-backup.timer
+```
+
+### Manual backup
+
+```bash
+./backup/backup.sh                  # all databases
+./backup/backup.sh saq_sommelier    # single database
+```
 
 ## Logging
 

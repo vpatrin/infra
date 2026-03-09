@@ -1,0 +1,11 @@
+[Unit]
+Description=PostgreSQL database backup
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStartPre=+/usr/bin/mkdir -p /var/backups/postgres
+ExecStartPre=+/usr/bin/chown victor:victor /var/backups/postgres
+ExecStart=/home/victor/infra/backup/backup.sh
+User=victor
