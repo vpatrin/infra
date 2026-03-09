@@ -92,6 +92,13 @@ Everything else. All service containers can be rebuilt from their repos. Static 
 - systemd timer at 3:00 AM.
 - ~150MB disk budget (50MB DB × ~5MB compressed × 30 days).
 
+## Logging
+
+Docker container logs are stored at `/var/lib/docker/containers/<id>/<id>-json.log`. Each service has log rotation configured in its `docker-compose.yml` (10MB max per file, 3 files retained = 30MB cap per service).
+
+- **View logs**: `make logs` or `docker logs caddy`
+- **Raw access**: useful if Docker daemon or container is down
+
 ## Monitoring
 
 | Tool | URL | Purpose |
