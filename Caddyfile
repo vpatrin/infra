@@ -1,27 +1,48 @@
+(security_headers) {
+	header {
+		X-Content-Type-Options "nosniff" # Prevents MIME type sniffing
+		X-Frame-Options "DENY" # Prevents clickjacking by disallowing the site to be framed
+		Referrer-Policy "strict-origin-when-cross-origin" # When navigating to another site, only sends the origin (not the full URL path). Prevents leaking private paths/query params to third parties.
+		Permissions-Policy "camera=(), microphone=(), geolocation=()" # Explicitly disables browser APIs you don't use
+		-Server # Strips the Server: Caddy header
+	}
+}
+
 victorpatrin.dev {
-    root * /srv/homepage
-    file_server
-}
-
-s.victorpatrin.dev {
-    reverse_proxy url-shortener-api:8000
-}
-
-analytics.victorpatrin.dev {
-    reverse_proxy umami:3000
-}
-
-status.victorpatrin.dev {
-    reverse_proxy uptime-kuma:3001
+	import security_headers
+	encode zstd gzip # Reduces bandwidth and speeds up page loads
+	root * /srv/homepage
+	file_server
 }
 
 wine.victorpatrin.dev {
-    handle /api/* {
-        reverse_proxy saq-backend:8001
-    }
-    handle {
-        root * /srv/wine
-        file_server
-        try_files {path} /index.html
-    }
+	import security_headers
+	encode zstd gzip
+	# Any request starting with /api/ gets proxied to the saq-backend 
+	handle /api/* { 
+		reverse_proxy saq-backend:8001
+	}
+	# handle (catch-all) — Everything else serves the React SPA from /srv/wine
+	handle {
+		root * /srv/wine
+		file_server
+		try_files {path} /index.html # if the requested file doesn't exist on disk, it falls back to index.html
+	}
 }
+
+s.victorpatrin.dev {
+	import security_headers
+	encode zstd gzip
+	reverse_proxy url-shortener-api:8000
+}
+
+analytics.victorpatrin.dev {
+	import security_headers
+	reverse_proxy umami:3000
+}
+
+status.victorpatrin.dev {
+	import security_headers
+	reverse_proxy uptime-kuma:3001
+}
+

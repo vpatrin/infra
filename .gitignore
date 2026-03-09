@@ -1,4 +1,8 @@
 .env
 *.log
-.claude/
+.DS_Store
+
+# Claude
 CLAUDE.md
+.claude/*
+!.claude/commands/
