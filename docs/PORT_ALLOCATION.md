@@ -6,7 +6,7 @@ Network layout for all services on the VPS. Caddy is the only public entry point
 
 | Service | Container name | Internal port | Subdomain | Project |
 |---------|---------------|---------------|-----------|---------|
-| Caddy | infra-caddy-1 | 80, 443 | *.victorpatrin.dev (routing) | infra |
+| Caddy | caddy | 80, 443 | *.victorpatrin.dev (routing) | infra |
 | PostgreSQL | shared-postgres | 5432 | — | shared-postgres |
 | Umami | umami | 3000 | `analytics.victorpatrin.dev` | umami |
 | Uptime Kuma | uptime-kuma | 3001 | `status.victorpatrin.dev` | uptime-kuma |
