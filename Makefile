@@ -1,4 +1,4 @@
-.PHONY: help dev up down logs restart reload
+.PHONY: help dev up down logs restart reload status validate pull
 
 help: ## Show this help
 	@echo "Caddy Reverse Proxy - Available Commands"
@@ -21,3 +21,12 @@ reload: ## Reload Caddyfile (no downtime)
 	docker exec caddy caddy reload --config /etc/caddy/Caddyfile
 
 restart: down up ## Restart Caddy
+
+status: ## Show running containers
+	docker compose ps
+
+validate: ## Validate Caddyfile syntax
+	docker exec caddy caddy validate --config /etc/caddy/Caddyfile
+
+pull: ## Pull latest images
+	docker compose pull
