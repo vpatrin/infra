@@ -7,7 +7,7 @@ Server configuration for `victorpatrin.dev` — reverse proxy routing, TLS termi
 - **Caddyfile** — reverse proxy routing + TLS termination for all subdomains
 - **docker-compose.yml** — Caddy container
 - **homepage/** — static site served on `victorpatrin.dev`
-- **`/srv/wine`** (host path) — static SPA for `wine.victorpatrin.dev`
+- **`/srv/coupette`** (host path) — static SPA for `coupette.club`
 - **scripts/** — repo setup automation (`setup-repo.sh`)
 - **docs/** — port allocation and network layout documentation
 - **.github/** — PR template
@@ -20,7 +20,7 @@ Server configuration for `victorpatrin.dev` — reverse proxy routing, TLS termi
 | `s.victorpatrin.dev` | url-shortener API |
 | `analytics.victorpatrin.dev` | Umami |
 | `status.victorpatrin.dev` | Uptime Kuma |
-| `wine.victorpatrin.dev` | SAQ Sommelier (API + SPA) |
+| `coupette.club` | Coupette (API + SPA) |
 
 ## Deployment
 

@@ -15,18 +15,18 @@ victorpatrin.dev {
 	file_server
 }
 
-wine.victorpatrin.dev {
+coupette.club {
 	import security_headers
 	encode zstd gzip
-	# Any request starting with /api/ gets proxied to the saq-backend 
-	handle /api/* { 
+	# API requests proxied to backend container
+	handle /api/* {
 		reverse_proxy saq-backend:8001
 	}
-	# handle (catch-all) — Everything else serves the React SPA from /srv/wine
+	# Everything else serves the static SPA
 	handle {
-		root * /srv/wine
+		root * /srv/coupette
 		file_server
-		try_files {path} /index.html # if the requested file doesn't exist on disk, it falls back to index.html
+		try_files {path} /index.html
 	}
 }
 

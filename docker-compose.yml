@@ -11,8 +11,8 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile
       # Homepage files (Portfolio)
       - ./homepage:/srv/homepage
-      # saq-sommelier dist files
-      - /srv/wine:/srv/wine
+      # coupette.club frontend dist files
+      - /srv/coupette:/srv/coupette
       - caddy_data:/data
       - caddy_config:/config
     networks:
