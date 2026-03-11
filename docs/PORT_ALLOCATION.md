@@ -6,16 +6,16 @@ Network layout for all services on the VPS. Caddy is the only public entry point
 
 | Service | Container name | Internal port | Subdomain | Project |
 |---------|---------------|---------------|-----------|---------|
-| Caddy | caddy | 80, 443 | *.victorpatrin.dev (routing) | infra |
+| Caddy | caddy | 80, 443 | *.victorpatrin.dev + coupette.club (routing) | infra |
 | PostgreSQL | shared-postgres | 5432 | — | shared-postgres |
 | Umami | umami | 3000 | `analytics.victorpatrin.dev` | umami |
 | Uptime Kuma | uptime-kuma | 3001 | `status.victorpatrin.dev` | uptime-kuma |
 | URL shortener API | url-shortener-api | 8000 | `s.victorpatrin.dev` | url-shortener |
 | Redis | url-shortener-redis-1 | 6379 | — | url-shortener |
-| SAQ backend | saq-backend | 8001 | `wine.victorpatrin.dev/api` | saq-sommelier |
-| SAQ bot | saq-sommelier-bot-1 | — | — | saq-sommelier |
-| SAQ scraper | saq-sommelier-scraper-1 | — | — (one-shot cron) | saq-sommelier |
-| React (static) | — | — | `wine.victorpatrin.dev` (served by Caddy) | saq-sommelier |
+| Coupette backend | saq-backend | 8001 | `coupette.club/api` | coupette |
+| Coupette bot | saq-sommelier-bot-1 | — | — | coupette |
+| Coupette scraper | saq-sommelier-scraper-1 | — | — (one-shot cron) | coupette |
+| Coupette frontend (static) | — | — | `coupette.club` (served by Caddy) | coupette |
 
 ## Host-exposed ports
 
