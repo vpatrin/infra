@@ -7,9 +7,12 @@ services:
       - "80:80"
       - "443:443"
     volumes:
+      # Caddyfile for configuration
       - ./Caddyfile:/etc/caddy/Caddyfile
+      # Homepage files (Portfolio)
       - ./homepage:/srv/homepage
-      - ./wine-placeholder:/srv/wine
+      # saq-sommelier dist files
+      - /srv/wine:/srv/wine
       - caddy_data:/data
       - caddy_config:/config
     networks:
