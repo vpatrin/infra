@@ -42,12 +42,12 @@ const content = {
 
   projects: [
     {
-      name: "saq-sommelier",
+      name: "coupette",
       status: "live",
       desc: "AI wine discovery engine for Quebec's 15,000+ SAQ wines. Telegram bot live, web app and SSH TUI coming. One FastAPI backend, multiple clients.",
       stack: "FastAPI / PostgreSQL / python-telegram-bot / Docker",
       links: [
-        { label: "github", url: "https://github.com/vpatrin/saq-sommelier", icon: ICONS.github },
+        { label: "github", url: "https://github.com/vpatrin/coupette", icon: ICONS.github },
         { label: "telegram", url: "https://t.me/AlerteVinBot", icon: ICONS.telegram },
         { label: "web", url: "https://wine.victorpatrin.dev", icon: ICONS.globe },
         { label: "ssh", soon: true, icon: ICONS.terminal },

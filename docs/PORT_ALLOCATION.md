@@ -12,9 +12,9 @@ Network layout for all services on the VPS. Caddy is the only public entry point
 | Uptime Kuma | uptime-kuma | 3001 | `status.victorpatrin.dev` | uptime-kuma |
 | URL shortener API | url-shortener-api | 8000 | `s.victorpatrin.dev` | url-shortener |
 | Redis | url-shortener-redis-1 | 6379 | — | url-shortener |
-| Coupette backend | saq-backend | 8001 | `coupette.club/api` | coupette |
-| Coupette bot | saq-sommelier-bot-1 | — | — | coupette |
-| Coupette scraper | saq-sommelier-scraper-1 | — | — (one-shot cron) | coupette |
+| Coupette backend | coupette-backend | 8001 | `coupette.club/api` | coupette |
+| Coupette bot | coupette-bot-1 | — | — | coupette |
+| Coupette scraper | coupette-scraper-1 | — | — (one-shot cron) | coupette |
 | Coupette frontend (static) | — | — | `coupette.club` (served by Caddy) | coupette |
 
 ## Host-exposed ports
