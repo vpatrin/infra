@@ -19,7 +19,7 @@ Internet
   ▼
 Caddy (ports 80/443)
   ├── victorpatrin.dev          → static files (/srv/homepage)
-  ├── wine.victorpatrin.dev     → static SPA + reverse proxy to coupette-backend:8001
+  ├── coupette.club             → static SPA + reverse proxy to coupette-backend:8001
   ├── s.victorpatrin.dev        → reverse proxy to url-shortener-api:8000
   ├── analytics.victorpatrin.dev → reverse proxy to umami:3000
   └── status.victorpatrin.dev   → reverse proxy to uptime-kuma:3001

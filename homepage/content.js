@@ -49,7 +49,7 @@ const content = {
       links: [
         { label: "github", url: "https://github.com/vpatrin/coupette", icon: ICONS.github },
         { label: "telegram", url: "https://t.me/AlerteVinBot", icon: ICONS.telegram },
-        { label: "web", url: "https://wine.victorpatrin.dev", icon: ICONS.globe },
+        { label: "web", url: "https://coupette.club", icon: ICONS.globe },
         { label: "ssh", soon: true, icon: ICONS.terminal },
       ],
     },
