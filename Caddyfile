@@ -20,7 +20,7 @@ coupette.club {
 	encode zstd gzip
 	# API requests proxied to backend container
 	handle /api/* {
-		reverse_proxy saq-backend:8001
+		reverse_proxy coupette-backend:8001
 	}
 	# Everything else serves the static SPA
 	handle {

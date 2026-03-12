@@ -19,7 +19,7 @@ Internet
   ▼
 Caddy (ports 80/443)
   ├── victorpatrin.dev          → static files (/srv/homepage)
-  ├── wine.victorpatrin.dev     → static SPA + reverse proxy to saq-backend:8001
+  ├── coupette.club             → static SPA + reverse proxy to coupette-backend:8001
   ├── s.victorpatrin.dev        → reverse proxy to url-shortener-api:8000
   ├── analytics.victorpatrin.dev → reverse proxy to umami:3000
   └── status.victorpatrin.dev   → reverse proxy to uptime-kuma:3001
@@ -134,7 +134,7 @@ docker compose up -d --build   # full redeploy
 make reload                    # Caddyfile-only, no downtime
 ```
 
-Each project repo has its own deploy process. See [saq-sommelier PRODUCTION.md](https://github.com/vpatrin/saq-sommelier/blob/main/docs/PRODUCTION.md) for app-level deployment.
+Each project repo has its own deploy process. See [coupette PRODUCTION.md](https://github.com/vpatrin/coupette/blob/main/docs/PRODUCTION.md) for app-level deployment.
 
 ## Scalability
 
