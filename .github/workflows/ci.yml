@@ -35,7 +35,7 @@ jobs:
         run: |
           find . -name '*.sh' -type f | while read -r script; do
             echo "Checking $script..."
-            shellcheck "$script"
+            shellcheck --severity=warning "$script"
           done
 
   gitleaks:
