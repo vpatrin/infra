@@ -30,12 +30,6 @@ coupette.club {
 	}
 }
 
-s.victorpatrin.dev {
-	import security_headers
-	encode zstd gzip
-	reverse_proxy url-shortener-api:8000
-}
-
 analytics.victorpatrin.dev {
 	import security_headers
 	reverse_proxy umami:3000
