@@ -77,7 +77,7 @@ Weekly automated backups via systemd timer ([#6](https://github.com/vpatrin/infr
 
 | Data | Location | Risk |
 |------|----------|------|
-| PostgreSQL (3 databases) | Docker volume `shared-postgres_pgdata` | **High** — user data, product catalog, analytics |
+| PostgreSQL (2 databases) | Docker volume `shared-postgres_pgdata` | **High** — user data, product catalog, analytics |
 | Caddy TLS certs | Docker volume `caddy_data` | Low — auto-renewed by ACME |
 | Caddy config | Docker volume `caddy_config` | Low — regenerated from Caddyfile |
 
