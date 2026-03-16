@@ -32,4 +32,4 @@ pull: ## Pull latest images
 	docker compose pull
 
 backup: ## Backup all PostgreSQL databases
-	./services/postgres/backup/backup.sh
+	./services/postgres/backups/backup.sh

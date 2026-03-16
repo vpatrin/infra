@@ -12,7 +12,7 @@ PG_USER="postgres"
 RETENTION_DAYS=30
 DATE=$(date +%Y%m%d)
 
-DATABASES=("saq_sommelier" "umami" "url_shortener")
+DATABASES=("saq_sommelier" "umami")
 
 # If a specific database is requested, only dump that one
 if [[ $# -ge 1 ]]; then

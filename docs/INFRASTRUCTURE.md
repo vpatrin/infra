@@ -20,7 +20,6 @@ Internet
 Caddy (ports 80/443)
   ├── victorpatrin.dev          → static files (/srv/homepage)
   ├── coupette.club             → static SPA + reverse proxy to coupette-backend:8001
-  ├── s.victorpatrin.dev        → reverse proxy to url-shortener-api:8000
   ├── analytics.victorpatrin.dev → reverse proxy to umami:3000
   └── status.victorpatrin.dev   → reverse proxy to uptime-kuma:3001
 
@@ -90,13 +89,13 @@ Everything else. All service containers can be rebuilt from their repos. Static 
 
 - Weekly `pg_dump` per database (compressed), retained for 30 days
 - systemd timer: Monday 02:00 (before scraper at 03:00)
-- Pre-deploy dumps via `./services/postgres/backup/backup.sh <db_name>` (called by deploy scripts)
+- Pre-deploy dumps via `./services/postgres/backups/backup.sh <db_name>` (called by deploy scripts)
 - Storage: `/var/backups/postgres/` (~2MB per dump × 3 DBs × 4 weeks = ~24MB)
 
 ### Setup on VPS
 
 ```bash
-sudo cp services/postgres/backup/pg-backup.service services/postgres/backup/pg-backup.timer /etc/systemd/system/
+sudo cp services/postgres/backups/pg-backup.service services/postgres/backups/pg-backup.timer /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now pg-backup.timer
 ```
@@ -104,8 +103,8 @@ sudo systemctl enable --now pg-backup.timer
 ### Manual backup
 
 ```bash
-./services/postgres/backup/backup.sh                  # all databases
-./services/postgres/backup/backup.sh saq_sommelier    # single database
+./services/postgres/backups/backup.sh                  # all databases
+./services/postgres/backups/backup.sh saq_sommelier    # single database
 ```
 
 ## Logging
