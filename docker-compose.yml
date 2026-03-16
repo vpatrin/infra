@@ -8,9 +8,9 @@ services:
       - "443:443"
     volumes:
       # Caddyfile for configuration
-      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./services/caddy/Caddyfile:/etc/caddy/Caddyfile
       # Homepage files (Portfolio)
-      - ./homepage:/srv/homepage
+      - ./services/homepage:/srv/homepage
       # coupette.club frontend dist files
       - /srv/coupette:/srv/coupette
       - caddy_data:/data
