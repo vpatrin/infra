@@ -10,8 +10,6 @@ Network layout for all services on the VPS. Caddy is the only public entry point
 | PostgreSQL | shared-postgres | 5432 | — | infra |
 | Umami | umami | 3000 | `analytics.victorpatrin.dev` | infra |
 | Uptime Kuma | uptime-kuma | 3001 | `status.victorpatrin.dev` | infra |
-| URL shortener API | url-shortener-api | 8000 | `s.victorpatrin.dev` | url-shortener |
-| Redis | url-shortener-redis-1 | 6379 | — | url-shortener |
 | Coupette backend | coupette-backend | 8001 | `coupette.club/api` | coupette |
 | Coupette bot | coupette-bot-1 | — | — | coupette |
 | Coupette scraper | coupette-scraper-1 | — | — (one-shot cron) | coupette |

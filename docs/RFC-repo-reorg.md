@@ -124,7 +124,7 @@ This means the `services/` directories hold **config and data**, not compose def
 ```text
 services/caddy/Caddyfile           # Config mounted into the caddy service
 services/postgres/init-scripts/    # Mounted into the postgres service
-services/postgres/backup/          # Backup scripts + systemd units
+services/postgres/backups/         # Backup scripts + systemd units
 services/homepage/index.html       # Static files served by Caddy
 ```
 
@@ -146,8 +146,8 @@ Each `services/<name>/` directory includes a `.env.example` committed with place
 
 App repos (coupette, url-shortener) don't manage their own infrastructure but depend on it. These assumptions must hold for app repos to deploy correctly:
 
-- A `web` Docker network exists (created by `infra/`'s root compose). App repos attach to it for Caddy routing.
-- A `shared-postgres` container is running and reachable on the `web` network. App repos connect to it by container name.
+- An `internal` Docker network exists (external, shared across compose stacks). App repos attach to it for Caddy routing.
+- A `shared-postgres` container is running and reachable on the `internal` network. App repos connect to it by container name.
 - Caddy routes are defined in `infra/services/caddy/Caddyfile`. Adding a new app route requires a PR to `infra/`.
 
 If any of these change, app deploy scripts must be updated in the same logical change.

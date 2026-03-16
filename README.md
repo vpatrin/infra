@@ -14,7 +14,6 @@ Platform infrastructure for `victorpatrin.dev` — all service definitions, reve
 App repos (own code, CI, releases) on the same VPS:
 
 - [coupette](https://github.com/vpatrin/coupette) — wine recommendations (`coupette.club`)
-- [url-shortener](https://github.com/vpatrin/url-shortener) — link shortener (`s.victorpatrin.dev`)
 
 ## Structure
 
@@ -27,7 +26,7 @@ infra/
 │   ├── homepage/                  # Static site for victorpatrin.dev
 │   ├── postgres/
 │   │   ├── init-scripts/          # DB + user creation on first start
-│   │   ├── backup/                # pg_dump scripts + systemd units
+│   │   ├── backups/               # pg_dump scripts + systemd units
 │   │   └── .env.example
 │   └── umami/
 │       └── .env.example
@@ -36,8 +35,6 @@ infra/
 │   ├── PORT_ALLOCATION.md         # Service-to-port mapping
 │   ├── RFC-repo-reorg.md          # Repo consolidation decision record
 │   └── GITHUB-SETUP.md            # GitHub repo hardening guide
-├── scripts/
-│   └── setup-repo.sh              # GitHub repo bootstrap automation
 └── .github/
     ├── workflows/ci.yml           # PR checks: compose, shellcheck, gitleaks
     └── dependabot.yml             # Weekly Docker + Actions updates
