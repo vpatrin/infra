@@ -97,7 +97,9 @@ services:
     networks:
       - internal
     security_opt: [no-new-privileges:true]
+    # setpriv needs these caps to switch user/group at startup.
     cap_drop: [ALL]
+    cap_add: [CHOWN, SETUID, SETGID, DAC_OVERRIDE]
     mem_limit: 256m
     logging:
       driver: json-file
