@@ -90,7 +90,7 @@ Everything else. All service containers can be rebuilt from their repos. Static 
 - Weekly `pg_dump` per database (compressed), retained for 30 days
 - systemd timer: Monday 02:00 (before scraper at 03:00)
 - Pre-deploy dumps via `./services/postgres/backups/backup.sh <db_name>` (called by deploy scripts)
-- Storage: `/var/backups/postgres/` (~2MB per dump × 3 DBs × 4 weeks = ~24MB)
+- Storage: `/var/backups/postgres/` (~2MB per dump × 2 DBs × 4 weeks = ~16MB)
 
 ### Setup on VPS
 
