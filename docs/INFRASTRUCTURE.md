@@ -28,46 +28,13 @@ Only Caddy binds to host ports 80/443.
 PostgreSQL binds to localhost:5432 for dev tooling (DBeaver, Alembic).
 ```
 
-See [PORT_ALLOCATION.md](PORT_ALLOCATION.md) for the full service/port/container mapping.
+See [SERVICE_CATALOG.md](SERVICE_CATALOG.md) for the full service inventory and port mapping.
 
 ## Security
 
-### Firewall
+See [SECURITY.md](SECURITY.md) for the full platform security posture (firewall, TLS, headers, container hardening, SSH, secrets management).
 
-- Hetzner network firewall (cloud-level, before traffic hits the VPS)
-- `ufw` on the VPS — ports 22, 80, 443 only
-
-### Network isolation
-
-- Caddy is the only internet-facing container — all other services are on the `internal` Docker network only.
-- PostgreSQL is bound to `localhost:5432`, not `0.0.0.0`.
-
-### TLS
-
-- Caddy handles automatic HTTPS via Let's Encrypt (ACME). Certificates are auto-renewed.
-- HSTS is enabled automatically by Caddy on all HTTPS sites.
-
-### Response headers
-
-Applied to all sites via a shared Caddyfile snippet ([#12](https://github.com/vpatrin/infra/pull/12)):
-
-| Header | Value | Purpose |
-|--------|-------|---------|
-| `X-Content-Type-Options` | `nosniff` | Prevent MIME-sniffing |
-| `X-Frame-Options` | `DENY` | Prevent clickjacking via iframes |
-| `Referrer-Policy` | `strict-origin-when-cross-origin` | Limit referrer leakage to third parties |
-| `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` | Disable unused browser APIs |
-| `Server` | (removed) | Prevent server fingerprinting |
-
-### SSH
-
-- Key-only authentication (`PasswordAuthentication no`, `PermitRootLogin no`)
-- Fail2ban for brute-force protection (planned)
-
-### Access control
-
-- GitHub branch protection on all repos (squash/rebase only, no direct push to main).
-- All services with web UIs (Umami, Uptime Kuma) have built-in authentication.
+For full VPS setup instructions, see [guides/VPS_SETUP.md](guides/VPS_SETUP.md).
 
 ## Backups
 
@@ -105,6 +72,47 @@ sudo systemctl enable --now pg-backup.timer
 ```bash
 ./services/postgres/backups/backup.sh                  # all databases
 ./services/postgres/backups/backup.sh saq_sommelier    # single database
+```
+
+### Restore
+
+Backups are gzipped SQL dumps in `/var/backups/postgres/`. To restore:
+
+```bash
+# List available backups
+ls -lh /var/backups/postgres/
+
+# Restore into an existing database (replays the dump — safe for additive restores)
+gunzip -c /var/backups/postgres/saq_sommelier_20260316.sql.gz | \
+  docker exec -i shared-postgres psql -U postgres -d saq_sommelier
+
+# Full rebuild (drop + recreate + restore)
+docker exec shared-postgres psql -U postgres -c "DROP DATABASE saq_sommelier;"
+docker exec shared-postgres psql -U postgres -c "CREATE DATABASE saq_sommelier OWNER saq_sommelier;"
+gunzip -c /var/backups/postgres/saq_sommelier_20260316.sql.gz | \
+  docker exec -i shared-postgres psql -U postgres -d saq_sommelier
+
+# Verify
+docker exec shared-postgres psql -U postgres -d saq_sommelier -c "SELECT count(*) FROM product;"
+```
+
+After restoring an app database, re-run the app's migrations to ensure schema is current.
+
+## PostgreSQL Extensions
+
+See [SERVICE_CATALOG.md](SERVICE_CATALOG.md#required-extensions) for the full extensions table. If rebuilding postgres from scratch, `vector` is created automatically by the init script. `pg_trgm` is created by coupette's migrations — run `alembic upgrade head` after restore.
+
+## Systemd Timers
+
+See [SERVICE_CATALOG.md](SERVICE_CATALOG.md#timer-scheduling) for the full timer inventory and scheduling diagram.
+
+```bash
+# Check all timers
+systemctl list-timers --all | grep -E "pg-backup|coupette"
+
+# Check a specific timer
+systemctl status pg-backup.timer
+journalctl -u pg-backup.service --since "1 week ago"
 ```
 
 ## Logging
