@@ -7,8 +7,10 @@ Platform infrastructure for `victorpatrin.dev` — service definitions, reverse 
 - **services/** — per-service config and data
   - `caddy/` — Caddyfile (reverse proxy routing + TLS)
   - `homepage/` — static site for `victorpatrin.dev`
-  - `postgres/` — backup scripts + systemd units
-- **docker-compose.yml** — all service definitions
+  - `postgres/` — init scripts, backup scripts + systemd units
+  - `umami/` — analytics (.env config)
+  - `uptime-kuma/` — monitoring (zero-config, data in Docker volume)
+- **docker-compose.yml** — all service definitions (Caddy, PostgreSQL, Umami, Uptime Kuma)
 - **scripts/** — repo setup automation (`setup-repo.sh`)
 - **docs/** — infrastructure overview, port allocation
 
