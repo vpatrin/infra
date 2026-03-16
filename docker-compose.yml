@@ -32,9 +32,72 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: shared-postgres
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5432:5432"  # Localhost only — for DBeaver, Alembic
+    env_file: ./services/postgres/.env
+    mem_limit: 1g
+    shm_size: 256mb
+    volumes:
+      - shared-postgres_pgdata:/var/lib/postgresql/data
+      - ./services/postgres/init-scripts:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - internal
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    container_name: umami
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"  # Localhost only — Caddy proxies public traffic
+    env_file: ./services/umami/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3001:3001"  # Localhost only — Caddy proxies public traffic
+    volumes:
+      - uptime-kuma_uptime-kuma-data:/app/data
+    networks:
+      - internal
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 volumes:
   caddy_data:
   caddy_config:
+  shared-postgres_pgdata:
+    external: true
+  uptime-kuma_uptime-kuma-data:
+    external: true
 
 networks:
   internal:
