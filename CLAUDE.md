@@ -60,9 +60,15 @@ infra/
 │   │   └── .env.example
 │   └── uptime-kuma/               # Zero-config, data in Docker volume
 ├── docs/
-│   ├── PORT_ALLOCATION.md         # Port assignments across services
+│   ├── ROADMAP.md                 # Phased infrastructure plan
 │   ├── INFRASTRUCTURE.md          # Server setup, backups, logging
-│   └── RFC-repo-reorg.md          # Repo consolidation plan
+│   ├── SERVICE_CATALOG.md         # Service inventory + platform contract
+│   ├── SECURITY.md                # Platform security posture
+│   ├── decisions/                 # Architecture decision records
+│   │   └── 0001-consolidate-repos.md
+│   └── guides/                    # Reusable how-to guides
+│       ├── GITHUB_SETUP.md
+│       └── VPS_SETUP.md
 ├── .claude/
 │   ├── COMMANDS.md                # Virtual team overview
 │   └── commands/                  # Slash command definitions
@@ -161,6 +167,28 @@ App repos (e.g. coupette) depend on infrastructure this repo provides:
 - Caddy routes are defined in `services/caddy/Caddyfile`. Adding a new app route requires a PR here.
 
 If any of these change, app deploy scripts must be updated in the same logical change.
+
+## Separation of Concerns
+
+Infra and app repos have distinct ownership boundaries. Do not duplicate content across repos — use cross-repo pointers instead.
+
+**Infra owns (this repo):**
+
+- VPS provisioning, firewall, SSH, TLS, DNS
+- Docker network, Caddy routing, shared-postgres
+- Backups, monitoring alerts, systemd timer inventory
+- Secrets management, IaC (Terraform, Ansible), K8s migration
+- `docs/ROADMAP.md` — phased infrastructure plan (Phases 0–9)
+
+**Coupette owns (app repo):**
+
+- App architecture, deploy process, CI/CD pipeline
+- Alembic migrations, scraper operations, bot logic, auth
+- App-level performance, testing, code quality
+- `docs/ROADMAP.md` — app feature roadmap
+- `docs/ENGINEERING.md` — app architecture and technical decisions
+
+Platform-level items removed from coupette's docs point back to infra's ROADMAP. App-level deployment (PRODUCTION.md) stays in coupette.
 
 ## Developer Context
 

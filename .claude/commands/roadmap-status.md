@@ -18,7 +18,7 @@ Input: a phase name, topic, or `--stale`. Use `$ARGUMENTS` as the input.
 
 Before responding, silently:
 
-1. Read `docs/RFC-repo-reorg.md` to understand the planned phases and migration sequence
+1. Read `docs/decisions/0001-consolidate-repos.md` to understand the planned phases and migration sequence
 2. Run `gh issue list --state all --limit 100` to see all issues (open and closed)
 3. Run `gh pr list --state merged --limit 50` to see what's been shipped
 4. Run `gh project item-list 1 --owner vpatrin --limit 100` to check the kanban board status
