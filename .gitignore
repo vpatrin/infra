@@ -1,9 +1,18 @@
-.env
-services/*/.env
+# Logs
 *.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# macOS
 .DS_Store
 
-# Claude
-CLAUDE.md
-.claude/*
-!.claude/commands/
+# Claude (commit commands + docs, ignore local settings)
+.claude/settings.local.json
+
+# Environment variables
+.env
+services/*/.env
