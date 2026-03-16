@@ -7,5 +7,5 @@ Requires=docker.service
 Type=oneshot
 ExecStartPre=+/usr/bin/mkdir -p /var/backups/postgres
 ExecStartPre=+/usr/bin/chown victor:victor /var/backups/postgres
-ExecStart=/home/victor/infra/backup/backup.sh
+ExecStart=/home/victor/infra/services/postgres/backup/backup.sh
 User=victor
