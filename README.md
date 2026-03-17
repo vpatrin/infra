@@ -37,8 +37,13 @@ infra/
 │   ├── SERVICE_CATALOG.md         # Service inventory + platform contract
 │   ├── SECURITY.md                # Platform security posture
 │   ├── decisions/                 # Architecture decision records
-│   │   └── 0001-consolidate-repos.md
+│   │   ├── 0001-consolidate-repos.md
+│   │   ├── 0002-caddy-reverse-proxy.md
+│   │   ├── 0003-shared-postgres.md
+│   │   ├── 0004-hetzner-single-vps.md
+│   │   └── 0005-docker-compose-orchestration.md
 │   └── guides/                    # Reusable how-to guides
+│       ├── DOCKER_GUIDE.md
 │       ├── GITHUB_SETUP.md
 │       └── VPS_SETUP.md
 └── .github/
@@ -68,4 +73,5 @@ make reload
 - [SERVICE_CATALOG.md](docs/SERVICE_CATALOG.md) — service inventory + platform contract
 - [SECURITY.md](docs/SECURITY.md) — platform security posture
 - [decisions/](docs/decisions/) — architecture decision records
+- [guides/DOCKER_GUIDE.md](docs/guides/DOCKER_GUIDE.md) — Docker patterns for apps on this platform
 - [guides/](docs/guides/) — reusable how-to guides (future blog material)

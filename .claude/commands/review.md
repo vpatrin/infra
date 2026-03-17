@@ -33,7 +33,7 @@ Input: a branch name, issue number, or topic. Use `$ARGUMENTS` as the input. If 
    - Docs updated if architecture changed
 6. **Config-specific review:**
    - **Caddyfile:** directive order matters (Caddy processes top-to-bottom within a site block). Check for conflicting matchers, missing TLS config, reverse_proxy targets matching container names on the `internal` network.
-   - **docker-compose.yml:** service patterns consistent (image, ports, volumes, networks, restart policy). Volume declarations correct (named vs bind mount). `env_file` paths resolve. Network attachments match Caddyfile routing assumptions.
+   - **docker-compose.yml:** service patterns consistent (image, ports, volumes, networks, restart policy). Volume declarations correct (named vs bind mount). `env_file` paths resolve. Network attachments match Caddyfile routing assumptions. New services follow `docs/guides/DOCKER_GUIDE.md` patterns (hardening, logging, healthchecks).
    - **Shell scripts:** `set -e` present. Variables quoted. Error handling on critical operations (pg_dump, docker exec). Exit codes meaningful.
    - **systemd units:** `After=` and `Requires=` dependencies correct. `ExecStart` paths absolute and valid. Timer schedule makes sense.
    - **Makefile:** `.PHONY` for all targets. Help comments (`##`) on every target. No inline secrets.

@@ -58,15 +58,21 @@ infra/
 │   │   └── .env.example
 │   ├── umami/
 │   │   └── .env.example
-│   └── uptime-kuma/               # Zero-config, data in Docker volume
+│   ├── uptime-kuma/               # Zero-config, data in Docker volume
+│   └── homepage/                  # Static site for victorpatrin.dev
 ├── docs/
 │   ├── ROADMAP.md                 # Phased infrastructure plan
 │   ├── INFRASTRUCTURE.md          # Server setup, backups, logging
 │   ├── SERVICE_CATALOG.md         # Service inventory + platform contract
 │   ├── SECURITY.md                # Platform security posture
 │   ├── decisions/                 # Architecture decision records
-│   │   └── 0001-consolidate-repos.md
+│   │   ├── 0001-consolidate-repos.md
+│   │   ├── 0002-caddy-reverse-proxy.md
+│   │   ├── 0003-shared-postgres.md
+│   │   ├── 0004-hetzner-single-vps.md
+│   │   └── 0005-docker-compose-orchestration.md
 │   └── guides/                    # Reusable how-to guides
+│       ├── DOCKER_GUIDE.md
 │       ├── GITHUB_SETUP.md
 │       └── VPS_SETUP.md
 ├── .claude/
