@@ -117,6 +117,8 @@ Example from coupette's deploy script:
 
 ## App Deployment Assumptions
 
+These assumptions apply to [coupette](https://github.com/vpatrin/coupette) — the main app on this platform. See its [PRODUCTION.md](https://github.com/vpatrin/coupette/blob/main/docs/PRODUCTION.md) for the full deploy process.
+
 ### Working directory
 
 Coupette is deployed to `/opt/coupette` on the VPS. Systemd timer units use `WorkingDirectory=/opt/coupette`. The deploy script writes an `.image-tag` file there that timers read to pull the correct container image version.

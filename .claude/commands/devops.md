@@ -34,7 +34,7 @@ Before responding, silently read what's relevant:
 5. Read `Makefile`
 6. Read all docs in `docs/`
 7. Read `docs/decisions/0006-consolidate-repos.md` for the consolidation roadmap
-8. Read `docs/guides/COMPOSE_GUIDE.md` and `docs/guides/DOCKERFILE_GUIDE.md` for container patterns and platform contract
+8. Read `docs/guides/COMPOSE_GUIDE.md` for container patterns and platform contract (guides are also under `docs/` from step 6)
 
 ## Domain coverage
 
