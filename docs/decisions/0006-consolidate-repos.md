@@ -1,8 +1,7 @@
-# RFC: Repository Reorganization
+# ADR 0006: Consolidate Infrastructure Repos
 
-**Author:** Victor Patrin
 **Date:** 2026-03-16
-**Status:** Draft
+**Status:** Accepted
 
 ---
 
@@ -75,11 +74,11 @@ infra/
 │   │   └── Caddyfile
 │   ├── postgres/
 │   │   ├── init-scripts/
-│   │   └── backup/                 # pg-backup.sh, systemd timer
+│   │   └── backups/                # pg-backup.sh, systemd timer
 │   ├── umami/
 │   ├── uptime-kuma/
 │   ├── homepage/                   # Static site (victorpatrin.dev)
-│   ├── grafana/                    # Phase 4 — observability
+│   ├── grafana/                    # Observability phase
 │   ├── loki/
 │   └── promtail/
 │
@@ -95,13 +94,13 @@ infra/
 │   ├── roles/
 │   │   ├── base/                   # apt, swap, sysctl, fail2ban, ufw
 │   │   ├── docker/                 # Docker + compose install
-│   │   ├── k3s/                    # K3s install + node join (Phase 5)
+│   │   ├── k3s/                    # K3s install + node join (Kubernetes phase)
 │   │   └── app/                    # Generic deploy role (parameterized)
 │   └── playbooks/
 │       ├── bootstrap.yml           # Fresh Debian → production-ready
 │       └── deploy.yml              # Deploy a specific service
 │
-├── k8s/                            # Phase 5 — K3s manifests (Flux watches this path)
+├── k8s/                            # Kubernetes phase — K3s manifests (Flux watches this path)
 │   ├── base/                       # Namespaces, ingress, shared config
 │   └── apps/
 │       ├── coupette/
@@ -140,7 +139,7 @@ services:
     env_file: ./services/postgres/.env
 ```
 
-Each `services/<name>/` directory includes a `.env.example` committed with placeholder values for documentation. On the VPS, `.env` files are managed manually (or by Ansible in Phase 2).
+Each `services/<name>/` directory includes a `.env.example` committed with placeholder values for documentation. On the VPS, `.env` files are managed manually (or by Ansible in the Ansible phase).
 
 ### Contract with app repos
 
@@ -154,7 +153,7 @@ If any of these change, app deploy scripts must be updated in the same logical c
 
 ### Terraform state
 
-Terraform state will be stored locally during initial adoption (single developer, single server). If the IaC layer grows or a second environment is added, migrate to an S3-compatible backend (Hetzner Object Storage or Terraform Cloud free tier). This decision should be made before Phase 2 work begins.
+Terraform state will be stored locally during initial adoption (single developer, single server). If the IaC layer grows or a second environment is added, migrate to an S3-compatible backend (Hetzner Object Storage or Terraform Cloud free tier). This decision should be made before the Ansible phase begins.
 
 ### Why not split `infra/` and `deploy/`?
 
@@ -195,7 +194,7 @@ If the team grows or the IaC layer becomes substantial enough to warrant its own
 4. **Absorb uptime-kuma** — add uptime-kuma service definition to root compose. Validate with `docker compose config`.
 5. **Update Coupette's deploy script** — `deploy/deploy.sh` references `shared-postgres` for backups and assumes postgres is managed externally. Update the backup path, container name reference, and any assumptions about postgres "already running" to reflect the new `infra/` layout.
 6. **Archive old repos** — mark `shared-postgres`, `umami`, `uptime-kuma` as archived on GitHub. Don't delete — preserves commit history. Update each archived repo's README with: (1) where the content moved (path in `infra/`), (2) the date of the migration, and (3) the last commit hash that was migrated.
-7. **Add IaC directories** — create `terraform/` and `ansible/` stubs. Populate as Phases 1-2 begin.
+7. **Add IaC directories** — create `terraform/` and `ansible/` stubs. Populate as the Terraform and Ansible phases begin.
 
 Each step is independently deployable. No big-bang migration.
 
@@ -223,7 +222,7 @@ This avoids data loss and avoids copying volumes. Once confirmed working, the ol
 
 ## CI/CD Architecture
 
-### Pre-K3s (Phases 1-3)
+### Pre-K3s (Terraform + Ansible + Automated Deployment)
 
 ```
 App repo (coupette)                     infra/
@@ -241,7 +240,7 @@ App repo (coupette)                     infra/
 - `infra/` owns **deploy** (Ansible playbook, triggered by repository dispatch).
 - Deploys only on tagged releases, never on push to main.
 
-### Post-K3s (Phase 5)
+### Post-K3s (Kubernetes)
 
 ```
 App repo (coupette)                     infra/
@@ -264,11 +263,11 @@ These pipelines are introduced incrementally as each IaC layer is adopted — no
 
 | Trigger | Pipeline | What it does | Introduced in |
 | --- | --- | --- | --- |
-| PR touching `services/` | Docker CI | Hadolint, compose config validation | Phase 1 (restructure) |
-| PR touching `terraform/` | Terraform CI | `terraform fmt -check`, `terraform validate`, `terraform plan` (comment on PR) | Phase 2 (Terraform) |
-| PR touching `ansible/` | Ansible CI | `ansible-lint`, syntax check | Phase 2 (Ansible) |
-| PR touching `k8s/` | K8s CI | `kubeval` / `kubeconform` manifest validation | Phase 5 (K3s) |
-| Merge to main | Deploy | Ansible playbook or Flux sync (depending on phase) | Phase 3 (CI/CD) |
+| PR touching `services/` | Docker CI | Hadolint, compose config validation | Consolidation phase |
+| PR touching `terraform/` | Terraform CI | `terraform fmt -check`, `terraform validate`, `terraform plan` (comment on PR) | Terraform phase |
+| PR touching `ansible/` | Ansible CI | `ansible-lint`, syntax check | Ansible phase |
+| PR touching `k8s/` | K8s CI | `kubeval` / `kubeconform` manifest validation | Kubernetes phase |
+| Merge to main | Deploy | Ansible playbook or Flux sync (depending on phase) | Automated Deployment phase |
 
 ---
 

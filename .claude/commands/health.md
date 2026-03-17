@@ -23,7 +23,7 @@ Before auditing, silently:
 3. Read `docker-compose.yml` for all service definitions
 4. Read `services/caddy/Caddyfile` for routing config
 5. Read `docs/INFRASTRUCTURE.md` for operational context
-6. Read `docs/PORT_ALLOCATION.md` for port assignments
+6. Read `docs/SERVICE_CATALOG.md` for service inventory and port assignments
 
 ## Surface checklist (default)
 

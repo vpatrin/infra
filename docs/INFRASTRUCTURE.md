@@ -28,46 +28,13 @@ Only Caddy binds to host ports 80/443.
 PostgreSQL binds to localhost:5432 for dev tooling (DBeaver, Alembic).
 ```
 
-See [PORT_ALLOCATION.md](PORT_ALLOCATION.md) for the full service/port/container mapping.
+See [SERVICE_CATALOG.md](SERVICE_CATALOG.md) for the full service inventory and port mapping.
+
+For full VPS setup instructions, see [guides/VPS_SETUP.md](guides/VPS_SETUP.md).
 
 ## Security
 
-### Firewall
-
-- Hetzner network firewall (cloud-level, before traffic hits the VPS)
-- `ufw` on the VPS — ports 22, 80, 443 only
-
-### Network isolation
-
-- Caddy is the only internet-facing container — all other services are on the `internal` Docker network only.
-- PostgreSQL is bound to `localhost:5432`, not `0.0.0.0`.
-
-### TLS
-
-- Caddy handles automatic HTTPS via Let's Encrypt (ACME). Certificates are auto-renewed.
-- HSTS is enabled automatically by Caddy on all HTTPS sites.
-
-### Response headers
-
-Applied to all sites via a shared Caddyfile snippet ([#12](https://github.com/vpatrin/infra/pull/12)):
-
-| Header | Value | Purpose |
-|--------|-------|---------|
-| `X-Content-Type-Options` | `nosniff` | Prevent MIME-sniffing |
-| `X-Frame-Options` | `DENY` | Prevent clickjacking via iframes |
-| `Referrer-Policy` | `strict-origin-when-cross-origin` | Limit referrer leakage to third parties |
-| `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` | Disable unused browser APIs |
-| `Server` | (removed) | Prevent server fingerprinting |
-
-### SSH
-
-- Key-only authentication (`PasswordAuthentication no`, `PermitRootLogin no`)
-- Fail2ban for brute-force protection (planned)
-
-### Access control
-
-- GitHub branch protection on all repos (squash/rebase only, no direct push to main).
-- All services with web UIs (Umami, Uptime Kuma) have built-in authentication.
+See [SECURITY.md](SECURITY.md) for the full platform security posture (firewall, TLS, headers, container hardening, SSH, secrets management).
 
 ## Backups
 
@@ -78,6 +45,7 @@ Weekly automated backups via systemd timer ([#6](https://github.com/vpatrin/infr
 | Data | Location | Risk |
 |------|----------|------|
 | PostgreSQL (2 databases) | Docker volume `shared-postgres_pgdata` | **High** — user data, product catalog, analytics |
+| Uptime Kuma | Docker volume `uptime-kuma_uptime-kuma-data` | Medium — monitoring config + history, reconfigurable |
 | Caddy TLS certs | Docker volume `caddy_data` | Low — auto-renewed by ACME |
 | Caddy config | Docker volume `caddy_config` | Low — regenerated from Caddyfile |
 
@@ -88,7 +56,7 @@ Everything else. All service containers can be rebuilt from their repos. Static 
 ### Strategy
 
 - Weekly `pg_dump` per database (compressed), retained for 30 days
-- systemd timer: Monday 02:00 (before scraper at 03:00)
+- systemd timer: Sunday 02:00 (day before Monday scraper)
 - Pre-deploy dumps via `./services/postgres/backups/backup.sh <db_name>` (called by deploy scripts)
 - Storage: `/var/backups/postgres/` (~2MB per dump × 2 DBs × 4 weeks = ~16MB)
 
@@ -107,6 +75,47 @@ sudo systemctl enable --now pg-backup.timer
 ./services/postgres/backups/backup.sh saq_sommelier    # single database
 ```
 
+### Restore
+
+Backups are gzipped SQL dumps in `/var/backups/postgres/`. To restore:
+
+```bash
+# List available backups
+ls -lh /var/backups/postgres/
+
+# Restore into an existing database (replays the dump — safe for additive restores)
+gunzip -c /var/backups/postgres/saq_sommelier_YYYYMMDD.sql.gz | \
+  docker exec -i shared-postgres psql -U postgres -d saq_sommelier
+
+# Full rebuild (drop + recreate + restore)
+docker exec shared-postgres psql -U postgres -c "DROP DATABASE saq_sommelier;"
+docker exec shared-postgres psql -U postgres -c "CREATE DATABASE saq_sommelier OWNER saq_sommelier;"
+gunzip -c /var/backups/postgres/saq_sommelier_YYYYMMDD.sql.gz | \
+  docker exec -i shared-postgres psql -U postgres -d saq_sommelier
+
+# Verify
+docker exec shared-postgres psql -U postgres -d saq_sommelier -c "SELECT count(*) FROM product;"
+```
+
+After restoring an app database, re-run the app's migrations to ensure schema is current.
+
+## PostgreSQL Extensions
+
+See [SERVICE_CATALOG.md](SERVICE_CATALOG.md#required-extensions) for the full extensions table. If rebuilding postgres from scratch, `vector` is created automatically by the init script. `pg_trgm` is created by coupette's migrations — run `alembic upgrade head` after restore.
+
+## Systemd Timers
+
+See [SERVICE_CATALOG.md](SERVICE_CATALOG.md#timer-scheduling) for the full timer inventory and scheduling diagram.
+
+```bash
+# Check all timers
+systemctl list-timers --all | grep -E "pg-backup|coupette"
+
+# Check a specific timer
+systemctl status pg-backup.timer
+journalctl -u pg-backup.service --since "1 week ago"
+```
+
 ## Logging
 
 Docker container logs are stored at `/var/lib/docker/containers/<id>/<id>-json.log`. Each service has log rotation configured in its `docker-compose.yml` (10MB max per file, 3 files retained = 30MB cap per service).
@@ -121,6 +130,43 @@ Docker container logs are stored at `/var/lib/docker/containers/<id>/<id>-json.l
 | Uptime Kuma | `status.victorpatrin.dev` | Uptime monitoring, alerts on downtime |
 | Umami | `analytics.victorpatrin.dev` | Privacy-friendly web analytics |
 
+### HTTP monitors
+
+Uptime Kuma polls services via HTTP and alerts on downtime via Telegram (`@victor_uptime_bot`).
+
+### Push monitors (systemd timers)
+
+Scheduled jobs (backups, scrapers) report success to Uptime Kuma push monitors. If a heartbeat doesn't arrive within the grace period, Uptime Kuma sends a Telegram alert.
+
+| Job          | Monitor Type | Heartbeat | Grace |
+|--------------|--------------|-----------|-------|
+| `pg-backup`  | Push         | 7 days    | 1 day |
+
+Push URLs are stored in `/etc/push-monitor/<job>.env` on the VPS (root-owned, `0600`). Systemd loads them via `EnvironmentFile` (mandatory — unit won't start without it), and `ExecStartPost=-` calls `scripts/push-monitor.sh` on success. See `pg-backup.service` for the reference implementation.
+
+#### Adding a push monitor
+
+1. Create the push monitor in Uptime Kuma (set heartbeat interval and grace period)
+2. Store the push URL on the VPS:
+
+   ```bash
+   sudo mkdir -p /etc/push-monitor
+   sudo tee /etc/push-monitor/<job>.env > /dev/null <<EOF
+   PUSH_URL=<paste push URL from Uptime Kuma>
+   EOF
+   sudo chmod 600 /etc/push-monitor/<job>.env
+   ```
+
+3. Add `EnvironmentFile=/etc/push-monitor/<job>.env` and `ExecStartPost=-/.../scripts/push-monitor.sh ${PUSH_URL}` to the systemd service unit
+4. Copy updated unit files and reload:
+
+   ```bash
+   sudo cp <service-file> <timer-file> /etc/systemd/system/
+   sudo systemctl daemon-reload
+   sudo systemctl reenable <job>.timer
+   ```
+5. Test: `sudo systemctl start <job>.service` and verify heartbeat in Uptime Kuma
+
 ## Deployment
 
 Manual git-based deployment (intentional for solo dev — CI/CD overhead not justified yet).
@@ -129,8 +175,8 @@ Manual git-based deployment (intentional for solo dev — CI/CD overhead not jus
 ssh web-01
 cd ~/infra
 git pull
-docker compose up -d --build   # full redeploy
-make reload                    # Caddyfile-only, no downtime
+make restart   # full container restart (if docker-compose.yml changed)
+make reload    # Caddyfile-only, no downtime
 ```
 
 Each project repo has its own deploy process. See [coupette PRODUCTION.md](https://github.com/vpatrin/coupette/blob/main/docs/PRODUCTION.md) for app-level deployment.
