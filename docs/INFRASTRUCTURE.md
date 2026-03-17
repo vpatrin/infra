@@ -56,7 +56,7 @@ Everything else. All service containers can be rebuilt from their repos. Static 
 ### Strategy
 
 - Weekly `pg_dump` per database (compressed), retained for 30 days
-- systemd timer: Monday 02:00 (before scraper at 03:00)
+- systemd timer: Sunday 02:00 (day before Monday scraper)
 - Pre-deploy dumps via `./services/postgres/backups/backup.sh <db_name>` (called by deploy scripts)
 - Storage: `/var/backups/postgres/` (~2MB per dump × 2 DBs × 4 weeks = ~16MB)
 
@@ -129,6 +129,20 @@ Docker container logs are stored at `/var/lib/docker/containers/<id>/<id>-json.l
 |------|-----|---------|
 | Uptime Kuma | `status.victorpatrin.dev` | Uptime monitoring, alerts on downtime |
 | Umami | `analytics.victorpatrin.dev` | Privacy-friendly web analytics |
+
+### HTTP monitors
+
+Uptime Kuma polls services via HTTP and alerts on downtime via Telegram (`@victor_uptime_bot`).
+
+### Push monitors (systemd timers)
+
+Scheduled jobs (backups, scrapers) report success to Uptime Kuma push monitors. If a heartbeat doesn't arrive within the grace period, Uptime Kuma sends a Telegram alert.
+
+| Job          | Monitor Type | Heartbeat | Grace |
+|--------------|--------------|-----------|-------|
+| `pg-backup`  | Push         | 7 days    | 1 day |
+
+Push URLs are stored in `/etc/push-monitor/<job>.env` on the VPS (root-owned, `0600`). Systemd loads them via `EnvironmentFile`, and `ExecStartPost` calls `scripts/push-monitor.sh` on success. See `pg-backup.service` for the reference implementation.
 
 ## Deployment
 
