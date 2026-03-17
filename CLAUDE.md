@@ -58,8 +58,7 @@ infra/
 │   │   └── .env.example
 │   ├── umami/
 │   │   └── .env.example
-│   ├── uptime-kuma/               # Zero-config, data in Docker volume
-│   └── homepage/                  # Static site for victorpatrin.dev
+│   └── uptime-kuma/               # Zero-config, data in Docker volume
 ├── docs/
 │   ├── ROADMAP.md                 # Phased infrastructure plan
 │   ├── INFRASTRUCTURE.md          # Server setup, backups, logging
@@ -72,7 +71,8 @@ infra/
 │   │   ├── 0004-hetzner-single-vps.md
 │   │   └── 0005-docker-compose-orchestration.md
 │   └── guides/                    # Reusable how-to guides
-│       ├── DOCKER_GUIDE.md
+│       ├── COMPOSE_GUIDE.md
+│       ├── DOCKERFILE_GUIDE.md
 │       ├── GITHUB_SETUP.md
 │       └── VPS_SETUP.md
 ├── .claude/
