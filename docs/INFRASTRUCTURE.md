@@ -142,7 +142,30 @@ Scheduled jobs (backups, scrapers) report success to Uptime Kuma push monitors. 
 |--------------|--------------|-----------|-------|
 | `pg-backup`  | Push         | 7 days    | 1 day |
 
-Push URLs are stored in `/etc/push-monitor/<job>.env` on the VPS (root-owned, `0600`). Systemd loads them via `EnvironmentFile`, and `ExecStartPost` calls `scripts/push-monitor.sh` on success. See `pg-backup.service` for the reference implementation.
+Push URLs are stored in `/etc/push-monitor/<job>.env` on the VPS (root-owned, `0600`). Systemd loads them via `EnvironmentFile` (mandatory — unit won't start without it), and `ExecStartPost=-` calls `scripts/push-monitor.sh` on success. See `pg-backup.service` for the reference implementation.
+
+#### Adding a push monitor
+
+1. Create the push monitor in Uptime Kuma (set heartbeat interval and grace period)
+2. Store the push URL on the VPS:
+
+   ```bash
+   sudo mkdir -p /etc/push-monitor
+   sudo tee /etc/push-monitor/<job>.env > /dev/null <<EOF
+   PUSH_URL=<paste push URL from Uptime Kuma>
+   EOF
+   sudo chmod 600 /etc/push-monitor/<job>.env
+   ```
+
+3. Add `EnvironmentFile=/etc/push-monitor/<job>.env` and `ExecStartPost=-/.../scripts/push-monitor.sh ${PUSH_URL}` to the systemd service unit
+4. Copy updated unit files and reload:
+
+   ```bash
+   sudo cp <service-file> <timer-file> /etc/systemd/system/
+   sudo systemctl daemon-reload
+   sudo systemctl reenable <job>.timer
+   ```
+5. Test: `sudo systemctl start <job>.service` and verify heartbeat in Uptime Kuma
 
 ## Deployment
 
