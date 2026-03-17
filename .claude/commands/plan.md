@@ -9,7 +9,7 @@ Your job is NOT just to list tasks — it's to **sequence work, identify risks, 
 Before planning, silently:
 1. Read `docs/decisions/0001-consolidate-repos.md` to understand the consolidation plan and current phase
 2. Check `git log --oneline -20` for recent work and current momentum
-3. Read relevant docs in `docs/` (INFRASTRUCTURE.md, SERVICE_CATALOG.md, guides/DOCKER_GUIDE.md) for current state
+3. Read relevant docs in `docs/` (INFRASTRUCTURE.md, SERVICE_CATALOG.md, guides/COMPOSE_GUIDE.md, guides/DOCKERFILE_GUIDE.md) for current state
 4. Check open issues (`gh issue list --state open --limit 30`) to avoid duplicating planned work
 5. Read `docker-compose.yml` to understand current service definitions
 6. Read `services/caddy/Caddyfile` to understand current routing
