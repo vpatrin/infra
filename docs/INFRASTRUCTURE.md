@@ -56,7 +56,7 @@ Everything else. All service containers can be rebuilt from their repos. Static 
 ### Strategy
 
 - Weekly `pg_dump` per database (compressed), retained for 30 days
-- systemd timer: Monday 02:00 (before scraper at 03:00)
+- systemd timer: Sunday 02:00 (day before Monday scraper)
 - Pre-deploy dumps via `./services/postgres/backups/backup.sh <db_name>` (called by deploy scripts)
 - Storage: `/var/backups/postgres/` (~2MB per dump × 2 DBs × 4 weeks = ~16MB)
 
@@ -129,6 +129,43 @@ Docker container logs are stored at `/var/lib/docker/containers/<id>/<id>-json.l
 |------|-----|---------|
 | Uptime Kuma | `status.victorpatrin.dev` | Uptime monitoring, alerts on downtime |
 | Umami | `analytics.victorpatrin.dev` | Privacy-friendly web analytics |
+
+### HTTP monitors
+
+Uptime Kuma polls services via HTTP and alerts on downtime via Telegram (`@victor_uptime_bot`).
+
+### Push monitors (systemd timers)
+
+Scheduled jobs (backups, scrapers) report success to Uptime Kuma push monitors. If a heartbeat doesn't arrive within the grace period, Uptime Kuma sends a Telegram alert.
+
+| Job          | Monitor Type | Heartbeat | Grace |
+|--------------|--------------|-----------|-------|
+| `pg-backup`  | Push         | 7 days    | 1 day |
+
+Push URLs are stored in `/etc/push-monitor/<job>.env` on the VPS (root-owned, `0600`). Systemd loads them via `EnvironmentFile` (mandatory — unit won't start without it), and `ExecStartPost=-` calls `scripts/push-monitor.sh` on success. See `pg-backup.service` for the reference implementation.
+
+#### Adding a push monitor
+
+1. Create the push monitor in Uptime Kuma (set heartbeat interval and grace period)
+2. Store the push URL on the VPS:
+
+   ```bash
+   sudo mkdir -p /etc/push-monitor
+   sudo tee /etc/push-monitor/<job>.env > /dev/null <<EOF
+   PUSH_URL=<paste push URL from Uptime Kuma>
+   EOF
+   sudo chmod 600 /etc/push-monitor/<job>.env
+   ```
+
+3. Add `EnvironmentFile=/etc/push-monitor/<job>.env` and `ExecStartPost=-/.../scripts/push-monitor.sh ${PUSH_URL}` to the systemd service unit
+4. Copy updated unit files and reload:
+
+   ```bash
+   sudo cp <service-file> <timer-file> /etc/systemd/system/
+   sudo systemctl daemon-reload
+   sudo systemctl reenable <job>.timer
+   ```
+5. Test: `sudo systemctl start <job>.service` and verify heartbeat in Uptime Kuma
 
 ## Deployment
 

@@ -141,11 +141,11 @@ Timers are sequenced to avoid conflicts and ensure pre-job backups:
 Daily (UTC):
   02:00  coupette-availability (stock refresh, ~5-18 min) [app-owned]
 
-Monday (UTC):
+Sunday (UTC):
   02:00  pg-backup (weekly dump of all databases)
+
+Monday (UTC):
   03:00  coupette-scraper (scrape → enrich → embed, ~1-2 hours) [app-owned]
 ```
 
-On Mondays, `coupette-availability` and `pg-backup` both fire at 02:00 UTC. This is safe — `pg_dump` takes a consistent snapshot regardless of concurrent activity, and availability refresh is a lightweight read/write cycle.
-
-Backup runs before scraper so there's always a pre-scrape dump. All timers use `Persistent=true` — if the VPS is down during the scheduled time, the job runs on next boot.
+Backup runs Sunday, a full day before the Monday scraper — ensuring a clean pre-scrape dump. All timers use `Persistent=true` — if the VPS is down during the scheduled time, the job runs on next boot.

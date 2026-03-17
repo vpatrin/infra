@@ -5,7 +5,9 @@ Requires=docker.service
 
 [Service]
 Type=oneshot
+EnvironmentFile=/etc/push-monitor/pg-backup.env
 ExecStartPre=+/usr/bin/mkdir -p /var/backups/postgres
 ExecStartPre=+/usr/bin/chown victor:victor /var/backups/postgres
 ExecStart=/home/victor/infra/services/postgres/backups/backup.sh
+ExecStartPost=-/home/victor/infra/scripts/push-monitor.sh ${PUSH_URL}
 User=victor
