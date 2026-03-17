@@ -140,6 +140,7 @@ Timers are sequenced to avoid conflicts and ensure pre-job backups:
 ```text
 Daily (UTC):
   02:00  coupette-availability (stock refresh, ~5-18 min) [app-owned]
+  06:00  disk-alert (disk usage check, alerts if >85%)
 
 Sunday (UTC):
   02:00  pg-backup (weekly dump of all databases)

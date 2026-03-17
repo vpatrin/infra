@@ -134,6 +134,12 @@ Docker container logs are stored at `/var/lib/docker/containers/<id>/<id>-json.l
 
 Uptime Kuma polls services via HTTP and alerts on downtime via Telegram (`@victor_uptime_bot`).
 
+### Disk usage alert
+
+Daily systemd timer checks disk usage on `/`. If usage exceeds 85%, sends a Telegram alert via `@victor_uptime_bot`. Not routed through Uptime Kuma — the timer always runs and the disk is always queryable, so push/pull monitoring doesn't apply.
+
+Credentials (`BOT_TOKEN`, `CHAT_ID`) stored in `/etc/push-monitor/disk-alert.env` (root-owned, `0600`).
+
 ### Push monitors (systemd timers)
 
 Scheduled jobs (backups, scrapers) report success to Uptime Kuma push monitors. If a heartbeat doesn't arrive within the grace period, Uptime Kuma sends a Telegram alert.
