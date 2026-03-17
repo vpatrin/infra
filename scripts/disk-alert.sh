@@ -18,9 +18,11 @@ fi
 hostname=$(hostname)
 message="⚠️ Disk usage on ${hostname}: ${usage}% (threshold: ${THRESHOLD}%)"
 
-curl --silent --fail --max-time 10 \
+if curl --silent --fail --max-time 10 \
     "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
     -d chat_id="${CHAT_ID}" \
-    -d text="${message}" > /dev/null
-
-echo "disk-alert: ${usage}% used, alert sent"
+    -d text="${message}" > /dev/null; then
+    echo "disk-alert: ${usage}% used, alert sent"
+else
+    echo "disk-alert: ${usage}% used, failed to send alert" >&2
+fi

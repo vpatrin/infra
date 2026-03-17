@@ -1,5 +1,7 @@
 [Unit]
 Description=Disk usage alert via Telegram
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=oneshot
