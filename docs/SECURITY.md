@@ -76,7 +76,7 @@ Every container in `docker-compose.yml` follows these defaults:
 | ------- | ------- | ------- |
 | Umami | `read_only: true` + `tmpfs: /tmp` | Immutable filesystem |
 | PostgreSQL | `shm_size: 256mb` | Shared memory for query processing |
-| All | `logging: max-size 10m, max-file 3` | Prevent log-based disk exhaustion |
+| All infra services | `logging: max-size 10m, max-file 3` | Prevent log-based disk exhaustion |
 
 ### Memory budget
 

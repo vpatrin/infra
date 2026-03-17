@@ -74,8 +74,8 @@ Adding or modifying a route requires a PR to this repo — app repos do not touc
 | Umami | umami | 3000 | `127.0.0.1:3000` | `analytics.victorpatrin.dev` | infra |
 | Uptime Kuma | uptime-kuma | 3001 | `127.0.0.1:3001` | `status.victorpatrin.dev` | infra |
 | Coupette backend | coupette-backend | 8001 | — | `coupette.club/api` | coupette |
-| Coupette bot | coupette-bot-1 | — | — | — | coupette |
-| Coupette scraper | coupette-scraper-1 | — | — | — (systemd timer) | coupette |
+| Coupette bot | coupette-bot | — | — | — | coupette |
+| Coupette scraper | coupette-scraper | — | — | — (systemd timer) | coupette |
 | Coupette frontend | — | — | — | `coupette.club` (static, served by Caddy) | coupette |
 
 Only Caddy is internet-facing. Everything else is internal Docker network or localhost-only.
@@ -137,11 +137,11 @@ Timers are sequenced to avoid conflicts and ensure pre-job backups:
 
 ```text
 Daily (UTC):
-  02:00  coupette-availability (stock refresh, ~5-18 min)
+  02:00  coupette-availability (stock refresh, ~5-18 min) [app-owned]
 
 Monday (UTC):
   02:00  pg-backup (weekly dump of all databases)
-  03:00  coupette-scraper (scrape → enrich → embed, ~1-2 hours)
+  03:00  coupette-scraper (scrape → enrich → embed, ~1-2 hours) [app-owned]
 ```
 
 On Mondays, `coupette-availability` and `pg-backup` both fire at 02:00 UTC. This is safe — `pg_dump` takes a consistent snapshot regardless of concurrent activity, and availability refresh is a lightweight read/write cycle.

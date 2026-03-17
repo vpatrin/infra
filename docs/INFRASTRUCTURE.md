@@ -30,11 +30,11 @@ PostgreSQL binds to localhost:5432 for dev tooling (DBeaver, Alembic).
 
 See [SERVICE_CATALOG.md](SERVICE_CATALOG.md) for the full service inventory and port mapping.
 
+For full VPS setup instructions, see [guides/VPS_SETUP.md](guides/VPS_SETUP.md).
+
 ## Security
 
 See [SECURITY.md](SECURITY.md) for the full platform security posture (firewall, TLS, headers, container hardening, SSH, secrets management).
-
-For full VPS setup instructions, see [guides/VPS_SETUP.md](guides/VPS_SETUP.md).
 
 ## Backups
 
@@ -83,13 +83,13 @@ Backups are gzipped SQL dumps in `/var/backups/postgres/`. To restore:
 ls -lh /var/backups/postgres/
 
 # Restore into an existing database (replays the dump — safe for additive restores)
-gunzip -c /var/backups/postgres/saq_sommelier_20260316.sql.gz | \
+gunzip -c /var/backups/postgres/saq_sommelier_YYYYMMDD.sql.gz | \
   docker exec -i shared-postgres psql -U postgres -d saq_sommelier
 
 # Full rebuild (drop + recreate + restore)
 docker exec shared-postgres psql -U postgres -c "DROP DATABASE saq_sommelier;"
 docker exec shared-postgres psql -U postgres -c "CREATE DATABASE saq_sommelier OWNER saq_sommelier;"
-gunzip -c /var/backups/postgres/saq_sommelier_20260316.sql.gz | \
+gunzip -c /var/backups/postgres/saq_sommelier_YYYYMMDD.sql.gz | \
   docker exec -i shared-postgres psql -U postgres -d saq_sommelier
 
 # Verify
@@ -137,8 +137,8 @@ Manual git-based deployment (intentional for solo dev — CI/CD overhead not jus
 ssh web-01
 cd ~/infra
 git pull
-docker compose up -d --build   # full redeploy
-make reload                    # Caddyfile-only, no downtime
+make restart   # full container restart (if docker-compose.yml changed)
+make reload    # Caddyfile-only, no downtime
 ```
 
 Each project repo has its own deploy process. See [coupette PRODUCTION.md](https://github.com/vpatrin/coupette/blob/main/docs/PRODUCTION.md) for app-level deployment.

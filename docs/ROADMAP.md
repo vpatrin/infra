@@ -20,11 +20,11 @@ Absorb shared-postgres, umami, uptime-kuma into single repo. Restructure into `s
 
 Make the platform legible. Zero blast radius — no running services touched.
 
-- [ ] `ROADMAP.md` — this file
-- [ ] `SERVICE_CATALOG.md` — service inventory + platform contract for app repos
-- [ ] `SECURITY.md` — platform security posture
-- [ ] `INFRASTRUCTURE.md` updates — restore procedure, systemd timer inventory, extension requirements
-- [ ] `decisions/` — ADR directory with consolidation decision record
+- [x] `ROADMAP.md` — this file
+- [x] `SERVICE_CATALOG.md` — service inventory + platform contract for app repos
+- [x] `SECURITY.md` — platform security posture
+- [x] `INFRASTRUCTURE.md` updates — restore procedure, systemd timer inventory, extension requirements
+- [x] `decisions/` — ADR directory with consolidation decision record
 
 *(#31)*
 
