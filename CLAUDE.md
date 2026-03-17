@@ -65,11 +65,12 @@ infra/
 │   ├── SERVICE_CATALOG.md         # Service inventory + platform contract
 │   ├── SECURITY.md                # Platform security posture
 │   ├── decisions/                 # Architecture decision records
-│   │   ├── 0001-consolidate-repos.md
+│   │   ├── 0001-hetzner-single-vps.md
 │   │   ├── 0002-caddy-reverse-proxy.md
 │   │   ├── 0003-shared-postgres.md
-│   │   ├── 0004-hetzner-single-vps.md
-│   │   └── 0005-docker-compose-orchestration.md
+│   │   ├── 0004-docker-compose-orchestration.md
+│   │   ├── 0005-systemd-timers.md
+│   │   └── 0006-consolidate-repos.md
 │   └── guides/                    # Reusable how-to guides
 │       ├── COMPOSE_GUIDE.md
 │       ├── DOCKERFILE_GUIDE.md

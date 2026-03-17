@@ -1,4 +1,4 @@
-# ADR 0004: Hetzner CX22 Single VPS
+# ADR 0001: Hetzner CX22 Single VPS
 
 **Date:** 2026-03-16
 **Status:** Accepted
@@ -43,6 +43,6 @@ One server means one thing to SSH into, one thing to back up, one firewall to co
 - Total hosting cost is ~$5/mo. No per-service billing surprises.
 - Full control: systemd timers for backups and scraper schedules, ufw for firewall, direct `docker logs` for debugging.
 - The 4GB constraint forces discipline — no Loki/Grafana observability stack (Phase 9 deferred to post-K3s/multi-node), no local LLM inference, memory limits on every container.
-- Single point of failure — if the VPS goes down, everything is down. Mitigated by automated backups and the ability to rebuild from Terraform + Ansible (Phases 4-5).
+- Single point of failure — if the VPS goes down, everything is down. Mitigated by automated backups and the ability to rebuild from Terraform + Ansible (Terraform and Ansible phases).
 - Vertical scaling is easy (resize to CX32 = 8GB for ~$9/mo) if memory becomes the bottleneck before K3s migration.
 - EU data center simplifies GDPR — no cross-border data transfer concerns.

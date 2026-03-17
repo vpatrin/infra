@@ -42,4 +42,4 @@ Caddy also serves static files directly (homepage at `/srv/homepage`, coupette S
 - Adding a new service route is a 3-line Caddyfile change + reload.
 - All routing logic lives in one file (`services/caddy/Caddyfile`), not scattered across Docker labels or Nginx includes.
 - Caddy's ecosystem is smaller than Nginx's — advanced features (rate limiting, WAF) may require plugins or moving to a different proxy later.
-- App repos depend on Caddy routes existing in this repo (see platform contract in [ADR 0001](0001-consolidate-repos.md)).
+- App repos depend on Caddy routes existing in this repo (see platform contract in [ADR 0006](0006-consolidate-repos.md)).

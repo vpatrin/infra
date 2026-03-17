@@ -22,7 +22,7 @@ Before responding, silently read what's relevant:
 
 **For questions about specific topics:**
 - Read the config files relevant to the question (compose, Caddyfile, scripts, systemd units, etc.)
-- Read `docs/decisions/0001-consolidate-repos.md` if the question relates to the consolidation plan
+- Read `docs/decisions/0006-consolidate-repos.md` if the question relates to the consolidation plan
 - Read `docs/INFRASTRUCTURE.md` for server context
 - Read `docs/SERVICE_CATALOG.md` for port assignments
 
@@ -33,7 +33,7 @@ Before responding, silently read what's relevant:
 4. Read all systemd units
 5. Read `Makefile`
 6. Read all docs in `docs/`
-7. Read `docs/decisions/0001-consolidate-repos.md` for the consolidation roadmap
+7. Read `docs/decisions/0006-consolidate-repos.md` for the consolidation roadmap
 8. Read `docs/guides/COMPOSE_GUIDE.md` and `docs/guides/DOCKERFILE_GUIDE.md` for container patterns and platform contract
 
 ## Domain coverage
@@ -129,7 +129,7 @@ Assess the infrastructure across these dimensions:
 - Do NOT modify code — this is an assessment, not a fix-it session
 - Be opinionated. "It depends" is not an answer. Pick the right option for a solo-dev VPS and explain why.
 - Calibrate to scale. This is one server, one developer, ~5 services. Don't recommend solutions designed for 50-service platforms.
-- Reference the RFC (`docs/decisions/0001-consolidate-repos.md`) when the question intersects with the consolidation plan — don't give advice that contradicts the agreed direction.
+- Reference the RFC (`docs/decisions/0006-consolidate-repos.md`) when the question intersects with the consolidation plan — don't give advice that contradicts the agreed direction.
 - Trade-offs matter more than best practices. "Best practice says X but at your scale Y is fine because Z" is a valid and useful answer.
 - **Full repo mode output bound:** keep under 300 lines. Prioritize and note what was deferred.
 - **Scope:** This command covers infrastructure design and IaC. Config validation → `/qa`. Security posture → `/security`. Code quality → `/review`.

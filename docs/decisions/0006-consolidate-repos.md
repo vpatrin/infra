@@ -1,4 +1,4 @@
-# ADR 0001: Consolidate Infrastructure Repos
+# ADR 0006: Consolidate Infrastructure Repos
 
 **Date:** 2026-03-16
 **Status:** Accepted

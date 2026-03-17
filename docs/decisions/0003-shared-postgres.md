@@ -44,5 +44,5 @@ The container is reachable by name (`shared-postgres`) on the `internal` Docker 
 - Memory budget is 1GB instead of 2GB+ — leaves headroom for app containers and pgvector workloads.
 - Adding a new database is a one-line addition to the init script + a new `.env` entry.
 - Single point of failure — if Postgres goes down, both umami and coupette are affected. Acceptable at this scale; mitigated by healthchecks and `restart: unless-stopped`.
-- App repos depend on `shared-postgres` being available on the `internal` network (see platform contract in [ADR 0001](0001-consolidate-repos.md)).
+- App repos depend on `shared-postgres` being available on the `internal` network (see platform contract in [ADR 0006](0006-consolidate-repos.md)).
 - Upgrading Postgres major versions requires migrating all databases at once, not incrementally.

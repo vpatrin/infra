@@ -1,4 +1,4 @@
-# ADR 0005: Docker Compose as Orchestrator
+# ADR 0004: Docker Compose as Orchestrator
 
 **Date:** 2026-03-16
 **Status:** Accepted
@@ -7,14 +7,14 @@
 
 ## Context
 
-With all services consolidated into one repo ([ADR 0001](0001-consolidate-repos.md)) and running on a single VPS ([ADR 0004](0004-hetzner-single-vps.md)), we need a way to define, start, and manage the containers. The orchestration choice also determines the deployment workflow and the migration path to Kubernetes.
+With all services consolidated into one repo ([ADR 0006](0006-consolidate-repos.md)) and running on a single VPS ([ADR 0001](0001-hetzner-single-vps.md)), we need a way to define, start, and manage the containers. The orchestration choice also determines the deployment workflow and the migration path to Kubernetes.
 
 ## Decision Drivers
 
 - Single VPS, single developer — orchestration complexity must match scale
 - 5 services today (Caddy, Postgres, umami, uptime-kuma, plus coupette in its own repo)
-- Deployment is `ssh` + `git pull` + restart — no CI/CD pipeline yet (Phase 7)
-- Kubernetes (K3s) is on the roadmap (Phase 8) but not justified today
+- Deployment is `ssh` + `git pull` + restart — no CI/CD pipeline yet
+- Kubernetes (K3s) is on the roadmap but not justified today
 
 ## Options Considered
 
@@ -47,7 +47,7 @@ Background scheduling (backups, scraper) uses systemd timers rather than trying 
 ## Consequences
 
 - The entire platform state is declared in one file — `docker compose config` validates it, `docker compose ps` shows it, `docker compose logs` debugs it.
-- Deployment is a two-command operation. No pipeline to maintain until Phase 7.
+- Deployment is a two-command operation. No pipeline to maintain until the Automated Deployment phase.
 - No rolling updates — `docker compose up -d` recreates changed containers. Acceptable for low-traffic services; Caddy's `make reload` handles zero-downtime config changes separately.
-- The compose file structure (service names, network names, volume names) is designed to map cleanly to K8s manifests when Phase 8 arrives. Each service becomes a Deployment + Service, the `internal` network becomes a namespace, volumes become PVCs.
+- The compose file structure (service names, network names, volume names) is designed to map cleanly to K8s manifests when the Kubernetes phase arrives. Each service becomes a Deployment + Service, the `internal` network becomes a namespace, volumes become PVCs.
 - App repos must run their own `docker compose` but share the `internal` network (`external: true`) — this coupling is intentional and documented in the platform contract.
