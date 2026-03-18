@@ -6,6 +6,7 @@ set -euo pipefail
 # Called by GitHub Actions (manual dispatch) or directly: ./deploy_infra.sh
 
 INFRA_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+COMPOSE="docker compose -f ${INFRA_DIR}/docker-compose.yml -f ${INFRA_DIR}/docker-compose.prod.yml"
 UNITS_SRC="${INFRA_DIR}/systemd"
 UNITS_DST="/etc/systemd/system"
 
@@ -22,13 +23,13 @@ echo "==> Decrypting secrets..."
 (
     umask 077  # owner-only from creation — no race window unlike chmod after write
     for svc in "${ENCRYPTED_SERVICES[@]}"; do
-        sops --decrypt "${INFRA_DIR}/services/${svc}/.env.prod.enc" > "${INFRA_DIR}/services/${svc}/.env"
+        sops --decrypt "${INFRA_DIR}/services/${svc}/.env.prod.enc" > "${INFRA_DIR}/services/${svc}/.env.prod"
     done
 )
 
 # Validate decrypted files are non-empty before proceeding
 for svc in "${ENCRYPTED_SERVICES[@]}"; do
-    env_file="${INFRA_DIR}/services/${svc}/.env"
+    env_file="${INFRA_DIR}/services/${svc}/.env.prod"
     if [[ ! -s "${env_file}" ]]; then
         echo "ERROR: ${env_file} is empty after decryption"
         exit 1
@@ -36,13 +37,13 @@ for svc in "${ENCRYPTED_SERVICES[@]}"; do
 done
 
 echo "==> Validating compose config..."
-docker compose -f "${INFRA_DIR}/docker-compose.yml" config --quiet
+${COMPOSE} config --quiet
 
 echo "==> Pulling latest images..."
-docker compose -f "${INFRA_DIR}/docker-compose.yml" pull
+${COMPOSE} pull
 
 echo "==> Starting services..."
-docker compose -f "${INFRA_DIR}/docker-compose.yml" up -d
+${COMPOSE} up -d
 
 echo "==> Validating Caddyfile..."
 docker exec caddy caddy validate --config /etc/caddy/Caddyfile
@@ -52,6 +53,7 @@ docker exec caddy caddy reload --config /etc/caddy/Caddyfile
 
 echo "==> Syncing systemd units..."
 CHANGED=0
+shopt -s nullglob
 
 for unit in "${UNITS_SRC}"/*.{service,timer}; do
     name="$(basename "${unit}")"
