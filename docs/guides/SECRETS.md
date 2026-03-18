@@ -1,55 +1,91 @@
-# Secrets Management
+# Secrets Guide
 
-Secrets are encrypted with [sops](https://github.com/getsops/sops) + [age](https://github.com/FiloSottile/age) and committed to the repo. Plaintext secrets never touch git.
+Secrets are encrypted with sops + age and committed to the repo. Plaintext never touches git.
+
+## Why sops + age
+
+`.env` files can't be committed to a public repo. Copying them manually to the VPS means they're lost if the server dies. GitHub Actions secrets (individual variables) are hard to audit and painful to rotate.
+
+sops encrypts the whole file so the ciphertext can be committed; age is the crypto backend — no GPG keyring complexity. Two recipients (laptop + GitHub Actions) means local editing and CI decryption both work independently. Rotating a key is one re-encrypt, not a hunt through GitHub's secrets UI.
 
 ## How it works
 
-- `.sops.yaml` defines two age recipients: laptop key (DR + local editing) and GitHub Actions key (CD)
-- Encrypted files (`.env.prod.enc`) are committed — values are ciphertext, structure is readable
-- Plaintext files (`.env`, `.env.prod`) are gitignored
+sops encrypts each value individually using age, leaving keys readable:
 
-## Setup (one-time, already done)
+```env
+POSTGRES_PASSWORD=ENC[AES256_GCM,data:abc123...,type:str]
+```
+
+`.sops.yaml` lists two recipient public keys. sops encrypts once for both — either private key can decrypt.
+
+| Recipient      | Private key location              | Purpose                                                              |
+| -------------- | --------------------------------- | -------------------------------------------------------------------- |
+| Laptop         | `~/.config/sops/age/keys.txt`     | Local editing, disaster recovery                                     |
+| GitHub Actions | `SOPS_AGE_KEY` secret on GitHub   | Deploy-time decryption (injected via SSH, never written to VPS disk) |
+
+During deploy, `deploy.yml` passes the private key over SSH to `deploy_infra.sh` as an env var. sops reads `SOPS_AGE_KEY`, decrypts in memory, and the key is gone when the process exits.
+
+## Install
+
+macOS:
 
 ```bash
 brew install sops age
-age-keygen -o ~/.config/sops/age/keys.txt
-export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt  # add to ~/.zshrc
 ```
 
-## Day-to-day
+Debian:
 
-**Edit a secret:**
+```bash
+apt install age
+curl -Lo /usr/local/bin/sops https://github.com/getsops/sops/releases/download/v3.9.4/sops-v3.9.4.linux.amd64
+chmod +x /usr/local/bin/sops
+```
+
+Generate a key and wire it up:
+
+```bash
+age-keygen -o ~/.config/sops/age/keys.txt
+echo 'export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt' >> ~/.zshrc
+source ~/.zshrc
+```
+
+Add the public key to `.sops.yaml` under `creation_rules`.
+
+## Edit a secret
+
 ```bash
 sops services/postgres/.env.prod.enc
-# editor opens with decrypted values — save to re-encrypt
 ```
 
-**Re-encrypt from plaintext (after editing `.env.prod` directly):**
-```bash
-sops --encrypt services/postgres/.env.prod > services/postgres/.env.prod.enc
-```
+Opens in your editor decrypted. Save and close — sops re-encrypts automatically.
 
-**Decrypt to inspect:**
-```bash
-sops --decrypt services/postgres/.env.prod.enc
-```
+## Add a new service
 
-## Rotating keys
+1. Create plaintext `services/<name>/.env.prod` (gitignored)
 
-1. Generate new age key
-2. Add new public key to `.sops.yaml`
-3. Remove old public key from `.sops.yaml`
-4. Re-encrypt all `.env.prod.enc` files: `sops --encrypt services/postgres/.env.prod > services/postgres/.env.prod.enc`
-5. Update GitHub Actions secret `SOPS_AGE_KEY` if rotating the CI key
+2. Encrypt it:
 
-## Files
+   ```bash
+   sops --encrypt services/<name>/.env.prod > services/<name>/.env.prod.enc
+   ```
 
-| File | Committed | Description |
-|------|-----------|-------------|
-| `.sops.yaml` | ✅ | age public keys + path rules |
-| `services/postgres/.env.prod.enc` | ✅ | encrypted postgres secrets |
-| `services/umami/.env.prod.enc` | ✅ | encrypted umami secrets |
-| `services/postgres/.env.prod` | ❌ | plaintext (gitignored) |
-| `services/umami/.env.prod` | ❌ | plaintext (gitignored) |
-| `~/.config/sops/age/keys.txt` | ❌ | laptop private key (never leaves machine) |
-| `~/.config/sops/age/github_actions.txt` | ❌ | CI private key (stored in GitHub secrets) |
+3. Add decrypt step to `deploy_infra.sh`:
+
+   ```bash
+   sops --decrypt "${INFRA_DIR}/services/<name>/.env.prod.enc" > "${INFRA_DIR}/services/<name>/.env"
+   ```
+
+4. Commit `.env.prod.enc`
+
+## Rotate a key
+
+1. Generate new key: `age-keygen -o ~/.config/sops/age/new.txt`
+2. Update `.sops.yaml` — swap old public key for new one
+3. Re-encrypt all secrets from plaintext:
+
+   ```bash
+   sops --encrypt services/postgres/.env.prod > services/postgres/.env.prod.enc
+   sops --encrypt services/umami/.env.prod > services/umami/.env.prod.enc
+   ```
+
+4. If rotating the GitHub Actions key, update `SOPS_AGE_KEY` secret on GitHub
