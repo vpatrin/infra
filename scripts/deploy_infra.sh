@@ -6,8 +6,7 @@ set -euo pipefail
 # Called by GitHub Actions (manual dispatch) or directly: ./deploy_infra.sh
 
 INFRA_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-UNITS_SRC_POSTGRES="${INFRA_DIR}/services/postgres/backups"
-UNITS_SRC_DISK="${INFRA_DIR}/services/disk-alert"
+UNITS_SRC="${INFRA_DIR}/systemd"
 UNITS_DST="/etc/systemd/system"
 
 # Check for sops installation for secret decryption before proceeding
@@ -54,30 +53,21 @@ docker exec caddy caddy reload --config /etc/caddy/Caddyfile
 echo "==> Syncing systemd units..."
 CHANGED=0
 
-for unit in pg-backup.service pg-backup.timer; do
-    src="${UNITS_SRC_POSTGRES}/${unit}"
-    dst="${UNITS_DST}/${unit}"
-    if [[ ! -f "${dst}" ]] || ! diff -q "${src}" "${dst}" > /dev/null 2>&1; then
-        sudo tee "${dst}" < "${src}" > /dev/null
+for unit in "${UNITS_SRC}"/*.{service,timer}; do
+    name="$(basename "${unit}")"
+    dst="${UNITS_DST}/${name}"
+    if [[ ! -f "${dst}" ]] || ! diff -q "${unit}" "${dst}" > /dev/null 2>&1; then
+        sudo tee "${dst}" < "${unit}" > /dev/null
         CHANGED=1
-        echo "  updated: ${unit}"
-    fi
-done
-
-for unit in disk-alert.service disk-alert.timer; do
-    src="${UNITS_SRC_DISK}/${unit}"
-    dst="${UNITS_DST}/${unit}"
-    if [[ ! -f "${dst}" ]] || ! diff -q "${src}" "${dst}" > /dev/null 2>&1; then
-        sudo tee "${dst}" < "${src}" > /dev/null
-        CHANGED=1
-        echo "  updated: ${unit}"
+        echo "  updated: ${name}"
     fi
 done
 
 if [[ "${CHANGED}" -eq 1 ]]; then
     sudo systemctl daemon-reload
-    sudo systemctl enable pg-backup.timer disk-alert.timer
-    sudo systemctl start pg-backup.timer disk-alert.timer
+    timers=("${UNITS_SRC}"/*.timer)
+    sudo systemctl enable "${timers[@]##*/}"
+    sudo systemctl start "${timers[@]##*/}"
     echo "  systemd units reloaded"
 else
     echo "  systemd units unchanged"
