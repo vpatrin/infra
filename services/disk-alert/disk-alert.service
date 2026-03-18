@@ -6,5 +6,5 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 EnvironmentFile=/etc/push-monitor/disk-alert.env
-ExecStart=/home/victor/infra/scripts/disk-alert.sh
+ExecStart=/home/deploy/infra/scripts/disk-alert.sh
 User=victor
