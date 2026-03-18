@@ -10,6 +10,9 @@ UNITS_SRC_POSTGRES="${INFRA_DIR}/services/postgres/backups"
 UNITS_SRC_DISK="${INFRA_DIR}/services/disk-alert"
 UNITS_DST="/etc/systemd/system"
 
+# Check for sops installation for secret decryption before proceeding
+command -v sops >/dev/null || { echo "ERROR: sops not found in PATH"; exit 1; }
+
 echo "==> Pulling latest infra repo..."
 git -C "${INFRA_DIR}" pull
 
@@ -19,6 +22,14 @@ echo "==> Decrypting secrets..."
     sops --decrypt "${INFRA_DIR}/services/postgres/.env.prod.enc" > "${INFRA_DIR}/services/postgres/.env"
     sops --decrypt "${INFRA_DIR}/services/umami/.env.prod.enc" > "${INFRA_DIR}/services/umami/.env"
 )
+
+# Validate decrypted files are non-empty before proceeding
+for env_file in "${INFRA_DIR}/services/postgres/.env" "${INFRA_DIR}/services/umami/.env"; do
+    if [[ ! -s "${env_file}" ]]; then
+        echo "ERROR: ${env_file} is empty after decryption"
+        exit 1
+    fi
+done
 
 echo "==> Validating compose config..."
 docker compose -f "${INFRA_DIR}/docker-compose.yml" config --quiet
