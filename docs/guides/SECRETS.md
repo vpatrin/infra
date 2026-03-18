@@ -37,8 +37,9 @@ Debian:
 
 ```bash
 apt install age
-curl -Lo /usr/local/bin/sops https://github.com/getsops/sops/releases/download/v3.9.4/sops-v3.9.4.linux.amd64
-chmod +x /usr/local/bin/sops
+curl -LO https://github.com/getsops/sops/releases/download/v3.12.2/sops_3.12.2_amd64.deb
+sudo dpkg -i sops_3.12.2_amd64.deb
+rm sops_3.12.2_amd64.deb
 ```
 
 Generate a key and wire it up:
@@ -81,11 +82,11 @@ Opens in your editor decrypted. Save and close — sops re-encrypts automaticall
 
 1. Generate new key: `age-keygen -o ~/.config/sops/age/new.txt`
 2. Update `.sops.yaml` — swap old public key for new one
-3. Re-encrypt all secrets from plaintext:
+3. Re-encrypt all files in place with the new recipients:
 
    ```bash
-   sops --encrypt services/postgres/.env.prod > services/postgres/.env.prod.enc
-   sops --encrypt services/umami/.env.prod > services/umami/.env.prod.enc
+   sops updatekeys services/postgres/.env.prod.enc
+   sops updatekeys services/umami/.env.prod.enc
    ```
 
 4. If rotating the GitHub Actions key, update `SOPS_AGE_KEY` secret on GitHub

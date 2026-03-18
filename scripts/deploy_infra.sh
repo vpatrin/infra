@@ -5,7 +5,7 @@ set -euo pipefail
 # Runs on the VPS — safe to re-run at any time.
 # Called by GitHub Actions (manual dispatch) or directly: ./deploy_infra.sh
 
-INFRA_DIR="$(cd "$(dirname "$0")" && pwd)"
+INFRA_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 UNITS_SRC_POSTGRES="${INFRA_DIR}/services/postgres/backups"
 UNITS_SRC_DISK="${INFRA_DIR}/services/disk-alert"
 UNITS_DST="/etc/systemd/system"
@@ -14,8 +14,11 @@ echo "==> Pulling latest infra repo..."
 git -C "${INFRA_DIR}" pull
 
 echo "==> Decrypting secrets..."
-sops --decrypt "${INFRA_DIR}/services/postgres/.env.prod.enc" > "${INFRA_DIR}/services/postgres/.env"
-sops --decrypt "${INFRA_DIR}/services/umami/.env.prod.enc" > "${INFRA_DIR}/services/umami/.env"
+(
+    umask 077  # owner-only from creation — no race window unlike chmod after write
+    sops --decrypt "${INFRA_DIR}/services/postgres/.env.prod.enc" > "${INFRA_DIR}/services/postgres/.env"
+    sops --decrypt "${INFRA_DIR}/services/umami/.env.prod.enc" > "${INFRA_DIR}/services/umami/.env"
+)
 
 echo "==> Validating compose config..."
 docker compose -f "${INFRA_DIR}/docker-compose.yml" config --quiet
