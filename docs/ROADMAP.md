@@ -42,13 +42,19 @@ No more manual deploys. Tag push deploys coupette. One-click deploys infra.
 
 ### Prerequisites (manual, one-time)
 
-- [ ] Generate SSH deploy key (`ed25519`) — add public key to `/home/deploy/.ssh/authorized_keys` on web-01
-- [ ] Add private key to GitHub Actions secrets in both repos (`SSH_DEPLOY_KEY`)
+- [x] Generate SSH deploy key (`ed25519`) — add public key to `/home/deploy/.ssh/authorized_keys` on web-01
+- [x] Add private key to GitHub Actions secrets in both repos (`SSH_DEPLOY_KEY`)
+
+### Secrets
+
+- [x] sops + age setup — encrypted secrets committed, decrypted at deploy time (#45)
+- [x] Encrypt `services/postgres/.env.prod` + `services/umami/.env.prod` → `.env.prod.enc` (#45)
+- [x] Document secrets workflow — `docs/guides/SECRETS.md` (#45)
 
 ### Infra
 
-- [ ] `deploy_infra.sh` — idempotent: `git pull` + `docker compose up -d` + Caddy reload + systemd unit sync
-- [ ] GitHub Actions workflow — manual dispatch → validate Caddyfile + compose → `deploy_infra.sh` on VPS
+- [x] `deploy_infra.sh` — idempotent: `git pull` + `docker compose up -d` + Caddy reload + systemd unit sync (#44)
+- [x] GitHub Actions workflow — manual dispatch → `deploy_infra.sh` on VPS (#44)
 - [ ] CI gate — `ansible-lint` on PR (prep for Phase 5)
 
 ### Coupette
@@ -77,7 +83,7 @@ web-01 dies → fully operational replacement in one session, no data loss.
 ### Ansible
 
 - [ ] `requirements.yml` — `geerlingguy.security`, `geerlingguy.docker`
-- [ ] `roles/base` — swap, timezone, locale, Docker log rotation
+- [ ] `roles/base` — swap, timezone, locale, Docker log rotation, sops
 - [ ] `roles/security` — SSH hardening, fail2ban, ufw (wraps `geerlingguy.security`)
 - [ ] `roles/docker` — Docker + Compose plugin (wraps `geerlingguy.docker`)
 - [ ] `roles/infra` — clone infra + coupette repos, `internal` network, compose up, `deploy_infra.sh`

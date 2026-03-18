@@ -5,13 +5,36 @@ set -euo pipefail
 # Runs on the VPS — safe to re-run at any time.
 # Called by GitHub Actions (manual dispatch) or directly: ./deploy_infra.sh
 
-INFRA_DIR="$(cd "$(dirname "$0")" && pwd)"
+INFRA_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 UNITS_SRC_POSTGRES="${INFRA_DIR}/services/postgres/backups"
 UNITS_SRC_DISK="${INFRA_DIR}/services/disk-alert"
 UNITS_DST="/etc/systemd/system"
 
+# Check for sops installation for secret decryption before proceeding
+command -v sops >/dev/null || { echo "ERROR: sops not found in PATH"; exit 1; }
+[[ -n "${SOPS_AGE_KEY:-}" ]] || { echo "ERROR: SOPS_AGE_KEY not set"; exit 1; }
+
 echo "==> Pulling latest infra repo..."
 git -C "${INFRA_DIR}" pull
+
+ENCRYPTED_SERVICES=(postgres umami)
+
+echo "==> Decrypting secrets..."
+(
+    umask 077  # owner-only from creation — no race window unlike chmod after write
+    for svc in "${ENCRYPTED_SERVICES[@]}"; do
+        sops --decrypt "${INFRA_DIR}/services/${svc}/.env.prod.enc" > "${INFRA_DIR}/services/${svc}/.env"
+    done
+)
+
+# Validate decrypted files are non-empty before proceeding
+for svc in "${ENCRYPTED_SERVICES[@]}"; do
+    env_file="${INFRA_DIR}/services/${svc}/.env"
+    if [[ ! -s "${env_file}" ]]; then
+        echo "ERROR: ${env_file} is empty after decryption"
+        exit 1
+    fi
+done
 
 echo "==> Validating compose config..."
 docker compose -f "${INFRA_DIR}/docker-compose.yml" config --quiet

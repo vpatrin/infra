@@ -18,4 +18,7 @@ jobs:
           host: ${{ secrets.SSH_DEPLOY_HOST }}
           username: ${{ secrets.SSH_DEPLOY_USER }}
           key: ${{ secrets.SSH_DEPLOY_KEY }}
+          envs: SOPS_AGE_KEY
           script: ~/infra/scripts/deploy_infra.sh
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}

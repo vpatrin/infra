@@ -13,6 +13,8 @@
 # Claude (commit commands + docs, ignore local settings)
 .claude/settings.local.json
 
-# Environment variables
-.env
-services/*/.env
+# Environment variables — plaintext ignored, encrypted (.enc) committed
+**/*.env
+**/*.env.prod
+!**/*.env.enc
+!**/*.env.prod.enc
