@@ -17,15 +17,19 @@ command -v sops >/dev/null || { echo "ERROR: sops not found in PATH"; exit 1; }
 echo "==> Pulling latest infra repo..."
 git -C "${INFRA_DIR}" pull
 
+ENCRYPTED_SERVICES=(postgres umami)
+
 echo "==> Decrypting secrets..."
 (
     umask 077  # owner-only from creation — no race window unlike chmod after write
-    sops --decrypt "${INFRA_DIR}/services/postgres/.env.prod.enc" > "${INFRA_DIR}/services/postgres/.env"
-    sops --decrypt "${INFRA_DIR}/services/umami/.env.prod.enc" > "${INFRA_DIR}/services/umami/.env"
+    for svc in "${ENCRYPTED_SERVICES[@]}"; do
+        sops --decrypt "${INFRA_DIR}/services/${svc}/.env.prod.enc" > "${INFRA_DIR}/services/${svc}/.env"
+    done
 )
 
 # Validate decrypted files are non-empty before proceeding
-for env_file in "${INFRA_DIR}/services/postgres/.env" "${INFRA_DIR}/services/umami/.env"; do
+for svc in "${ENCRYPTED_SERVICES[@]}"; do
+    env_file="${INFRA_DIR}/services/${svc}/.env"
     if [[ ! -s "${env_file}" ]]; then
         echo "ERROR: ${env_file} is empty after decryption"
         exit 1
