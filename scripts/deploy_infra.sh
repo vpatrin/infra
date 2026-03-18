@@ -12,6 +12,7 @@ UNITS_DST="/etc/systemd/system"
 
 # Check for sops installation for secret decryption before proceeding
 command -v sops >/dev/null || { echo "ERROR: sops not found in PATH"; exit 1; }
+[[ -n "${SOPS_AGE_KEY:-}" ]] || { echo "ERROR: SOPS_AGE_KEY not set"; exit 1; }
 
 echo "==> Pulling latest infra repo..."
 git -C "${INFRA_DIR}" pull
