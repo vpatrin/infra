@@ -24,6 +24,9 @@ steps (console, firewall UI) for other providers.
 11. [Swap](#11-swap) — safety net for memory pressure
 12. [Timezone](#12-timezone) — UTC for consistent log and timer behavior
 13. [Docker log rotation](#13-docker-log-rotation) — prevent disk fill from container logs
+14. [Deploy user](#14-deploy-user) — scoped CI user for GitHub Actions
+15. [SSH deploy key](#15-ssh-deploy-key) — dedicated key for CI, separate from personal key
+16. [Repo layout](#16-repo-layout) — clone infra + app repos as deploy user
 
 ---
 
@@ -454,3 +457,120 @@ sudo systemctl restart docker
 This caps every container at 10 MB × 3 files = 30 MB of logs. New containers pick up the default automatically.
 
 > Per-service overrides can be set in `docker-compose.yml` via the `logging:` key. The daemon default acts as a safety net for any container that doesn't specify its own policy.
+
+---
+
+## 14. Deploy User
+
+A dedicated `deploy` user runs CI workloads (GitHub Actions). It is separate from `victor` (personal admin) — principle of least privilege. If the deploy key is compromised, revoke it without touching the admin account.
+
+```bash
+sudo adduser --disabled-password --gecos '' deploy
+sudo usermod -aG docker deploy
+```
+
+`--disabled-password` means no password and no password-based login. SSH key only. No sudo.
+
+Adding `deploy` to the `docker` group allows it to run `docker compose` commands without root.
+
+### Scoped sudo for systemd
+
+`deploy` needs to manage systemd units as part of the deploy script. Grant the minimum required permissions only:
+
+```bash
+echo 'deploy ALL=(ALL) NOPASSWD: /usr/bin/systemctl daemon-reload, /usr/bin/systemctl enable, /usr/bin/systemctl start, /usr/bin/tee /etc/systemd/system/*' | sudo tee /etc/sudoers.d/deploy
+sudo chmod 0440 /etc/sudoers.d/deploy
+sudo visudo -c
+```
+
+| Command | Purpose |
+| --- | --- |
+| `systemctl daemon-reload` | Reload systemd after unit files change |
+| `systemctl enable` | Enable a service/timer to start on boot |
+| `systemctl start` | Start a service/timer immediately |
+| `tee /etc/systemd/system/*` | Write unit files to the systemd directory |
+
+`deploy` cannot run any other root commands — no `apt`, no arbitrary file writes.
+
+### Verify deploy user
+
+```bash
+sudo -u deploy docker ps   # must work without sudo
+```
+
+---
+
+## 15. SSH Deploy Key
+
+A dedicated ed25519 key for GitHub Actions. Generated on your laptop, never touches the VPS directly — only the public key is added to `authorized_keys`.
+
+### Generate (on your laptop)
+
+```bash
+ssh-keygen -t ed25519 -C "github-actions-deploy" -f ~/.ssh/github_actions_deploy -N ""
+```
+
+`-N ""` = no passphrase. Correct for CI keys — security is in GitHub's encrypted secret storage, not the passphrase.
+
+### Add to deploy user on VPS
+
+```bash
+sudo mkdir -p /home/deploy/.ssh
+sudo chmod 700 /home/deploy/.ssh
+cat ~/.ssh/github_actions_deploy.pub | sudo tee /home/deploy/.ssh/authorized_keys
+sudo chmod 600 /home/deploy/.ssh/authorized_keys
+sudo chown -R deploy:deploy /home/deploy/.ssh
+```
+
+### Add to GitHub Actions secrets (both repos)
+
+```text
+SSH_DEPLOY_KEY   → contents of ~/.ssh/github_actions_deploy (private key)
+SSH_DEPLOY_HOST  → VPS IP
+SSH_DEPLOY_USER  → deploy
+```
+
+### Add to local SSH config (optional, for testing)
+
+```ssh-config
+Host web-01-deploy
+    HostName <VPS_IP>
+    User deploy
+    IdentityFile ~/.ssh/github_actions_deploy
+```
+
+> Your personal `id_ed25519` is unchanged. `victor` and `deploy` are independent users with independent keys.
+
+---
+
+## 16. Repo Layout
+
+Repos live under the `deploy` user's home. Scripts and systemd unit paths reference these locations.
+
+```bash
+# Create directory structure
+sudo -u deploy mkdir -p /home/deploy/projects
+
+# Clone repos (both public — no auth needed)
+sudo -u deploy git clone https://github.com/vpatrin/infra.git /home/deploy/infra
+sudo -u deploy git clone https://github.com/vpatrin/coupette.git /home/deploy/projects/coupette
+
+# Update /opt/coupette symlink
+sudo ln -sfn /home/deploy/projects/coupette /opt/coupette
+
+# Frontend static files — owned by deploy, served by Caddy
+sudo mkdir -p /srv/coupette
+sudo chown deploy:deploy /srv/coupette
+```
+
+### Final layout
+
+| Path | Owner | Purpose |
+| --- | --- | --- |
+| `/home/deploy/infra/` | `deploy` | infra repo |
+| `/home/deploy/projects/coupette/` | `deploy` | coupette repo |
+| `/opt/coupette` | symlink | → `/home/deploy/projects/coupette` |
+| `/srv/coupette/` | `deploy` | frontend static files (served by Caddy) |
+| `/home/victor/` | `victor` | personal admin, unchanged |
+
+> `victor` can still run deploy scripts manually — both users have access to the repos via their respective SSH sessions.

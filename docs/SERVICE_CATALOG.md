@@ -101,7 +101,7 @@ The backup script is called by app deploy scripts before running migrations.
 
 | Property | Value |
 |----------|-------|
-| Path on VPS | `/home/victor/infra/services/postgres/backups/backup.sh` |
+| Path on VPS | `/home/deploy/infra/services/postgres/backups/backup.sh` |
 | Interface | `./backup.sh [db_name]` — dumps one DB, or all if no argument |
 | Output | `/var/backups/postgres/<db_name>_YYYYMMDD.sql.gz` |
 | Retention | 30 days |
@@ -110,7 +110,7 @@ The backup script is called by app deploy scripts before running migrations.
 Example from coupette's deploy script:
 
 ```bash
-/home/victor/infra/services/postgres/backups/backup.sh saq_sommelier
+/home/deploy/infra/services/postgres/backups/backup.sh saq_sommelier
 ```
 
 **Do not change the script path, arguments, or output format** without updating app deploy scripts that call it.
@@ -150,3 +150,30 @@ Monday (UTC):
 ```
 
 Backup runs Sunday, a full day before the Monday scraper — ensuring a clean pre-scrape dump. All timers use `Persistent=true` — if the VPS is down during the scheduled time, the job runs on next boot.
+
+## Deployment
+
+### Repo layout
+
+| Path | Owner | Purpose |
+| --- | --- | --- |
+| `/home/deploy/infra/` | `deploy` | infra repo |
+| `/home/deploy/projects/coupette/` | `deploy` | coupette repo |
+| `/opt/coupette` | symlink | → `/home/deploy/projects/coupette` |
+| `/srv/coupette/` | `deploy` | frontend static files (served by Caddy) |
+
+### Deploy user
+
+A dedicated `deploy` system user owns all repos and runs CI workloads. It has no sudo except for scoped systemd commands. Human admin work uses `victor`.
+
+### SSH deploy key
+
+A dedicated `github_actions_deploy` ed25519 key authenticates GitHub Actions to the VPS as the `deploy` user. It is stored as `SSH_DEPLOY_KEY` in GitHub Actions secrets on both repos. App repos must use this key — do not use personal SSH keys in CI.
+
+### Infra deploy
+
+Infra deploys are triggered manually via GitHub Actions (workflow dispatch). The workflow validates Caddyfile + compose, then runs `deploy_infra.sh` on the VPS as `deploy`.
+
+### App deploy
+
+App repos trigger their own deploy workflows. After a successful deploy, the app is responsible for running its own `deploy.sh` on the VPS. Infra guarantees the platform contract (network, postgres, Caddy routes) is intact before any app deploy runs.

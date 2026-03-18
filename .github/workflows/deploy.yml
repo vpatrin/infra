@@ -1,0 +1,21 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Deploy to web-01
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.SSH_DEPLOY_HOST }}
+          username: ${{ secrets.SSH_DEPLOY_USER }}
+          key: ${{ secrets.SSH_DEPLOY_KEY }}
+          script: ~/infra/scripts/deploy_infra.sh

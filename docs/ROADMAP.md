@@ -36,42 +36,61 @@ First real alerting. Know when things break instead of discovering it weeks late
 - [ ] Document push monitor pattern for app repos to adopt
 - [ ] Cron failure → alert path
 
-## Phase 4 — Terraform
+## Phase 4 — Continuous Deployment
 
-Codify what's currently manual VPS provisioning. Bounded scope — run once, rarely touch again.
+No more manual deploys. Tag push deploys coupette. One-click deploys infra.
 
-- [ ] Hetzner VPS + SSH key
-- [ ] Hetzner firewall rules
-- [ ] DNS records (Porkbun)
+### Prerequisites (manual, one-time)
+
+- [ ] Generate SSH deploy key (`ed25519`) — add public key to `/home/deploy/.ssh/authorized_keys` on web-01
+- [ ] Add private key to GitHub Actions secrets in both repos (`SSH_DEPLOY_KEY`)
+
+### Infra
+
+- [ ] `deploy_infra.sh` — idempotent: `git pull` + `docker compose up -d` + Caddy reload + systemd unit sync
+- [ ] GitHub Actions workflow — manual dispatch → validate Caddyfile + compose → `deploy_infra.sh` on VPS
+- [ ] CI gate — `ansible-lint` on PR (prep for Phase 5)
+
+### Coupette
+
+- [ ] Extend `deploy.sh` — add idempotent systemd unit sync (scraper, availability timers)
+- [ ] GitHub Actions workflow — tag push → build images → push GHCR → scp frontend → `deploy.sh` on VPS
+- [ ] Update `SERVICE_CATALOG.md` — document deploy key pattern for app repos
+
+## Phase 5 — Disaster Recovery
+
+web-01 dies → fully operational replacement in one session, no data loss.
+
+### Backup strategy
+
+- [ ] Daily Postgres dumps (all DBs) → Hetzner Object Storage — 3-tier retention (daily 7d / weekly 4w / monthly 3m)
+- [ ] Backup script updated — offload to object storage, prune per retention policy
+- [ ] Restore smoke test — verify current dumps restore into a throwaway container before trusting offsite
+
+### Terraform
+
+- [ ] Hetzner VPS (Debian 13) + SSH key registration
+- [ ] Hetzner firewall rules (22, 80, 443)
 - [ ] CI gate — `terraform validate` on PR
+- [ ] Outputs VPS IP for Ansible inventory
 
-## Phase 5 — Ansible
+### Ansible
 
-Automate server configuration and deployment. Iterative — this is where ongoing operational value lives.
-
-- [ ] Bootstrap playbook — fresh Debian → production-ready (Docker, ufw, swap, fail2ban)
-- [ ] Deploy playbook — `git pull` + `make restart` via playbook
+- [ ] `requirements.yml` — `geerlingguy.security`, `geerlingguy.docker`
+- [ ] `roles/base` — swap, timezone, locale, Docker log rotation
+- [ ] `roles/security` — SSH hardening, fail2ban, ufw (wraps `geerlingguy.security`)
+- [ ] `roles/docker` — Docker + Compose plugin (wraps `geerlingguy.docker`)
+- [ ] `roles/infra` — clone infra + coupette repos, `internal` network, compose up, `deploy_infra.sh`
+- [ ] `roles/timers` — provision infra systemd units (pg-backup, disk-alert, push monitors)
+- [ ] Ansible vault — all secrets (Postgres, Umami, Telegram token, push monitor URLs, Hetzner Object Storage credentials, SSH deploy key public key, coupette `.env`)
 - [ ] CI gate — `ansible-lint` on PR
 
-## Phase 6 — Secrets Management
+### DR runbook + validation
 
-Replace `.env` files with encrypted secrets. Prerequisite for automated deployment.
+- [ ] `docs/DISASTER_RECOVERY.md` — DR spec, scenarios, runbook, app contract
+- [ ] DR test — spin up real web-02, run full flow, verify traffic serves, tear down
 
-- [ ] sops + age setup — encrypted secrets committed, decrypted at deploy time
-- [ ] Migrate postgres + umami credentials
-- [ ] Document secrets workflow for app repos
-- [ ] Delete `.env.example` files (secrets self-documenting via sops)
-
-## Phase 7 — Automated Deployment
-
-App repos trigger deploys via infra. No more SSH + git pull.
-
-- [ ] Repository dispatch → Ansible deploy workflow
-- [ ] Health check gate after deploy
-- [ ] Rollback automation (re-deploy previous tag)
-- [ ] Environment-scoped GitHub secrets
-
-## Phase 8 — Kubernetes
+## Phase 6 — Kubernetes
 
 Docker Compose → K3s + Flux GitOps. Only when scaling demands it or for portfolio signal — not before.
 
@@ -80,9 +99,18 @@ Docker Compose → K3s + Flux GitOps. Only when scaling demands it or for portfo
 - [ ] Migrate services to K8s manifests (stateless first, then stateful)
 - [ ] App repo integration — Flux image automation
 
-## Phase 9 — Observability
+## Phase 7 — Automated Deployment
 
-Log aggregation and dashboards. Deferred until multi-node (Phase 8) — on a single VPS, `docker logs` and `journalctl` are sufficient. Adding Loki + Grafana to a 4GB VPS with pgvector is a bad memory trade-off.
+Helm-based CD. Tag push → GitOps deploy. Replaces GitHub Actions SSH deploy pattern from Phase 4.
+
+- [ ] Helm charts for infra services + coupette
+- [ ] Flux image automation — tag push triggers rollout
+- [ ] Health check gate + rollback
+- [ ] Retire `deploy_infra.sh` and `deploy.sh` SSH-based workflows
+
+## Phase 8 — Observability
+
+Log aggregation and dashboards. Deferred until multi-node (Phase 6) — on a single VPS, `docker logs` and `journalctl` are sufficient. Adding Loki + Grafana to a 4GB VPS with pgvector is a bad memory trade-off.
 
 - [ ] Loki + Promtail — log aggregation, queryable via `logcli`
 - [ ] Grafana — dashboards (only if CLI log search isn't enough)
@@ -94,5 +122,4 @@ Log aggregation and dashboards. Deferred until multi-node (Phase 8) — on a sin
 - [ ] Staging environment — same VPS, separate ports + DB, promotion pattern
 - [ ] Multi-node — second VPS, load balancing (only if traffic demands)
 - [ ] HashiCorp Vault — centralized secrets with RBAC (overkill until team grows)
-- [ ] Disaster recovery — automated VPS rebuild from Terraform + Ansible + latest backup
 - [ ] Postgres tuning — `shared_buffers`, `effective_cache_size`, `work_mem` for pgvector workload on 4GB VPS
