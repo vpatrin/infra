@@ -6,7 +6,7 @@ set -euo pipefail
 # Called by GitHub Actions (manual dispatch) or directly: ./deploy_infra.sh
 
 INFRA_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-COMPOSE="docker compose -f ${INFRA_DIR}/docker-compose.yml -f ${INFRA_DIR}/docker-compose.prod.yml"
+COMPOSE=(docker compose -f "${INFRA_DIR}/docker-compose.yml" -f "${INFRA_DIR}/docker-compose.prod.yml")
 UNITS_SRC="${INFRA_DIR}/systemd"
 UNITS_DST="/etc/systemd/system"
 
@@ -23,7 +23,9 @@ echo "==> Decrypting secrets..."
 (
     umask 077  # owner-only from creation — no race window unlike chmod after write
     for svc in "${ENCRYPTED_SERVICES[@]}"; do
-        sops --decrypt "${INFRA_DIR}/services/${svc}/.env.prod.enc" > "${INFRA_DIR}/services/${svc}/.env.prod"
+        enc="${INFRA_DIR}/services/${svc}/.env.prod.enc"
+        [[ -f "${enc}" ]] || { echo "ERROR: ${enc} not found"; exit 1; }
+        sops --decrypt "${enc}" > "${INFRA_DIR}/services/${svc}/.env.prod"
     done
 )
 
@@ -37,13 +39,13 @@ for svc in "${ENCRYPTED_SERVICES[@]}"; do
 done
 
 echo "==> Validating compose config..."
-${COMPOSE} config --quiet
+"${COMPOSE[@]}" config --quiet
 
 echo "==> Pulling latest images..."
-${COMPOSE} pull
+"${COMPOSE[@]}" pull
 
 echo "==> Starting services..."
-${COMPOSE} up -d
+"${COMPOSE[@]}" up -d
 
 echo "==> Validating Caddyfile..."
 docker exec caddy caddy validate --config /etc/caddy/Caddyfile
@@ -68,8 +70,10 @@ done
 if [[ "${CHANGED}" -eq 1 ]]; then
     sudo systemctl daemon-reload
     timers=("${UNITS_SRC}"/*.timer)
-    sudo systemctl enable "${timers[@]##*/}"
-    sudo systemctl start "${timers[@]##*/}"
+    if [[ ${#timers[@]} -gt 0 ]]; then
+        sudo systemctl enable "${timers[@]##*/}"
+        sudo systemctl start "${timers[@]##*/}"
+    fi
     echo "  systemd units reloaded"
 else
     echo "  systemd units unchanged"
