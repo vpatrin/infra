@@ -101,8 +101,8 @@ The backup script is called by app deploy scripts before running migrations.
 
 | Property | Value |
 |----------|-------|
-| Path on VPS | `/home/deploy/infra/services/postgres/backups/backup.sh` |
-| Interface | `./backup.sh [db_name]` — dumps one DB, or all if no argument |
+| Path on VPS | `/home/deploy/infra/scripts/postgres_backup.sh` |
+| Interface | `./scripts/postgres_backup.sh [db_name]` — dumps one DB, or all if no argument |
 | Output | `/var/backups/postgres/<db_name>_YYYYMMDD.sql.gz` |
 | Retention | 30 days |
 | Container | Runs `pg_dump` inside `shared-postgres` via `docker exec` |
@@ -110,7 +110,7 @@ The backup script is called by app deploy scripts before running migrations.
 Example from coupette's deploy script:
 
 ```bash
-/home/deploy/infra/services/postgres/backups/backup.sh saq_sommelier
+/home/deploy/infra/scripts/postgres_backup.sh saq_sommelier
 ```
 
 **Do not change the script path, arguments, or output format** without updating app deploy scripts that call it.

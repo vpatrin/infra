@@ -59,7 +59,7 @@ Description=PostgreSQL backup
 Type=oneshot
 User=victor
 WorkingDirectory=/home/victor/infra
-ExecStart=/home/victor/infra/services/postgres/backups/backup.sh
+ExecStart=/home/deploy/infra/scripts/postgres_backup.sh
 ```
 
 Timer units live in `/etc/systemd/system/` and are enabled with `systemctl enable --now <timer>`.

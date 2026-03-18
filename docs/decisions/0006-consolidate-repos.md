@@ -73,8 +73,7 @@ infra/
 │   ├── caddy/
 │   │   └── Caddyfile
 │   ├── postgres/
-│   │   ├── init-scripts/
-│   │   └── backups/                # pg-backup.sh, systemd timer
+│   │   └── init-scripts/
 │   ├── umami/
 │   ├── uptime-kuma/
 │   ├── homepage/                   # Static site (victorpatrin.dev)

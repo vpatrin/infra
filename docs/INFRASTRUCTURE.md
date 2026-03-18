@@ -57,13 +57,13 @@ Everything else. All service containers can be rebuilt from their repos. Static 
 
 - Weekly `pg_dump` per database (compressed), retained for 30 days
 - systemd timer: Sunday 02:00 (day before Monday scraper)
-- Pre-deploy dumps via `./services/postgres/backups/backup.sh <db_name>` (called by deploy scripts)
+- Pre-deploy dumps via `./scripts/postgres_backup.sh <db_name>` (called by deploy scripts)
 - Storage: `/var/backups/postgres/` (~2MB per dump × 2 DBs × 4 weeks = ~16MB)
 
 ### Setup on VPS
 
 ```bash
-sudo cp services/postgres/backups/pg-backup.service services/postgres/backups/pg-backup.timer /etc/systemd/system/
+sudo cp systemd/pg-backup.service systemd/pg-backup.timer /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now pg-backup.timer
 ```
@@ -71,8 +71,8 @@ sudo systemctl enable --now pg-backup.timer
 ### Manual backup
 
 ```bash
-./services/postgres/backups/backup.sh                  # all databases
-./services/postgres/backups/backup.sh saq_sommelier    # single database
+./scripts/postgres_backup.sh                  # all databases
+./scripts/postgres_backup.sh saq_sommelier    # single database
 ```
 
 ### Restore
