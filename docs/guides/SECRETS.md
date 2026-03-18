@@ -10,11 +10,16 @@ sops encrypts the whole file so the ciphertext can be committed; age is the cryp
 
 ## How it works
 
-sops encrypts each value individually using age, leaving keys readable:
+sops encrypts the entire file as a single blob using age. The ciphertext is stored in a JSON wrapper with sops metadata:
 
-```env
-POSTGRES_PASSWORD=ENC[AES256_GCM,data:abc123...,type:str]
+```json
+{
+  "data": "ENC[AES256_GCM,data:...,type:str]",
+  "sops": { "age": [...], "version": "3.12.2" }
+}
 ```
+
+To get per-key encryption (visible key names, meaningful diffs), encrypt with `--input-type dotenv --output-type json` instead.
 
 `.sops.yaml` lists two recipient public keys. sops encrypts once for both — either private key can decrypt.
 
@@ -70,13 +75,15 @@ Opens in your editor decrypted. Save and close — sops re-encrypts automaticall
    sops --encrypt services/<name>/.env.prod > services/<name>/.env.prod.enc
    ```
 
-3. Add decrypt step to `deploy_infra.sh`:
+3. Add decrypt step to `deploy_infra.sh` (inside the `umask 077` subshell):
 
    ```bash
    sops --decrypt "${INFRA_DIR}/services/<name>/.env.prod.enc" > "${INFRA_DIR}/services/<name>/.env"
    ```
 
-4. Commit `.env.prod.enc`
+4. Add the new `.env` path to the validation loop in `deploy_infra.sh`
+
+5. Commit `.env.prod.enc`
 
 ## Rotate a key
 
