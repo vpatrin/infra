@@ -62,11 +62,7 @@ Everything else. All service containers can be rebuilt from their repos. Static 
 
 ### Setup on VPS
 
-```bash
-sudo cp systemd/pg-backup.service systemd/pg-backup.timer /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now pg-backup.timer
-```
+Handled automatically by `deploy_infra.sh` — it syncs all units from `systemd/` to `/etc/systemd/system/`.
 
 ### Manual backup
 

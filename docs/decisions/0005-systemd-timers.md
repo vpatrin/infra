@@ -58,7 +58,6 @@ Description=PostgreSQL backup
 [Service]
 Type=oneshot
 User=victor
-WorkingDirectory=/home/victor/infra
 ExecStart=/home/deploy/infra/scripts/postgres_backup.sh
 ```
 

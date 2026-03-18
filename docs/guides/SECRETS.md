@@ -75,15 +75,9 @@ Opens in your editor decrypted. Save and close — sops re-encrypts automaticall
    sops --encrypt services/<name>/.env.prod > services/<name>/.env.prod.enc
    ```
 
-3. Add decrypt step to `deploy_infra.sh` (inside the `umask 077` subshell):
+3. Add the service name to `ENCRYPTED_SERVICES` array in `deploy_infra.sh`
 
-   ```bash
-   sops --decrypt "${INFRA_DIR}/services/<name>/.env.prod.enc" > "${INFRA_DIR}/services/<name>/.env"
-   ```
-
-4. Add the new `.env` path to the validation loop in `deploy_infra.sh`
-
-5. Commit `.env.prod.enc`
+4. Commit `.env.prod.enc`
 
 ## Rotate a key
 
