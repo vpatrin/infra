@@ -47,14 +47,16 @@ App repos on the same VPS (own code, CI, releases — not managed here):
 infra/
 ├── CLAUDE.md
 ├── docker-compose.yml             # All service definitions
+├── docker-compose.prod.yml        # Production overrides (env_file → .env.prod)
 ├── Makefile                       # Dev and ops commands
 ├── README.md
+├── scripts/                       # Operational scripts (deploy, backup, alerts)
+├── systemd/                       # systemd unit files (timers + services)
 ├── services/
 │   ├── caddy/Caddyfile            # Reverse proxy routing + TLS
 │   ├── homepage/                  # Static site for victorpatrin.dev
 │   ├── postgres/
 │   │   ├── init-scripts/          # DB + user creation on first start
-│   │   ├── backups/               # pg_dump scripts + systemd units
 │   │   └── .env.example
 │   ├── umami/
 │   │   └── .env.example

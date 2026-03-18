@@ -3,8 +3,8 @@ set -euo pipefail
 
 # Backup individual PostgreSQL databases from the shared-postgres container.
 # Usage:
-#   ./backup.sh              # Dump all databases
-#   ./backup.sh saq_sommelier # Dump a single database (used by deploy scripts)
+#   ./postgres_backup.sh              # Dump all databases
+#   ./postgres_backup.sh saq_sommelier # Dump a single database (used by deploy scripts)
 
 BACKUP_DIR="/var/backups/postgres"
 CONTAINER="shared-postgres"

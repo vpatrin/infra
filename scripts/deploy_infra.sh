@@ -6,8 +6,8 @@ set -euo pipefail
 # Called by GitHub Actions (manual dispatch) or directly: ./deploy_infra.sh
 
 INFRA_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-UNITS_SRC_POSTGRES="${INFRA_DIR}/services/postgres/backups"
-UNITS_SRC_DISK="${INFRA_DIR}/services/disk-alert"
+COMPOSE=(docker compose -f "${INFRA_DIR}/docker-compose.yml" -f "${INFRA_DIR}/docker-compose.prod.yml")
+UNITS_SRC="${INFRA_DIR}/systemd"
 UNITS_DST="/etc/systemd/system"
 
 # Check for sops installation for secret decryption before proceeding
@@ -23,13 +23,15 @@ echo "==> Decrypting secrets..."
 (
     umask 077  # owner-only from creation — no race window unlike chmod after write
     for svc in "${ENCRYPTED_SERVICES[@]}"; do
-        sops --decrypt "${INFRA_DIR}/services/${svc}/.env.prod.enc" > "${INFRA_DIR}/services/${svc}/.env"
+        enc="${INFRA_DIR}/services/${svc}/.env.prod.enc"
+        [[ -f "${enc}" ]] || { echo "ERROR: ${enc} not found"; exit 1; }
+        sops --decrypt "${enc}" > "${INFRA_DIR}/services/${svc}/.env.prod"
     done
 )
 
 # Validate decrypted files are non-empty before proceeding
 for svc in "${ENCRYPTED_SERVICES[@]}"; do
-    env_file="${INFRA_DIR}/services/${svc}/.env"
+    env_file="${INFRA_DIR}/services/${svc}/.env.prod"
     if [[ ! -s "${env_file}" ]]; then
         echo "ERROR: ${env_file} is empty after decryption"
         exit 1
@@ -37,13 +39,13 @@ for svc in "${ENCRYPTED_SERVICES[@]}"; do
 done
 
 echo "==> Validating compose config..."
-docker compose -f "${INFRA_DIR}/docker-compose.yml" config --quiet
+"${COMPOSE[@]}" config --quiet
 
 echo "==> Pulling latest images..."
-docker compose -f "${INFRA_DIR}/docker-compose.yml" pull
+"${COMPOSE[@]}" pull
 
 echo "==> Starting services..."
-docker compose -f "${INFRA_DIR}/docker-compose.yml" up -d
+"${COMPOSE[@]}" up -d
 
 echo "==> Validating Caddyfile..."
 docker exec caddy caddy validate --config /etc/caddy/Caddyfile
@@ -53,31 +55,25 @@ docker exec caddy caddy reload --config /etc/caddy/Caddyfile
 
 echo "==> Syncing systemd units..."
 CHANGED=0
+shopt -s nullglob
 
-for unit in pg-backup.service pg-backup.timer; do
-    src="${UNITS_SRC_POSTGRES}/${unit}"
-    dst="${UNITS_DST}/${unit}"
-    if [[ ! -f "${dst}" ]] || ! diff -q "${src}" "${dst}" > /dev/null 2>&1; then
-        sudo tee "${dst}" < "${src}" > /dev/null
+for unit in "${UNITS_SRC}"/*.{service,timer}; do
+    name="$(basename "${unit}")"
+    dst="${UNITS_DST}/${name}"
+    if [[ ! -f "${dst}" ]] || ! diff -q "${unit}" "${dst}" > /dev/null 2>&1; then
+        sudo tee "${dst}" < "${unit}" > /dev/null
         CHANGED=1
-        echo "  updated: ${unit}"
-    fi
-done
-
-for unit in disk-alert.service disk-alert.timer; do
-    src="${UNITS_SRC_DISK}/${unit}"
-    dst="${UNITS_DST}/${unit}"
-    if [[ ! -f "${dst}" ]] || ! diff -q "${src}" "${dst}" > /dev/null 2>&1; then
-        sudo tee "${dst}" < "${src}" > /dev/null
-        CHANGED=1
-        echo "  updated: ${unit}"
+        echo "  updated: ${name}"
     fi
 done
 
 if [[ "${CHANGED}" -eq 1 ]]; then
     sudo systemctl daemon-reload
-    sudo systemctl enable pg-backup.timer disk-alert.timer
-    sudo systemctl start pg-backup.timer disk-alert.timer
+    timers=("${UNITS_SRC}"/*.timer)
+    if [[ ${#timers[@]} -gt 0 ]]; then
+        sudo systemctl enable "${timers[@]##*/}"
+        sudo systemctl start "${timers[@]##*/}"
+    fi
     echo "  systemd units reloaded"
 else
     echo "  systemd units unchanged"

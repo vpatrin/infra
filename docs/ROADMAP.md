@@ -36,32 +36,16 @@ First real alerting. Know when things break instead of discovering it weeks late
 - [ ] Document push monitor pattern for app repos to adopt
 - [ ] Cron failure → alert path
 
-## Phase 4 — Continuous Deployment
+## Phase 4 — Continuous Deployment ✅
 
 No more manual deploys. Tag push deploys coupette. One-click deploys infra.
 
-### Prerequisites (manual, one-time)
-
-- [x] Generate SSH deploy key (`ed25519`) — add public key to `/home/deploy/.ssh/authorized_keys` on web-01
-- [x] Add private key to GitHub Actions secrets in both repos (`SSH_DEPLOY_KEY`)
-
-### Secrets
-
-- [x] sops + age setup — encrypted secrets committed, decrypted at deploy time (#45)
-- [x] Encrypt `services/postgres/.env.prod` + `services/umami/.env.prod` → `.env.prod.enc` (#45)
-- [x] Document secrets workflow — `docs/guides/SECRETS.md` (#45)
-
-### Infra
-
-- [x] `deploy_infra.sh` — idempotent: `git pull` + `docker compose up -d` + Caddy reload + systemd unit sync (#44)
-- [x] GitHub Actions workflow — manual dispatch → `deploy_infra.sh` on VPS (#44)
-- [ ] CI gate — `ansible-lint` on PR (prep for Phase 5)
-
-### Coupette
-
-- [ ] Extend `deploy.sh` — add idempotent systemd unit sync (scraper, availability timers)
-- [ ] GitHub Actions workflow — tag push → build images → push GHCR → scp frontend → `deploy.sh` on VPS
-- [ ] Update `SERVICE_CATALOG.md` — document deploy key pattern for app repos
+- [x] SSH deploy key + GitHub Actions secrets (#44)
+- [x] sops + age encrypted secrets (#45)
+- [x] `deploy_infra.sh` — idempotent deploy script (#44)
+- [x] GitHub Actions workflow — manual dispatch (#44)
+- [x] `SERVICE_CATALOG.md` — deploy key pattern documented
+- [x] Coupette CD — `deploy.sh` + tag-push workflow (coupette repo)
 
 ## Phase 5 — Disaster Recovery
 
