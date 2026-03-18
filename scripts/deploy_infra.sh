@@ -13,6 +13,10 @@ UNITS_DST="/etc/systemd/system"
 echo "==> Pulling latest infra repo..."
 git -C "${INFRA_DIR}" pull
 
+echo "==> Decrypting secrets..."
+sops --decrypt "${INFRA_DIR}/services/postgres/.env.prod.enc" > "${INFRA_DIR}/services/postgres/.env"
+sops --decrypt "${INFRA_DIR}/services/umami/.env.prod.enc" > "${INFRA_DIR}/services/umami/.env"
+
 echo "==> Validating compose config..."
 docker compose -f "${INFRA_DIR}/docker-compose.yml" config --quiet
 

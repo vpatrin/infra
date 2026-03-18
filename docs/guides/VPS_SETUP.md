@@ -24,9 +24,10 @@ steps (console, firewall UI) for other providers.
 11. [Swap](#11-swap) — safety net for memory pressure
 12. [Timezone](#12-timezone) — UTC for consistent log and timer behavior
 13. [Docker log rotation](#13-docker-log-rotation) — prevent disk fill from container logs
-14. [Deploy user](#14-deploy-user) — scoped CI user for GitHub Actions
-15. [SSH deploy key](#15-ssh-deploy-key) — dedicated key for CI, separate from personal key
-16. [Repo layout](#16-repo-layout) — clone infra + app repos as deploy user
+14. [sops](#14-sops) — decrypt secrets at deploy time
+15. [Deploy user](#15-deploy-user) — scoped CI user for GitHub Actions
+16. [SSH deploy key](#16-ssh-deploy-key) — dedicated key for CI, separate from personal key
+17. [Repo layout](#17-repo-layout) — clone infra + app repos as deploy user
 
 ---
 
@@ -460,7 +461,22 @@ This caps every container at 10 MB × 3 files = 30 MB of logs. New containers pi
 
 ---
 
-## 14. Deploy User
+## 14. sops
+
+sops decrypts encrypted `.env.prod.enc` files at deploy time. Install the `.deb` package:
+
+```bash
+curl -LO https://github.com/getsops/sops/releases/download/v3.12.2/sops_3.12.2_amd64.deb
+sudo dpkg -i sops_3.12.2_amd64.deb
+rm sops_3.12.2_amd64.deb
+sops --version
+```
+
+> age is not required on the VPS — sops receives the age private key via the `SOPS_AGE_KEY` environment variable injected by GitHub Actions at deploy time.
+
+---
+
+## 15. Deploy User
 
 A dedicated `deploy` user runs CI workloads (GitHub Actions). It is separate from `victor` (personal admin) — principle of least privilege. If the deploy key is compromised, revoke it without touching the admin account.
 
@@ -500,7 +516,7 @@ sudo -u deploy docker ps   # must work without sudo
 
 ---
 
-## 15. SSH Deploy Key
+## 16. SSH Deploy Key
 
 A dedicated ed25519 key for GitHub Actions. Generated on your laptop, never touches the VPS directly — only the public key is added to `authorized_keys`.
 
@@ -543,7 +559,7 @@ Host web-01-deploy
 
 ---
 
-## 16. Repo Layout
+## 17. Repo Layout
 
 Repos live under the `deploy` user's home. Scripts and systemd unit paths reference these locations.
 
