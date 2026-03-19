@@ -1,4 +1,4 @@
-.PHONY: help dev up down logs restart reload status validate pull backup
+.PHONY: help dev up down logs restart reload status validate pull backup deploy
 
 help: ## Show this help
 	@echo "Platform Infrastructure - Available Commands"
@@ -33,3 +33,9 @@ pull: ## Pull latest images
 
 backup: ## Backup all PostgreSQL databases
 	./scripts/postgres_backup.sh
+
+deploy: ## Trigger production deploy via GitHub Actions
+	@echo "⚠️  This will deploy to production (web-01)."
+	@read -p "Type 'approve' to continue: " confirm && [ "$$confirm" = "approve" ] || { echo "Aborted."; exit 1; }
+	gh workflow run deploy
+	@echo "Deploy triggered. Watch: gh run watch"
