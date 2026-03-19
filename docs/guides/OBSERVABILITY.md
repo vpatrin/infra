@@ -23,7 +23,7 @@ Config: `services/alloy/config.alloy`
 
 **Metrics:** Runs a built-in `node_exporter` (CPU, memory, disk, network) using host-mounted `/proc`, `/sys`, `/`. Scrapes every 15s, remote-writes to Prometheus.
 
-Host mounts give Alloy read access to the entire filesystem. Mitigated by `no-new-privileges` + `cap_drop: ALL`. TODO: replace with docker-socket-proxy (Phase 9).
+Host mounts give Alloy read access to the entire filesystem. Mitigated by `no-new-privileges` + `cap_drop: ALL`. TODO: replace with docker-socket-proxy (#68).
 
 ### Loki (log storage)
 

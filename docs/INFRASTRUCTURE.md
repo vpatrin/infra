@@ -49,12 +49,16 @@ Weekly automated backups via systemd timer ([#6](https://github.com/vpatrin/infr
 |------|----------|------|
 | PostgreSQL (2 databases) | Docker volume `shared-postgres_pgdata` | **High** — user data, product catalog, analytics |
 | Uptime Kuma | Docker volume `uptime-kuma_uptime-kuma-data` | Medium — monitoring config + history, reconfigurable |
+| Grafana | Docker volume `grafana_data` | Low — dashboards should be provisioned as code |
+| Prometheus | Docker volume `prometheus_data` | Low — metrics rebuilt from scrape targets (7d retention) |
+| Loki | Docker volume `loki_data` | Low — logs rebuilt from Docker log tailing (7d retention) |
+| Alloy | Docker volume `alloy_data` | Low — collector WAL, transient, rebuilt on restart |
 | Caddy TLS certs | Docker volume `caddy_data` | Low — auto-renewed by ACME |
 | Caddy config | Docker volume `caddy_config` | Low — regenerated from Caddyfile |
 
 ### What's stateless
 
-Everything else. All service containers can be rebuilt from their repos. Static sites are in git.
+Everything else. All service containers can be rebuilt from their repos. Static sites are in git. Observability data rebuilds from live sources.
 
 ### Strategy
 
@@ -119,7 +123,10 @@ journalctl -u pg-backup.service --since "1 week ago"
 
 Docker container logs are stored at `/var/lib/docker/containers/<id>/<id>-json.log`. Each service has log rotation configured in its `docker-compose.yml` (10MB max per file, 3 files retained = 30MB cap per service).
 
-- **View logs**: `make logs` or `docker logs caddy`
+Alloy auto-discovers all containers and ships their logs to Loki for centralized querying (7d retention). See [guides/OBSERVABILITY.md](guides/OBSERVABILITY.md) for LogQL examples and adding app logs.
+
+- **Centralized**: Grafana → Explore → Loki (`{container="caddy"} |= "error"`)
+- **Direct**: `make logs` or `docker logs caddy`
 - **Raw access**: useful if Docker daemon or container is down
 
 ## Monitoring
