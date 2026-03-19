@@ -79,4 +79,27 @@ else
     echo "  systemd units unchanged"
 fi
 
+echo "==> Health checks..."
+FAILED=0
+
+check_health() {
+    local name="$1" cmd="$2"
+    if eval "${cmd}" > /dev/null 2>&1; then
+        echo "  ✓ ${name}"
+    else
+        echo "  ✗ ${name}"
+        FAILED=1
+    fi
+}
+
+check_health "postgres"    "docker exec shared-postgres pg_isready -U postgres"
+check_health "caddy"       "curl -sf --max-time 5 https://victorpatrin.dev"
+check_health "umami"       "curl -sf --max-time 5 http://localhost:3000"
+check_health "uptime-kuma" "curl -sf --max-time 5 http://localhost:3001"
+
+if [[ "${FAILED}" -eq 1 ]]; then
+    echo "ERROR: one or more health checks failed"
+    exit 1
+fi
+
 echo "==> Deploy complete"
