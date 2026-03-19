@@ -1,4 +1,4 @@
-name: Manual Deployment
+name: Deploy
 
 on:
   workflow_dispatch:
@@ -11,6 +11,7 @@ jobs:
     name: Deploy
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    environment: production
     steps:
       - name: Deploy to web-01
         uses: appleboy/ssh-action@v1.2.5
