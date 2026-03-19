@@ -50,6 +50,7 @@ Scrape targets:
 |-----|--------|------|
 | `prometheus` | `localhost:9090` | Self-metrics (query latency, storage, scrape health) |
 | `alloy` | `alloy:12345` | Collector health, pipeline metrics |
+| `loki` | `loki:3100` | Log pipeline health (ingestion rate, compactor, query latency) |
 
 Query with PromQL in Grafana. Example: `node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes`.
 
