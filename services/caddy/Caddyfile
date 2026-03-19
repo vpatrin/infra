@@ -1,18 +1,39 @@
+# https://caddyserver.com/docs/caddyfile
+
 (security_headers) {
 	header {
 		X-Content-Type-Options "nosniff" # Prevents MIME type sniffing
 		X-Frame-Options "DENY" # Prevents clickjacking by disallowing the site to be framed
 		Referrer-Policy "strict-origin-when-cross-origin" # When navigating to another site, only sends the origin (not the full URL path). Prevents leaking private paths/query params to third parties.
 		Permissions-Policy "camera=(), microphone=(), geolocation=()" # Explicitly disables browser APIs you don't use
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-XSS-Protection "0" # Disables the deprecated XSS auditor, which can cause more harm than good. Included for legacy browser compatibility.
 		-Server # Strips the Server: Caddy header
 	}
 }
 
+# =============================================================================
+# Homepage
+# =============================================================================
+
+www.victorpatrin.dev {
+	redir https://victorpatrin.dev{uri} permanent
+}
+
 victorpatrin.dev {
 	import security_headers
-	encode zstd gzip # Reduces bandwidth and speeds up page loads
+	# Reduces bandwidth and speeds up page loads
+	encode zstd gzip
 	root * /srv/homepage
 	file_server
+}
+
+# ==============================================================================
+# Coupette
+# ==============================================================================
+
+www.coupette.club {
+	redir https://coupette.club{uri} permanent
 }
 
 coupette.club {
@@ -30,12 +51,18 @@ coupette.club {
 	}
 }
 
+# ==============================================================================
+# Analytics and status pages
+# ==============================================================================
+
 analytics.victorpatrin.dev {
 	import security_headers
+	encode zstd gzip
 	reverse_proxy umami:3000
 }
 
 status.victorpatrin.dev {
 	import security_headers
+	encode zstd gzip
 	reverse_proxy uptime-kuma:3001
 }
