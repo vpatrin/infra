@@ -2,7 +2,6 @@ services:
   caddy:
     image: caddy:2.11
     container_name: caddy
-    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
@@ -10,9 +9,7 @@ services:
       # Caddy configuration (directory mount for live reload)
       - ./services/caddy:/etc/caddy:ro
       # Homepage files (Portfolio)
-      - ./services/homepage:/srv/homepage
-      # coupette.club frontend dist files
-      - /srv/coupette:/srv/coupette
+      - ./services/homepage:/srv/homepage:ro
       - caddy_data:/data
       - caddy_config:/config
     networks:
@@ -26,7 +23,6 @@ services:
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
     cap_add: [NET_BIND_SERVICE]
-    mem_limit: 256m
     logging:
       driver: json-file
       options:
@@ -36,9 +32,6 @@ services:
   postgres:
     image: pgvector/pgvector:pg16
     container_name: shared-postgres
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:5432:5432"  # Localhost only — for DBeaver, Alembic
     shm_size: 256mb
     volumes:
       - shared-postgres_pgdata:/var/lib/postgresql/data
@@ -53,8 +46,7 @@ services:
     security_opt: [no-new-privileges:true]
     # Drop everything, then re-add only what Postgres needs to init its data dir.
     cap_drop: [ALL]
-    cap_add: [CHOWN, SETUID, SETGID, DAC_OVERRIDE, FOWNER]
-    mem_limit: 1g
+    cap_add: [CHOWN, SETUID, SETGID, FOWNER]
     logging:
       driver: json-file
       options:
@@ -64,9 +56,6 @@ services:
   umami:
     image: ghcr.io/umami-software/umami:postgresql-latest
     container_name: umami
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:3000:3000"  # Localhost only — Caddy proxies public traffic
     depends_on:
       postgres:
         condition: service_healthy
@@ -77,7 +66,6 @@ services:
       - /tmp
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
-    mem_limit: 256m
     logging:
       driver: json-file
       options:
@@ -85,11 +73,8 @@ services:
         max-file: "3"
 
   uptime-kuma:
-    image: louislam/uptime-kuma:1
+    image: louislam/uptime-kuma:2.2.1
     container_name: uptime-kuma
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:3001:3001"  # Localhost only — Caddy proxies public traffic
     volumes:
       - uptime-kuma_uptime-kuma-data:/app/data
     networks:
@@ -97,8 +82,7 @@ services:
     security_opt: [no-new-privileges:true]
     # setpriv needs these caps to switch user/group at startup.
     cap_drop: [ALL]
-    cap_add: [CHOWN, SETUID, SETGID, DAC_OVERRIDE]
-    mem_limit: 256m
+    cap_add: [CHOWN, SETUID, SETGID]
     logging:
       driver: json-file
       options:
@@ -112,7 +96,6 @@ services:
   loki:
     image: grafana/loki:3.5.0
     container_name: loki
-    restart: unless-stopped
     volumes:
       - ./services/loki:/etc/loki:ro
       - loki_data:/loki
@@ -127,7 +110,6 @@ services:
       start_period: 30s
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
-    mem_limit: 512m
     logging:
       driver: json-file
       options:
@@ -137,9 +119,6 @@ services:
   prometheus:
     image: prom/prometheus:v3.3.0
     container_name: prometheus
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:9090:9090"  # Localhost only — temporary until WireGuard
     volumes:
       - ./services/prometheus:/etc/prometheus:ro
       - prometheus_data:/prometheus
@@ -158,7 +137,6 @@ services:
       start_period: 15s
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
-    mem_limit: 512m
     logging:
       driver: json-file
       options:
@@ -168,15 +146,18 @@ services:
   alloy:
     image: grafana/alloy:v1.9.0
     container_name: alloy
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:12345:12345"  # Localhost only — Alloy UI + metrics
     volumes:
       - ./services/alloy:/etc/alloy:ro
       - alloy_data:/var/lib/alloy/data
+      # Docker socket: container discovery + log tailing.
+      # Grants effective root
+      # TODO: replace with docker-socket-proxy (#68).
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      # /proc: CPU, memory, load, network counters
       - /proc:/host/proc:ro
+      # /sys: hardware topology, device stats
       - /sys:/host/sys:ro
+      # rootfs: disk capacity, usage, inodes (node_filesystem_* metrics)
       - /:/host/root:ro
     command:
       - "run"
@@ -190,8 +171,7 @@ services:
       - internal
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
-    cap_add: [DAC_OVERRIDE, DAC_READ_SEARCH, FOWNER]
-    mem_limit: 256m
+    cap_add: [DAC_READ_SEARCH]
     logging:
       driver: json-file
       options:
@@ -201,9 +181,6 @@ services:
   grafana:
     image: grafana/grafana:12.0.0
     container_name: grafana
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:3002:3000"  # Localhost only — temporary until WireGuard
     volumes:
       - grafana_data:/var/lib/grafana
       - ./services/grafana/provisioning:/etc/grafana/provisioning:ro
@@ -223,8 +200,7 @@ services:
       start_period: 30s
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
-    cap_add: [CHOWN, SETUID, SETGID, FOWNER]
-    mem_limit: 256m
+    cap_add: [CHOWN, SETUID, SETGID]
     logging:
       driver: json-file
       options:
