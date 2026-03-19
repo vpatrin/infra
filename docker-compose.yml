@@ -1,6 +1,6 @@
 services:
   caddy:
-    image: caddy:2.11
+    image: caddy:2.11.2
     container_name: caddy
     ports:
       - "80:80"
@@ -30,7 +30,7 @@ services:
         max-file: "3"
 
   postgres:
-    image: pgvector/pgvector:pg16
+    image: pgvector/pgvector:0.8.2-pg16
     container_name: shared-postgres
     shm_size: 256mb
     volumes:
@@ -46,7 +46,8 @@ services:
     security_opt: [no-new-privileges:true]
     # Drop everything, then re-add only what Postgres needs to init its data dir.
     cap_drop: [ALL]
-    cap_add: [CHOWN, SETUID, SETGID, FOWNER]
+    # TODO: re-evaluate these caps for production.
+    cap_add: [SETUID, SETGID, DAC_READ_SEARCH, CHOWN, FOWNER]
     logging:
       driver: json-file
       options:
@@ -54,7 +55,7 @@ services:
         max-file: "3"
 
   umami:
-    image: ghcr.io/umami-software/umami:postgresql-latest
+    image: ghcr.io/umami-software/umami:postgresql-v2.20.2
     container_name: umami
     depends_on:
       postgres:
@@ -80,9 +81,7 @@ services:
     networks:
       - internal
     security_opt: [no-new-privileges:true]
-    # setpriv needs these caps to switch user/group at startup.
     cap_drop: [ALL]
-    cap_add: [CHOWN, SETUID, SETGID]
     logging:
       driver: json-file
       options:
@@ -94,7 +93,7 @@ services:
   # ============================================================================
 
   loki:
-    image: grafana/loki:3.5.0
+    image: grafana/loki:3.5.12
     container_name: loki
     volumes:
       - ./services/loki:/etc/loki:ro
@@ -117,7 +116,7 @@ services:
         max-file: "3"
 
   prometheus:
-    image: prom/prometheus:v3.3.0
+    image: prom/prometheus:v3.10.0
     container_name: prometheus
     volumes:
       - ./services/prometheus:/etc/prometheus:ro
@@ -144,14 +143,14 @@ services:
         max-file: "3"
 
   alloy:
-    image: grafana/alloy:v1.9.0
+    image: grafana/alloy:v1.14.1
     container_name: alloy
     volumes:
       - ./services/alloy:/etc/alloy:ro
       - alloy_data:/var/lib/alloy/data
       # Docker socket: container discovery + log tailing.
       # Grants effective root
-      # TODO: replace with docker-socket-proxy (#68).
+      # TODO: replace with docker-socket-proxy.
       - /var/run/docker.sock:/var/run/docker.sock:ro
       # /proc: CPU, memory, load, network counters
       - /proc:/host/proc:ro
@@ -179,7 +178,7 @@ services:
         max-file: "3"
 
   grafana:
-    image: grafana/grafana:12.0.0
+    image: grafana/grafana:12.4.1
     container_name: grafana
     volumes:
       - grafana_data:/var/lib/grafana
@@ -200,7 +199,6 @@ services:
       start_period: 30s
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
-    cap_add: [CHOWN, SETUID, SETGID]
     logging:
       driver: json-file
       options:
