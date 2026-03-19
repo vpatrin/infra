@@ -71,6 +71,6 @@ status.victorpatrin.dev {
 # Catch-all — reject requests to unknown hostnames or bare IP
 # ==============================================================================
 
-:80, :443 {
+:80 {
 	respond 404
 }
