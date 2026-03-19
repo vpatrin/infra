@@ -65,13 +65,13 @@ Every container in `docker-compose.yml` follows these security defaults:
 | Service | Capabilities | Why |
 | ------- | ------------ | --- |
 | Caddy | `NET_BIND_SERVICE` | Bind to ports 80/443 |
-| PostgreSQL | `CHOWN`, `SETUID`, `SETGID`, `DAC_OVERRIDE`, `FOWNER` | Init data directory ownership |
+| PostgreSQL | `SETUID`, `SETGID`, `DAC_READ_SEARCH`, `CHOWN`, `FOWNER` | Init data directory ownership (external volume) |
 | Umami | (none) | Read-only filesystem + tmpfs |
-| Uptime Kuma | `CHOWN`, `SETUID`, `SETGID`, `DAC_OVERRIDE` | setpriv user switch at startup |
+| Uptime Kuma | (none) | Runs as root, no privilege drop |
 | Loki | (none) | Log storage only |
 | Prometheus | (none) | Metrics storage only |
-| Alloy | `DAC_OVERRIDE`, `DAC_READ_SEARCH`, `FOWNER` | Read Docker socket + host filesystems for metrics |
-| Grafana | `CHOWN`, `SETUID`, `SETGID`, `FOWNER` | Init data directory ownership |
+| Alloy | `DAC_READ_SEARCH` | Read Docker socket + host filesystems for metrics |
+| Grafana | (none) | Runs as uid 472, dirs pre-set at build time |
 
 ### Additional hardening
 
