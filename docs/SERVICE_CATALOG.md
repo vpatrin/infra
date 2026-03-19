@@ -71,8 +71,8 @@ Adding or modifying a route requires a PR to this repo — app repos do not touc
 |---------|-----------|------|------------|--------|-------|
 | Caddy | caddy | 80, 443 | `0.0.0.0:80`, `0.0.0.0:443` (base) | all (reverse proxy) | infra |
 | PostgreSQL | shared-postgres | 5432 | `127.0.0.1:5433` | — | infra |
-| Umami | umami | 3000 | — | `analytics.victorpatrin.dev` | infra |
-| Uptime Kuma | uptime-kuma | 3001 | — | `status.victorpatrin.dev` | infra |
+| Umami | umami | 3000 | `127.0.0.1:3000` | `analytics.victorpatrin.dev` | infra |
+| Uptime Kuma | uptime-kuma | 3001 | `127.0.0.1:3001` | `status.victorpatrin.dev` | infra |
 | Loki | loki | 3100 | — | — | infra |
 | Prometheus | prometheus | 9090 | `127.0.0.1:9090` | — | infra |
 | Alloy | alloy | 12345 | `127.0.0.1:12345` | — | infra |

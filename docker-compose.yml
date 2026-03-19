@@ -166,6 +166,8 @@ services:
     depends_on:
       loki:
         condition: service_healthy
+      prometheus:
+        condition: service_healthy
     networks:
       - internal
     security_opt: [no-new-privileges:true]
