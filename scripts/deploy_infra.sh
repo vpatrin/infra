@@ -48,10 +48,10 @@ echo "==> Starting services..."
 "${COMPOSE[@]}" up -d
 
 echo "==> Validating Caddyfile..."
-docker exec caddy caddy validate --config /etc/caddy/Caddyfile
+docker exec caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 
 echo "==> Reloading Caddy..."
-docker exec caddy caddy reload --config /etc/caddy/Caddyfile
+docker exec caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
 
 echo "==> Syncing systemd units..."
 CHANGED=0
