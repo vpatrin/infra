@@ -22,7 +22,8 @@ www.victorpatrin.dev {
 
 victorpatrin.dev {
 	import security_headers
-	encode zstd gzip # Reduces bandwidth and speeds up page loads
+	# Reduces bandwidth and speeds up page loads
+	encode zstd gzip
 	root * /srv/homepage
 	file_server
 }
