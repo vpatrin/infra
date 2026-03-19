@@ -19,11 +19,6 @@ jobs:
           username: ${{ secrets.SSH_DEPLOY_USER }}
           key: ${{ secrets.SSH_DEPLOY_KEY }}
           envs: SOPS_AGE_KEY
-          script: |
-            git -C ~/infra config --list | grep -i url
-            whoami
-            echo "HOME=$HOME"
-            git -C ~/infra remote -v
-            SOPS_AGE_KEY='${{ secrets.SOPS_AGE_KEY }}' ~/infra/scripts/deploy_infra.sh
+          script: ~/infra/scripts/deploy_infra.sh
         env:
           SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}

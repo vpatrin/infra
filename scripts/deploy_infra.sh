@@ -25,7 +25,7 @@ echo "==> Decrypting secrets..."
     for svc in "${ENCRYPTED_SERVICES[@]}"; do
         enc="${INFRA_DIR}/services/${svc}/.env.prod.enc"
         [[ -f "${enc}" ]] || { echo "ERROR: ${enc} not found"; exit 1; }
-        sops --decrypt "${enc}" > "${INFRA_DIR}/services/${svc}/.env.prod"
+        sops --decrypt --output-type dotenv "${enc}" > "${INFRA_DIR}/services/${svc}/.env.prod"
     done
 )
 
