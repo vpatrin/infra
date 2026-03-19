@@ -16,7 +16,7 @@ Absorb shared-postgres, umami, uptime-kuma into single repo. Restructure into `s
 
 *(#22–#30)*
 
-## Phase 2 — Documentation & Contracts
+## Phase 2 — Documentation & Contracts ✅
 
 Make the platform legible. Zero blast radius — no running services touched.
 
@@ -28,13 +28,15 @@ Make the platform legible. Zero blast radius — no running services touched.
 
 *(#31)*
 
-## Phase 3 — Monitoring & Alerts
+## Phase 3 — Monitoring & Alerts ✅
 
 First real alerting. Know when things break instead of discovering it weeks later.
 
-- [ ] Uptime Kuma push monitors for systemd timers (backup, scraper, availability)
-- [ ] Document push monitor pattern for app repos to adopt
-- [ ] Cron failure → alert path
+- [x] Uptime Kuma push monitors for systemd timers (backup, scraper, availability)
+- [x] Document push monitor pattern for app repos to adopt
+- [x] Cron failure → alert path
+
+*(#33, #34, #35, #39)*
 
 ## Phase 4 — Continuous Deployment ✅
 
@@ -100,12 +102,77 @@ Helm-based CD. Tag push → GitOps deploy. Replaces GitHub Actions SSH deploy pa
 
 ## Phase 8 — Observability
 
-Log aggregation and dashboards. Deferred until multi-node (Phase 6) — on a single VPS, `docker logs` and `journalctl` are sufficient. Adding Loki + Grafana to a 4GB VPS with pgvector is a bad memory trade-off.
+Platform observability on Compose. Grafana + Loki + Prometheus + Alloy — learn the stack with fast feedback loops before K3s migration.
 
-- [ ] Loki + Promtail — log aggregation, queryable via `logcli`
-- [ ] Grafana — dashboards (only if CLI log search isn't enough)
-- [ ] Caddy structured access logs
-- [ ] Per-service log viewer + error rate dashboards
+Coupette's RAG pipeline needs structured metrics and log aggregation. `docker logs` and `journalctl` don't answer "is retrieval quality degrading?" or "what's the daily LLM cost?" Compose-first, then migrate alongside everything else in the K3s phase.
+
+### Phase 8a — Stack + Platform Dashboard
+
+- [ ] ADR: `decisions/0008-observability-stack.md`
+- [ ] Add Grafana, Loki, Prometheus, Alloy to `docker-compose.yml`
+- [ ] Alloy config: Docker log collection via socket + node metrics + systemd unit status
+- [ ] Prometheus scrape config: Alloy, Prometheus self-metrics
+- [ ] Grafana provisioning: datasources (Loki + Prometheus), dashboard provider
+- [ ] Platform Overview dashboard (container status, CPU/memory/disk, log volume, error rates, systemd timer health)
+- [ ] Temporary localhost port bindings for Grafana (until WireGuard in Phase 9)
+- [ ] `docs/guides/OBSERVABILITY_GUIDE.md` — stack overview, config walkthrough, querying with LogQL/PromQL, adding dashboards
+- [ ] Update SERVICE_CATALOG.md, INFRASTRUCTURE.md
+
+### Phase 8b — Application Dashboards (blocked on coupette contract)
+
+- [ ] Coupette emits structured JSON logs (event, query, similarity scores, latency, token usage)
+- [ ] Coupette exposes Prometheus metrics at `/metrics`
+- [ ] Recommendations & RAG Quality dashboard (latency, similarity distribution, token cost, zero-candidate rate)
+- [ ] Scraper & Data Pipeline dashboard (run duration, products scraped, embedding rate)
+- [ ] Alerting rules (low similarity, high error rate, scraper failure)
+
+## Phase 9 — WireGuard VPN
+
+Zero-trust network access to the VPS. All admin traffic (SSH, observability, database) moves behind a WireGuard tunnel. Port 22 closes on the public interface. The only internet-facing ports are 80, 443, and 51820/udp.
+
+Break-glass recovery: Hetzner web console (browser-based, always available, no SSH required).
+
+### Host-level WireGuard
+
+- [ ] Install WireGuard on the VPS host (not a container — needs full host network access)
+- [ ] Generate server keypair, configure `wg0` interface (`10.0.0.1/24`)
+- [ ] systemd unit: `wg-quick@wg0` (enabled, starts on boot)
+- [ ] UFW: allow UDP 51820 on public interface
+- [ ] IP forwarding enabled (`net.ipv4.ip_forward=1`) for tunnel routing to Docker network
+
+### Peer setup
+
+- [ ] Generate peer keypair for dev machine (macOS)
+- [ ] Dev machine: `10.0.0.2`, server: `10.0.0.1`
+- [ ] macOS WireGuard client config with DNS + allowed IPs
+- [ ] Validate: tunnel up, `ping 10.0.0.1`, reach Docker containers by `10.0.0.1:<port>`
+
+### SSH hardening
+
+- [ ] `sshd_config`: `ListenAddress 10.0.0.1` — SSH only on WireGuard interface
+- [ ] UFW: remove `allow 22` from public interface
+- [ ] Verify: SSH unreachable from public internet, reachable via tunnel
+- [ ] Verify: Hetzner web console still works as break-glass path
+- [ ] Update GitHub Actions deploy workflow — SSH via WireGuard or keep a scoped exception (deploy key from GitHub IP ranges)
+
+### Private DNS
+
+- [ ] CoreDNS as a Compose service on the `internal` network — resolves `*.internal` to `10.0.0.1`, forwards everything else upstream
+- [ ] WireGuard client config: `DNS = 10.0.0.1` — Mac uses CoreDNS when tunnel is up
+- [ ] DNS records: `grafana.internal`, `prometheus.internal`, `loki.internal`
+- [ ] CoreDNS config as code in `services/coredns/Corefile`
+
+### Observability lockdown
+
+- [ ] Remove Grafana/Prometheus/Loki localhost port bindings from `docker-compose.yml`
+- [ ] Access via tunnel only: `http://grafana.internal:3000`, `http://prometheus.internal:9090`
+
+### Documentation
+
+- [ ] `docs/guides/WIREGUARD_SETUP.md` — server config, peer setup, key generation, macOS client, troubleshooting, break-glass procedure
+- [ ] Update SECURITY.md — new network posture, attack surface reduction
+- [ ] Update INFRASTRUCTURE.md — SSH access method change
+- [ ] ADR: `decisions/0009-wireguard-vpn.md`
 
 ## Ideas (unscoped)
 
