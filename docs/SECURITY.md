@@ -20,7 +20,7 @@ All services communicate over a shared Docker network (`internal`). Only Caddy b
 | Caddy | `0.0.0.0:80`, `0.0.0.0:443` | Internet |
 | All others | — | Internal network only |
 
-No service except Caddy has a host port binding in the base compose. Dev port bindings (PostgreSQL, Grafana, Prometheus, Alloy) are in `docker-compose.dev.yml`. Production uses no extra port bindings.
+No service except Caddy has a host port binding in the base compose. Dev port bindings (PostgreSQL, Grafana, Prometheus, Alloy) are in `docker-compose.override.yml`. Production adds localhost-only bindings for SSH tunnel access to the observability stack.
 
 ---
 
@@ -49,15 +49,16 @@ Applied to all sites via a shared Caddyfile snippet:
 
 ## Container Hardening
 
-Every container in `docker-compose.yml` follows these defaults:
+Every container in `docker-compose.yml` follows these security defaults:
 
-| Control | What it does |
-| ------- | ------------ |
-| `security_opt: [no-new-privileges:true]` | Prevents privilege escalation inside the container |
-| `cap_drop: [ALL]` | Drops all Linux capabilities by default |
-| `cap_add: [...]` | Re-adds only what each service needs (see below) |
-| `mem_limit` | Hard memory ceiling per container |
-| `restart: unless-stopped` | Auto-restart on crash or reboot |
+| Control | Where | What it does |
+| ------- | ----- | ------------ |
+| `security_opt: [no-new-privileges:true]` | Base | Prevents privilege escalation inside the container |
+| `cap_drop: [ALL]` | Base | Drops all Linux capabilities by default |
+| `cap_add: [...]` | Base | Re-adds only what each service needs (see below) |
+| `logging` (rotation) | Base | Prevents log-based disk exhaustion |
+| `mem_limit` | Prod override | Hard memory ceiling per container |
+| `restart: unless-stopped` | Prod override | Auto-restart on crash or reboot |
 
 ### Per-service capabilities
 
@@ -133,7 +134,11 @@ Stateful data lives in Docker volumes. Two volumes are `external: true` (pre-exi
 | ------ | ---- | ------------ |
 | `shared-postgres_pgdata` | All databases (coupette, umami) | **High** — user data, product catalog, analytics |
 | `uptime-kuma_uptime-kuma-data` | Monitoring config + history | Medium — reconfigurable |
+| `grafana_data` | Dashboards + preferences | Low — dashboards should be provisioned as code |
+| `prometheus_data` | Metrics (7d retention) | Low — rebuilt from scrape targets |
+| `loki_data` | Logs (7d retention) | Low — rebuilt from Docker log tailing |
+| `alloy_data` | Collector WAL | Low — transient, rebuilt on restart |
 | `caddy_data` | TLS certificates | Low — auto-renewed |
 | `caddy_config` | Auto-generated config | Low — regenerated |
 
-Backups cover PostgreSQL only. Uptime Kuma and Caddy data are considered recoverable. See [INFRASTRUCTURE.md](INFRASTRUCTURE.md#backups) for backup strategy.
+Backups cover PostgreSQL only. All other volumes are considered recoverable — observability data rebuilds from live sources, Caddy certs auto-renew. See [INFRASTRUCTURE.md](INFRASTRUCTURE.md#backups) for backup strategy.

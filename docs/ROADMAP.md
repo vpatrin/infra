@@ -180,6 +180,12 @@ Break-glass recovery: Hetzner web console (browser-based, always available, no S
 - [ ] Update INFRASTRUCTURE.md — SSH access method change
 - [ ] ADR: `decisions/0009-wireguard-vpn.md`
 
+## Backlog
+
+Scoped, ready-to-pick-up work that doesn't belong to a phase.
+
+- [ ] Add `Content-Security-Policy` header to Caddyfile `(security_headers)` snippet (#69)
+
 ## Ideas (unscoped)
 
 - [ ] Staging environment — same VPS, separate ports + DB, promotion pattern

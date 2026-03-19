@@ -28,7 +28,7 @@ A PostgreSQL 16 container with pgvector runs as `shared-postgres` on the `intern
 | Container name | `shared-postgres` |
 | Image | `pgvector/pgvector:pg16` |
 | Internal port | 5432 |
-| Host binding | `127.0.0.1:5432` (localhost only, for DBeaver/Alembic) |
+| Host binding | `127.0.0.1:5432` (dev override only, for DBeaver/Alembic) |
 | Health check | `pg_isready` every 5s |
 
 ### Databases
@@ -82,7 +82,7 @@ Adding or modifying a route requires a PR to this repo — app repos do not touc
 | Coupette scraper | coupette-scraper | — | — | — (systemd timer) | coupette |
 | Coupette frontend | — | — | — | `coupette.club` (static, served by Caddy) | coupette |
 
-Dev bindings are defined in `docker-compose.dev.yml`. Only Caddy has host port bindings in the base compose. Production uses no extra port bindings (`docker-compose.prod.yml` only adds `env_file` overrides).
+Dev bindings are defined in `docker-compose.override.yml` (auto-loaded). Only Caddy has host port bindings in the base compose. Production adds localhost bindings for SSH tunnel access to the observability stack (`docker-compose.prod.yml`).
 
 Only Caddy is internet-facing. Everything else is internal Docker network or localhost-only.
 
