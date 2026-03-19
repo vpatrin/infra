@@ -67,16 +67,22 @@ Adding or modifying a route requires a PR to this repo — app repos do not touc
 
 ### Service inventory
 
-| Service | Container | Port | Host binding | Domain | Owner |
-|---------|-----------|------|-------------|--------|-------|
-| Caddy | caddy | 80, 443 | `0.0.0.0:80`, `0.0.0.0:443` | all (reverse proxy) | infra |
+| Service | Container | Port | Dev binding | Domain | Owner |
+|---------|-----------|------|------------|--------|-------|
+| Caddy | caddy | 80, 443 | `0.0.0.0:80`, `0.0.0.0:443` (base) | all (reverse proxy) | infra |
 | PostgreSQL | shared-postgres | 5432 | `127.0.0.1:5432` | — | infra |
-| Umami | umami | 3000 | `127.0.0.1:3000` | `analytics.victorpatrin.dev` | infra |
-| Uptime Kuma | uptime-kuma | 3001 | `127.0.0.1:3001` | `status.victorpatrin.dev` | infra |
+| Umami | umami | 3000 | — | `analytics.victorpatrin.dev` | infra |
+| Uptime Kuma | uptime-kuma | 3001 | — | `status.victorpatrin.dev` | infra |
+| Loki | loki | 3100 | — | — | infra |
+| Prometheus | prometheus | 9090 | `127.0.0.1:9090` | — | infra |
+| Alloy | alloy | 12345 | `127.0.0.1:12345` | — | infra |
+| Grafana | grafana | 3000 | `127.0.0.1:3002` | — | infra |
 | Coupette backend | coupette-backend | 8001 | — | `coupette.club/api` | coupette |
 | Coupette bot | coupette-bot | — | — | — | coupette |
 | Coupette scraper | coupette-scraper | — | — | — (systemd timer) | coupette |
 | Coupette frontend | — | — | — | `coupette.club` (static, served by Caddy) | coupette |
+
+Dev bindings are defined in `docker-compose.dev.yml`. Only Caddy has host port bindings in the base compose. Production uses no extra port bindings (`docker-compose.prod.yml` only adds `env_file` overrides).
 
 Only Caddy is internet-facing. Everything else is internal Docker network or localhost-only.
 
