@@ -1,8 +1,45 @@
 # Production overrides — used by deploy_infra.sh on VPS.
 # Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Adds: env_file, restart policy, memory limits.
+# Base compose has service topology, security, and logging only.
 services:
+  caddy:
+    restart: unless-stopped
+    mem_limit: 256m
+    volumes:
+      # coupette.club frontend dist files (prod-only, deployed by coupette CI)
+      - /srv/coupette:/srv/coupette:ro
+
   postgres:
+    restart: unless-stopped
     env_file: ./services/postgres/.env.prod
+    mem_limit: 1g
 
   umami:
+    restart: unless-stopped
     env_file: ./services/umami/.env.prod
+    mem_limit: 512m
+
+  uptime-kuma:
+    restart: unless-stopped
+    mem_limit: 256m
+
+  loki:
+    restart: unless-stopped
+    mem_limit: 512m
+
+  prometheus:
+    restart: unless-stopped
+    mem_limit: 512m
+
+  alloy:
+    restart: unless-stopped
+    mem_limit: 256m
+
+  grafana:
+    restart: unless-stopped
+    env_file: ./services/grafana/.env.prod
+    mem_limit: 256m
+    ports:
+      - "127.0.0.1:3002:3000"

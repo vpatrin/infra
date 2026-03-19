@@ -65,10 +65,7 @@ Things you can't decide without Victor's input. Ask them directly — don't assu
 ## Rules
 
 - Present the plan for Victor's approval **before creating any issues**
-- After approval, create each issue with `gh issue create --label <label1> --label <label2>` and immediately add to kanban:
-  ```
-  gh project item-add 1 --owner vpatrin --url <issue-url>
-  ```
+- After approval, create each issue with `gh issue create --label <label1> --label <label2> --milestone "<phase milestone>"` — assign to the relevant phase milestone
 - Use conventional commit style for issue titles: `feat: ...`, `chore: ...`, `fix: ...`
 - Reference dependencies in issue descriptions: "Depends on #N"
 - List all created issues with numbers and URLs when done

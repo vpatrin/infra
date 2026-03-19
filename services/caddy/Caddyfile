@@ -66,3 +66,11 @@ status.victorpatrin.dev {
 	encode zstd gzip
 	reverse_proxy uptime-kuma:3001
 }
+
+# ==============================================================================
+# Catch-all — reject requests to unknown hostnames or bare IP
+# ==============================================================================
+
+:80 {
+	respond 404
+}

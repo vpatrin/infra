@@ -18,11 +18,9 @@ All services communicate over a shared Docker network (`internal`). Only Caddy b
 | Service | Host binding | Accessible from |
 | ------- | ------------ | --------------- |
 | Caddy | `0.0.0.0:80`, `0.0.0.0:443` | Internet |
-| PostgreSQL | `127.0.0.1:5432` | Localhost only (DBeaver, Alembic) |
-| Umami | `127.0.0.1:3000` | Localhost only (Caddy proxies) |
-| Uptime Kuma | `127.0.0.1:3001` | Localhost only (Caddy proxies) |
+| All others | — | Internal network only |
 
-No service except Caddy is reachable from the internet. PostgreSQL, Umami, and Uptime Kuma bind to `127.0.0.1` explicitly.
+No service except Caddy has a host port binding in the base compose. Dev port bindings (PostgreSQL, Grafana, Prometheus, Alloy) are in `docker-compose.override.yml`. Production adds localhost-only bindings for SSH tunnel access to the observability stack.
 
 ---
 
@@ -51,24 +49,29 @@ Applied to all sites via a shared Caddyfile snippet:
 
 ## Container Hardening
 
-Every container in `docker-compose.yml` follows these defaults:
+Every container in `docker-compose.yml` follows these security defaults:
 
-| Control | What it does |
-| ------- | ------------ |
-| `security_opt: [no-new-privileges:true]` | Prevents privilege escalation inside the container |
-| `cap_drop: [ALL]` | Drops all Linux capabilities by default |
-| `cap_add: [...]` | Re-adds only what each service needs (see below) |
-| `mem_limit` | Hard memory ceiling per container |
-| `restart: unless-stopped` | Auto-restart on crash or reboot |
+| Control | Where | What it does |
+| ------- | ----- | ------------ |
+| `security_opt: [no-new-privileges:true]` | Base | Prevents privilege escalation inside the container |
+| `cap_drop: [ALL]` | Base | Drops all Linux capabilities by default |
+| `cap_add: [...]` | Base | Re-adds only what each service needs (see below) |
+| `logging` (rotation) | Base | Prevents log-based disk exhaustion |
+| `mem_limit` | Prod override | Hard memory ceiling per container |
+| `restart: unless-stopped` | Prod override | Auto-restart on crash or reboot |
 
 ### Per-service capabilities
 
 | Service | Capabilities | Why |
 | ------- | ------------ | --- |
 | Caddy | `NET_BIND_SERVICE` | Bind to ports 80/443 |
-| PostgreSQL | `CHOWN`, `SETUID`, `SETGID`, `DAC_OVERRIDE`, `FOWNER` | Init data directory ownership |
+| PostgreSQL | `SETUID`, `SETGID`, `DAC_READ_SEARCH`, `CHOWN`, `FOWNER` | Init data directory ownership (external volume) |
 | Umami | (none) | Read-only filesystem + tmpfs |
-| Uptime Kuma | `CHOWN`, `SETUID`, `SETGID`, `DAC_OVERRIDE` | setpriv user switch at startup |
+| Uptime Kuma | (none) | Runs as root, no privilege drop |
+| Loki | (none) | Log storage only |
+| Prometheus | (none) | Metrics storage only |
+| Alloy | `DAC_READ_SEARCH` | Read Docker socket + host filesystems for metrics |
+| Grafana | (none) | Runs as uid 472, dirs pre-set at build time |
 
 ### Additional hardening
 
@@ -84,9 +87,13 @@ Every container in `docker-compose.yml` follows these defaults:
 | ------- | ----- | ----- |
 | Caddy | 256m | Reverse proxy, low memory |
 | PostgreSQL | 1g | pgvector with 1536-dim embeddings |
-| Umami | 256m | Analytics, stateless |
+| Umami | 512m | Analytics, stateless |
 | Uptime Kuma | 256m | Monitoring, SQLite-backed |
-| **Total reserved** | **1.75g** | Of 4GB VPS (leaves ~2GB for apps + OS) |
+| Loki | 512m | Log aggregation |
+| Prometheus | 512m | Metrics storage (7d retention) |
+| Alloy | 256m | Log + metrics collector |
+| Grafana | 256m | Dashboards + visualization |
+| **Total reserved** | **3.5g** | Of 4GB VPS (leaves ~0.5GB for apps + OS) |
 
 ---
 
@@ -102,13 +109,9 @@ Every container in `docker-compose.yml` follows these defaults:
 
 ### Current state
 
-Secrets live in `.env` files on the VPS, one per service (`services/<name>/.env`). All `.env` files are gitignored. Each service has a committed `.env.example` with placeholder values.
+Production secrets are encrypted with sops + age and committed as `.env.prod.enc` files per service. The deploy script decrypts them at deploy time using `SOPS_AGE_KEY` from the environment. Decrypted `.env.prod` files are created with `umask 077` (owner-only).
 
-**Known limitation:** `.env` files on disk are readable by the `victor` user and Docker daemon. No encryption at rest.
-
-### Planned (Phase 6)
-
-Migrate to sops + age — encrypted secrets committed to the repo, decrypted at deploy time. See [ROADMAP.md](ROADMAP.md).
+Development `.env` files live on disk (gitignored). Each service has a committed `.env.example` with placeholder values.
 
 ---
 
@@ -131,7 +134,11 @@ Stateful data lives in Docker volumes. Two volumes are `external: true` (pre-exi
 | ------ | ---- | ------------ |
 | `shared-postgres_pgdata` | All databases (coupette, umami) | **High** — user data, product catalog, analytics |
 | `uptime-kuma_uptime-kuma-data` | Monitoring config + history | Medium — reconfigurable |
+| `grafana_data` | Dashboards + preferences | Low — dashboards should be provisioned as code |
+| `prometheus_data` | Metrics (7d retention) | Low — rebuilt from scrape targets |
+| `loki_data` | Logs (7d retention) | Low — rebuilt from Docker log tailing |
+| `alloy_data` | Collector WAL | Low — transient, rebuilt on restart |
 | `caddy_data` | TLS certificates | Low — auto-renewed |
 | `caddy_config` | Auto-generated config | Low — regenerated |
 
-Backups cover PostgreSQL only. Uptime Kuma and Caddy data are considered recoverable. See [INFRASTRUCTURE.md](INFRASTRUCTURE.md#backups) for backup strategy.
+Backups cover PostgreSQL only. All other volumes are considered recoverable — observability data rebuilds from live sources, Caddy certs auto-renew. See [INFRASTRUCTURE.md](INFRASTRUCTURE.md#backups) for backup strategy.

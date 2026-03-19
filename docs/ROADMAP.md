@@ -109,16 +109,24 @@ Coupette's RAG pipeline needs structured metrics and log aggregation. `docker lo
 ### Phase 8a — Stack + Platform Dashboard
 
 - [ ] ADR: `decisions/0008-observability-stack.md`
-- [ ] Add Grafana, Loki, Prometheus, Alloy to `docker-compose.yml`
-- [ ] Alloy config: Docker log collection via socket + node metrics + systemd unit status
-- [ ] Prometheus scrape config: Alloy, Prometheus self-metrics
-- [ ] Grafana provisioning: datasources (Loki + Prometheus), dashboard provider
+- [x] Add Grafana, Loki, Prometheus, Alloy to `docker-compose.yml`
+- [x] Alloy config: Docker log collection via socket + node metrics
+- [x] Prometheus scrape config: Alloy, Prometheus self-metrics
+- [x] Grafana provisioning: datasources (Loki + Prometheus), dashboard provider
 - [ ] Platform Overview dashboard (container status, CPU/memory/disk, log volume, error rates, systemd timer health)
-- [ ] Temporary localhost port bindings for Grafana (until WireGuard in Phase 9)
-- [ ] `docs/guides/OBSERVABILITY_GUIDE.md` — stack overview, config walkthrough, querying with LogQL/PromQL, adding dashboards
-- [ ] Update SERVICE_CATALOG.md, INFRASTRUCTURE.md
+- [x] Temporary localhost port bindings for Grafana (until WireGuard in Phase 9)
+- [x] `docs/guides/OBSERVABILITY.md` — stack overview, config walkthrough, querying with LogQL/PromQL, adding dashboards
+- [x] Update SERVICE_CATALOG.md, INFRASTRUCTURE.md, SECURITY.md
 
-### Phase 8b — Application Dashboards (blocked on coupette contract)
+### Phase 8b — Additional Exporters
+
+- [ ] Caddy Prometheus metrics — `metrics` global option in Caddyfile, Prometheus scrape target (no extra container)
+- [ ] postgres_exporter — connections, query latency, table sizes, dead tuples, pgvector index stats
+- [ ] Postgres dashboard in Grafana
+- [ ] systemd journal logs — Alloy `loki.source.journal` for timer/service logs (pg-backup, disk-alert, coupette timers)
+- [ ] systemd unit status metrics — Alloy `prometheus.exporter.unix` with `systemd` collector enabled, dashboard for timer success/failure/last-run
+
+### Phase 8c — Application Dashboards (blocked on coupette contract)
 
 - [ ] Coupette emits structured JSON logs (event, query, similarity scores, latency, token usage)
 - [ ] Coupette exposes Prometheus metrics at `/metrics`
@@ -173,6 +181,12 @@ Break-glass recovery: Hetzner web console (browser-based, always available, no S
 - [ ] Update SECURITY.md — new network posture, attack surface reduction
 - [ ] Update INFRASTRUCTURE.md — SSH access method change
 - [ ] ADR: `decisions/0009-wireguard-vpn.md`
+
+## Backlog
+
+Scoped, ready-to-pick-up work that doesn't belong to a phase.
+
+- [ ] Add `Content-Security-Policy` header to Caddyfile `(security_headers)` snippet (#69)
 
 ## Ideas (unscoped)
 

@@ -23,9 +23,12 @@ Caddy (ports 80/443)
   ├── analytics.victorpatrin.dev → reverse proxy to umami:3000
   └── status.victorpatrin.dev   → reverse proxy to uptime-kuma:3001
 
+Observability (internal only):
+  Alloy → collects logs + metrics → Loki (logs) + Prometheus (metrics) → Grafana (dashboards)
+
 All services communicate over a shared Docker network ("internal").
-Only Caddy binds to host ports 80/443.
-PostgreSQL binds to localhost:5432 for dev tooling (DBeaver, Alembic).
+Only Caddy binds to host ports 80/443 in the base compose.
+Grafana binds to localhost:3002 in prod (for SSH tunnel access).
 ```
 
 See [SERVICE_CATALOG.md](SERVICE_CATALOG.md) for the full service inventory and port mapping.
@@ -46,12 +49,16 @@ Weekly automated backups via systemd timer ([#6](https://github.com/vpatrin/infr
 |------|----------|------|
 | PostgreSQL (2 databases) | Docker volume `shared-postgres_pgdata` | **High** — user data, product catalog, analytics |
 | Uptime Kuma | Docker volume `uptime-kuma_uptime-kuma-data` | Medium — monitoring config + history, reconfigurable |
+| Grafana | Docker volume `grafana_data` | Low — dashboards should be provisioned as code |
+| Prometheus | Docker volume `prometheus_data` | Low — metrics rebuilt from scrape targets (7d retention) |
+| Loki | Docker volume `loki_data` | Low — logs rebuilt from Docker log tailing (7d retention) |
+| Alloy | Docker volume `alloy_data` | Low — collector WAL, transient, rebuilt on restart |
 | Caddy TLS certs | Docker volume `caddy_data` | Low — auto-renewed by ACME |
 | Caddy config | Docker volume `caddy_config` | Low — regenerated from Caddyfile |
 
 ### What's stateless
 
-Everything else. All service containers can be rebuilt from their repos. Static sites are in git.
+Everything else. All service containers can be rebuilt from their repos. Static sites are in git. Observability data rebuilds from live sources.
 
 ### Strategy
 
@@ -116,13 +123,20 @@ journalctl -u pg-backup.service --since "1 week ago"
 
 Docker container logs are stored at `/var/lib/docker/containers/<id>/<id>-json.log`. Each service has log rotation configured in its `docker-compose.yml` (10MB max per file, 3 files retained = 30MB cap per service).
 
-- **View logs**: `make logs` or `docker logs caddy`
+Alloy auto-discovers all containers and ships their logs to Loki for centralized querying (7d retention). See [guides/OBSERVABILITY.md](guides/OBSERVABILITY.md) for LogQL examples and adding app logs.
+
+- **Centralized**: Grafana → Explore → Loki (`{container="caddy"} |= "error"`)
+- **Direct**: `make logs` or `docker logs caddy`
 - **Raw access**: useful if Docker daemon or container is down
 
 ## Monitoring
 
 | Tool | URL | Purpose |
 |------|-----|---------|
+| Grafana | `localhost:3002` (SSH tunnel) | Dashboards — logs, metrics, system overview |
+| Prometheus | Internal only | Metrics storage (7d retention) |
+| Loki | Internal only | Log aggregation (7d retention) |
+| Alloy | Internal only | Log + metrics collector (Docker + node) |
 | Uptime Kuma | `status.victorpatrin.dev` | Uptime monitoring, alerts on downtime |
 | Umami | `analytics.victorpatrin.dev` | Privacy-friendly web analytics |
 
@@ -171,14 +185,18 @@ Push URLs are stored in `/etc/push-monitor/<job>.env` on the VPS (root-owned, `0
 
 ## Deployment
 
-Manual git-based deployment (intentional for solo dev — CI/CD overhead not justified yet).
+Infra deploys are triggered via GitHub Actions (manual workflow dispatch). The workflow runs `deploy_infra.sh` on the VPS as the `deploy` user, which: decrypts secrets (sops + age), pulls images, starts services, syncs systemd units, and runs health checks.
+
+```bash
+make deploy    # trigger via GitHub Actions (requires confirmation)
+```
+
+For Caddyfile-only changes (no container restart needed):
 
 ```bash
 ssh web-01
-cd ~/infra
-git pull
-make restart   # full container restart (if docker-compose.yml changed)
-make reload    # Caddyfile-only, no downtime
+cd ~/infra && git pull
+make reload-caddy
 ```
 
 Each project repo has its own deploy process. See [coupette PRODUCTION.md](https://github.com/vpatrin/coupette/blob/main/docs/PRODUCTION.md) for app-level deployment.
@@ -189,4 +207,4 @@ This is a single-VPS setup. Scaling considerations if needed:
 
 - **Vertical**: upgrade the Hetzner plan (more CPU/RAM/disk).
 - **Horizontal**: not designed for it — would require splitting services across servers, adding a load balancer, and externalizing PostgreSQL. Not planned.
-- **Current headroom**: the VPS runs ~6 containers with low resource usage. Plenty of room for additional services.
+- **Current headroom**: the VPS runs ~10 containers (4 core + 4 observability + coupette). Memory budget is tight at 3.5GB reserved of 4GB — monitor after observability stack is live.
