@@ -1,4 +1,4 @@
-.PHONY: help dev-homepage logs status validate-caddy reload-caddy deploy
+.PHONY: help dev-homepage logs status validate-caddy reload-caddy deploy tunnel
 
 help: ## Show this help
 	@echo "Platform Infrastructure - Available Commands"
@@ -19,6 +19,9 @@ validate-caddy: ## Validate Caddyfile syntax
 
 reload-caddy: ## Reload Caddy configuration
 	docker exec caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
+
+tunnel: ## SSH tunnel to observability stack (Grafana :3002, Prometheus :9090, Loki :3100)
+	ssh -L 3002:127.0.0.1:3002 -L 9090:127.0.0.1:9090 -L 3100:127.0.0.1:3100 web-01
 
 deploy: ## Trigger production deploy via GitHub Actions
 	@echo "⚠️  This will deploy to production (web-01)."

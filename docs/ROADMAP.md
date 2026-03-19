@@ -118,7 +118,13 @@ Coupette's RAG pipeline needs structured metrics and log aggregation. `docker lo
 - [ ] `docs/guides/OBSERVABILITY_GUIDE.md` — stack overview, config walkthrough, querying with LogQL/PromQL, adding dashboards
 - [ ] Update SERVICE_CATALOG.md, INFRASTRUCTURE.md
 
-### Phase 8b — Application Dashboards (blocked on coupette contract)
+### Phase 8b — Additional Exporters
+
+- [ ] Caddy Prometheus metrics — `metrics` global option in Caddyfile, Prometheus scrape target (no extra container)
+- [ ] postgres_exporter — connections, query latency, table sizes, dead tuples, pgvector index stats
+- [ ] Postgres dashboard in Grafana
+
+### Phase 8c — Application Dashboards (blocked on coupette contract)
 
 - [ ] Coupette emits structured JSON logs (event, query, similarity scores, latency, token usage)
 - [ ] Coupette exposes Prometheus metrics at `/metrics`

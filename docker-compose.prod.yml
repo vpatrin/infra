@@ -6,3 +6,6 @@ services:
 
   umami:
     env_file: ./services/umami/.env.prod
+
+  grafana:
+    env_file: ./services/grafana/.env.prod
