@@ -7,8 +7,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      # Caddyfile for configuration
-      - ./services/caddy/Caddyfile:/etc/caddy/Caddyfile
+      # Caddy configuration (directory mount for live reload)
+      - ./services/caddy:/etc/caddy:ro
       # Homepage files (Portfolio)
       - ./services/homepage:/srv/homepage
       # coupette.club frontend dist files
@@ -18,7 +18,7 @@ services:
     networks:
       - internal
     healthcheck:
-      test: ["CMD", "caddy", "validate", "--config", "/etc/caddy/Caddyfile"]
+      test: ["CMD", "caddy", "validate", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
       interval: 30s
       timeout: 5s
       retries: 3
