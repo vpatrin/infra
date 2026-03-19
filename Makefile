@@ -14,9 +14,9 @@ logs: ## Show logs (follow)
 status: ## Show running containers
 	docker compose ps
 
-validate-caddy: ## Validate Caddy configuration
-	docker exec caddy caddy validate --config /etc/caddy/Caddyfile --adapter
-	
+validate-caddy: ## Validate Caddyfile syntax
+	docker exec caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+
 reload-caddy: ## Reload Caddy configuration
 	docker exec caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
 
