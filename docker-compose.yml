@@ -39,7 +39,6 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:5432:5432"  # Localhost only — for DBeaver, Alembic
-    env_file: ./services/postgres/.env
     shm_size: 256mb
     volumes:
       - shared-postgres_pgdata:/var/lib/postgresql/data
@@ -68,7 +67,6 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:3000:3000"  # Localhost only — Caddy proxies public traffic
-    env_file: ./services/umami/.env
     depends_on:
       postgres:
         condition: service_healthy
