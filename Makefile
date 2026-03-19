@@ -1,4 +1,4 @@
-.PHONY: help dev-homepage logs status reload-caddy deploy
+.PHONY: help dev-homepage logs status validate-caddy reload-caddy deploy
 
 help: ## Show this help
 	@echo "Platform Infrastructure - Available Commands"
@@ -14,7 +14,9 @@ logs: ## Show logs (follow)
 status: ## Show running containers
 	docker compose ps
 
-
+validate-caddy: ## Validate Caddy configuration
+	docker exec caddy caddy validate --config /etc/caddy/Caddyfile --adapter
+	
 reload-caddy: ## Reload Caddy configuration
 	docker exec caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
 
