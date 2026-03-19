@@ -35,7 +35,7 @@ jobs:
     timeout-minutes: 2
     env:
       CADDY_DIR: services/caddy
-      CADDY_VERSION: "2.11"
+      CADDY_VERSION: "2.11.2"
     steps:
       - uses: actions/checkout@v6
       - name: Validate Caddyfile syntax
