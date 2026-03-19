@@ -39,4 +39,3 @@ status.victorpatrin.dev {
 	import security_headers
 	reverse_proxy uptime-kuma:3001
 }
-

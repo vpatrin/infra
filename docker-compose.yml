@@ -62,7 +62,7 @@ services:
         max-file: "3"
 
   umami:
-    image: ghcr.io/umami-software/umami:postgresql-v2.20.2
+    image: ghcr.io/umami-software/umami:postgresql-v3.0.3
     container_name: umami
     restart: unless-stopped
     ports:
