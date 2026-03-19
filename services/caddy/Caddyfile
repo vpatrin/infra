@@ -1,3 +1,5 @@
+# https://caddyserver.com/docs/caddyfile
+
 (security_headers) {
 	header {
 		X-Content-Type-Options "nosniff" # Prevents MIME type sniffing
@@ -10,11 +12,27 @@
 	}
 }
 
+# =============================================================================
+# Homepage
+# =============================================================================
+
+www.victorpatrin.dev {
+	redir https://victorpatrin.dev{uri} permanent
+}
+
 victorpatrin.dev {
 	import security_headers
 	encode zstd gzip # Reduces bandwidth and speeds up page loads
 	root * /srv/homepage
 	file_server
+}
+
+# ==============================================================================
+# Coupette
+# ==============================================================================
+
+www.coupette.club {
+	redir https://coupette.club{uri} permanent
 }
 
 coupette.club {
@@ -32,12 +50,18 @@ coupette.club {
 	}
 }
 
+# ==============================================================================
+# Analytics and status pages
+# ==============================================================================
+
 analytics.victorpatrin.dev {
 	import security_headers
+	encode zstd gzip
 	reverse_proxy umami:3000
 }
 
 status.victorpatrin.dev {
 	import security_headers
+	encode zstd gzip
 	reverse_proxy uptime-kuma:3001
 }
