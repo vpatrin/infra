@@ -4,6 +4,8 @@
 		X-Frame-Options "DENY" # Prevents clickjacking by disallowing the site to be framed
 		Referrer-Policy "strict-origin-when-cross-origin" # When navigating to another site, only sends the origin (not the full URL path). Prevents leaking private paths/query params to third parties.
 		Permissions-Policy "camera=(), microphone=(), geolocation=()" # Explicitly disables browser APIs you don't use
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-XSS-Protection "0" # Disables the deprecated XSS auditor, which can cause more harm than good. Included for legacy browser compatibility.
 		-Server # Strips the Server: Caddy header
 	}
 }

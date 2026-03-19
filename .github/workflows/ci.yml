@@ -25,6 +25,21 @@ jobs:
       - name: Validate docker-compose.yml
         run: docker compose config --quiet
 
+  caddy:
+    name: Validate Caddyfile
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    env:
+      CADDYFILE_PATH: services/caddy/Caddyfile
+      CADDY_VERSION: "2.11"
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate Caddyfile syntax
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}/${CADDYFILE_PATH}:/etc/caddy/Caddyfile \
+            caddy:${CADDY_VERSION} caddy validate --config /etc/caddy/Caddyfile
+
   shellcheck:
     name: Shellcheck
     runs-on: ubuntu-latest
