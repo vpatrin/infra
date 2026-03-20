@@ -4,7 +4,7 @@
 
 // Discover all containers on the Docker socket
 discovery.docker "containers" {
-  host = "http://docker-socket-proxy:2375"
+  host = "unix:///var/run/docker.sock"
 }
 
 // Extract container name as a clean label (strip leading /)
@@ -20,9 +20,15 @@ discovery.relabel "containers" {
 
 // Tail logs from discovered containers and push to Loki
 loki.source.docker "containers" {
-  host       = "http://docker-socket-proxy:2375"
+  host       = "unix:///var/run/docker.sock"
   targets    = discovery.relabel.containers.output
   forward_to = [loki.write.default.receiver]
+}
+
+// Systemd journal logs (timer/service logs: pg-backup, disk-alert, coupette timers)
+loki.source.journal "systemd" {
+  forward_to = [loki.write.default.receiver]
+  path       = "/var/log/journal"
 }
 
 loki.write "default" {
@@ -36,13 +42,42 @@ loki.write "default" {
 // =============================================================================
 
 prometheus.exporter.unix "node" {
-  procfs_path = "/host/proc"
-  sysfs_path  = "/host/sys"
-  rootfs_path = "/host/root"
+  procfs_path       = "/host/proc"
+  sysfs_path        = "/host/sys"
+  rootfs_path       = "/host/root"
+  enable_collectors = ["cpu", "loadavg", "meminfo", "filesystem", "diskstats", "netdev", "uname", "conntrack", "pressure"]
 }
 
 prometheus.scrape "node" {
   targets         = prometheus.exporter.unix.node.targets
+  forward_to      = [prometheus.remote_write.default.receiver]
+  scrape_interval = "15s"
+}
+
+// =============================================================================
+// Container metrics (per-container CPU, memory, network, disk I/O)
+// =============================================================================
+
+prometheus.exporter.cadvisor "containers" {
+  docker_host = "unix:///var/run/docker.sock"
+}
+
+prometheus.scrape "cadvisor" {
+  targets         = prometheus.exporter.cadvisor.containers.targets
+  forward_to      = [prometheus.remote_write.default.receiver]
+  scrape_interval = "15s"
+}
+
+// =============================================================================
+// PostgreSQL metrics (connections, query latency, table sizes, dead tuples)
+// =============================================================================
+
+prometheus.exporter.postgres "shared" {
+  data_source_names = [env("POSTGRES_DSN")]
+}
+
+prometheus.scrape "postgres" {
+  targets         = prometheus.exporter.postgres.shared.targets
   forward_to      = [prometheus.remote_write.default.receiver]
   scrape_interval = "15s"
 }
