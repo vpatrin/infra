@@ -84,7 +84,7 @@ FAILED=0
 
 check_health() {
     local name="$1" cmd="$2" retries=5 delay=3
-    for i in $(seq 1 "${retries}"); do
+    for _ in $(seq 1 "${retries}"); do
         if eval "${cmd}" > /dev/null 2>&1; then
             echo "  ✓ ${name}"
             return 0
