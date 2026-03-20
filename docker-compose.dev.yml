@@ -18,7 +18,7 @@ services:
   grafana:
     env_file: ./services/grafana/.env
     ports:
-      - "127.0.0.1:3002:3000"
+      - "127.0.0.1:3003:3000"
 
   prometheus:
     ports:
