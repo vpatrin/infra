@@ -242,8 +242,8 @@ without duplication.
 | Task | Command |
 |------|---------|
 | Dev (default) | `docker compose -f docker-compose.yml -f docker-compose.dev.yml up` |
-| Dev (rebuild) | `docker compose up --build` |
-| Dev (with postgres) | `docker compose --profile dev up` |
+| Dev (rebuild) | `docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build` |
+| Dev (with postgres) | `docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile dev up` |
 | Prod deploy | `IMAGE_TAG=v1.3.0 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d` |
 | Prod migrate | Same `-f` flags with `run --rm migrate` |
 | Prod logs | Same `-f` flags with `logs -f backend` |

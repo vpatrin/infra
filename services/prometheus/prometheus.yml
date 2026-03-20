@@ -16,12 +16,12 @@ scrape_configs:
     static_configs:
       - targets: ["loki:3100"]
 
-# Reverse proxy monitoring
+  # Reverse proxy monitoring
   - job_name: "caddy"
     static_configs:
       - targets: ["caddy:2019"]
 
-# App monitoring
+  # App monitoring
   - job_name: "coupette-backend"
     static_configs:
       - targets: ["coupette-backend:8001"]

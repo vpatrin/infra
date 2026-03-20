@@ -74,6 +74,7 @@ Scrape targets:
 | `alloy` | `alloy:12345` | Collector health, pipeline metrics |
 | `loki` | `loki:3100` | Log pipeline health (ingestion rate, compactor, query latency) |
 | `caddy` | `caddy:2019` | HTTP request rates, response codes, latency histograms |
+| `coupette-backend` | `coupette-backend:8001` | App request latency, error rates, recommendation pipeline metrics |
 
 Query with PromQL in Grafana. Example: `node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes`.
 
@@ -127,5 +128,4 @@ The `disk-alert` systemd timer fires at 85% disk usage.
 
 ## What's not covered yet
 
-- **Coupette app metrics** — structured logs, `/metrics` endpoint, RAG quality dashboard (Phase 8c)
 - **Alerting rules** — Grafana alerting or Prometheus alertmanager (Phase 8c)
