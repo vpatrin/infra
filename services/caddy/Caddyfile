@@ -1,4 +1,9 @@
 # https://caddyserver.com/docs/caddyfile
+{
+	servers {
+		metrics
+	}
+}
 
 (security_headers) {
 	header {
