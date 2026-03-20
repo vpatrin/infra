@@ -33,12 +33,9 @@ services:
     restart: unless-stopped
     mem_limit: 512m
 
-  docker-socket-proxy:
-    restart: unless-stopped
-    mem_limit: 64m
-
   alloy:
     restart: unless-stopped
+    env_file: ./services/alloy/.env.prod
     mem_limit: 256m
 
   grafana:
