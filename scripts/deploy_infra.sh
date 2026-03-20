@@ -83,13 +83,16 @@ echo "==> Health checks..."
 FAILED=0
 
 check_health() {
-    local name="$1" cmd="$2"
-    if eval "${cmd}" > /dev/null 2>&1; then
-        echo "  ✓ ${name}"
-    else
-        echo "  ✗ ${name}"
-        FAILED=1
-    fi
+    local name="$1" cmd="$2" retries=5 delay=3
+    for i in $(seq 1 "${retries}"); do
+        if eval "${cmd}" > /dev/null 2>&1; then
+            echo "  ✓ ${name}"
+            return 0
+        fi
+        sleep "${delay}"
+    done
+    echo "  ✗ ${name}"
+    FAILED=1
 }
 
 check_health "postgres"    "docker exec shared-postgres pg_isready -U postgres"
