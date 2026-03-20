@@ -47,6 +47,7 @@ App repos on the same VPS (own code, CI, releases — not managed here):
 infra/
 ├── CLAUDE.md
 ├── docker-compose.yml             # All service definitions
+├── docker-compose.dev.yml         # Dev overrides (port bindings, build targets)
 ├── docker-compose.prod.yml        # Production overrides (env_file → .env.prod)
 ├── Makefile                       # Dev and ops commands
 ├── README.md

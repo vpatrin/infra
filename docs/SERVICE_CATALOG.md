@@ -82,7 +82,7 @@ Adding or modifying a route requires a PR to this repo — app repos do not touc
 | Coupette scraper | coupette-scraper | — | — | — (systemd timer) | coupette |
 | Coupette frontend | — | — | — | `coupette.club` (static, served by Caddy) | coupette |
 
-Dev bindings are defined in `docker-compose.override.yml` (auto-loaded). Only Caddy has host port bindings in the base compose. Production adds localhost bindings for SSH tunnel access to the observability stack (`docker-compose.prod.yml`).
+Dev bindings are defined in `docker-compose.dev.yml` (loaded via `make up`). Only Caddy has host port bindings in the base compose. Production adds localhost bindings for SSH tunnel access to the observability stack (`docker-compose.prod.yml`).
 
 Only Caddy is internet-facing. Everything else is internal Docker network or localhost-only.
 
