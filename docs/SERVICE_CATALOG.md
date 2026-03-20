@@ -76,7 +76,7 @@ Adding or modifying a route requires a PR to this repo — app repos do not touc
 | Loki | loki | 3100 | — | — | infra |
 | Prometheus | prometheus | 9090 | `127.0.0.1:9090` | — | infra |
 | Alloy | alloy | 12345 | `127.0.0.1:12345` | — | infra |
-| Grafana | grafana | 3000 | `127.0.0.1:3002` | — | infra |
+| Grafana | grafana | 3000 | `127.0.0.1:3003` (dev) / `127.0.0.1:3002` (prod) | — | infra |
 | Coupette backend | coupette-backend | 8001 | — | `coupette.club/api` | coupette |
 | Coupette bot | coupette-bot | — | — | — | coupette |
 | Coupette scraper | coupette-scraper | — | — | — (systemd timer) | coupette |
