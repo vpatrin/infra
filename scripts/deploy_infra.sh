@@ -14,7 +14,7 @@ UNITS_DST="/etc/systemd/system"
 command -v sops >/dev/null || { echo "ERROR: sops not found in PATH"; exit 1; }
 [[ -n "${SOPS_AGE_KEY:-}" ]] || { echo "ERROR: SOPS_AGE_KEY not set"; exit 1; }
 
-ENCRYPTED_SERVICES=(postgres umami grafana)
+ENCRYPTED_SERVICES=(postgres umami grafana alloy)
 
 echo "==> Decrypting secrets..."
 (
@@ -79,7 +79,21 @@ fi
 echo "==> Health checks..."
 FAILED=0
 
-check_health() {
+check_health_inspect() {
+    local name="$1" container="${2:-$1}" retries=5 delay=3
+    for _ in $(seq 1 "${retries}"); do
+        status="$(docker inspect --format='{{.State.Health.Status}}' "${container}" 2>/dev/null || true)"
+        if [[ "${status}" == "healthy" ]]; then
+            echo "  ✓ ${name}"
+            return 0
+        fi
+        sleep "${delay}"
+    done
+    echo "  ✗ ${name} (status: ${status:-unknown})"
+    FAILED=1
+}
+
+check_health_cmd() {
     local name="$1" cmd="$2" retries=5 delay=3
     for _ in $(seq 1 "${retries}"); do
         if eval "${cmd}" > /dev/null 2>&1; then
@@ -92,14 +106,17 @@ check_health() {
     FAILED=1
 }
 
-check_health "postgres"    "docker exec shared-postgres pg_isready -U postgres"
-check_health "caddy"       "curl -sf --max-time 5 https://victorpatrin.dev"
-check_health "umami"       "docker exec umami wget --quiet --spider --timeout=5 http://umami:3000"
-check_health "uptime-kuma" "docker exec uptime-kuma curl -sf --max-time 5 http://localhost:3001"
-check_health "loki"        "docker exec loki wget --quiet --spider --timeout=5 http://localhost:3100/ready"
-check_health "prometheus"  "docker exec prometheus wget --quiet --spider --timeout=5 http://localhost:9090/-/healthy"
-check_health "grafana"     "docker exec grafana wget --quiet --spider --timeout=5 http://localhost:3000/api/health"
-check_health "alloy"       "docker exec caddy wget --quiet --spider --timeout=5 http://alloy:12345/-/ready"
+# Services with compose healthchecks — reuse via docker inspect
+check_health_inspect "postgres"   "shared-postgres"
+check_health_inspect "umami"
+check_health_inspect "loki"
+check_health_inspect "prometheus"
+check_health_inspect "grafana"
+check_health_inspect "alloy"
+
+# Services without compose healthchecks — manual checks
+check_health_cmd "caddy"       "curl -sf --max-time 5 https://victorpatrin.dev"
+check_health_cmd "uptime-kuma" "docker exec uptime-kuma curl -sf --max-time 5 http://localhost:3001"
 
 if [[ "${FAILED}" -eq 1 ]]; then
     echo "ERROR: one or more health checks failed"
