@@ -33,6 +33,10 @@ services:
     restart: unless-stopped
     mem_limit: 512m
 
+  docker-socket-proxy:
+    restart: unless-stopped
+    mem_limit: 64m
+
   alloy:
     restart: unless-stopped
     mem_limit: 256m
