@@ -99,7 +99,7 @@ check_health "uptime-kuma" "docker exec uptime-kuma curl -sf --max-time 5 http:/
 check_health "loki"        "docker exec loki wget --quiet --spider --timeout=5 http://localhost:3100/ready"
 check_health "prometheus"  "docker exec prometheus wget --quiet --spider --timeout=5 http://localhost:9090/-/healthy"
 check_health "grafana"     "docker exec grafana wget --quiet --spider --timeout=5 http://localhost:3000/api/health"
-check_health "alloy"       "docker exec alloy wget --quiet --spider --timeout=5 http://localhost:12345/-/ready"
+check_health "alloy"       "docker exec caddy wget --quiet --spider --timeout=5 http://alloy:12345/-/ready"
 
 if [[ "${FAILED}" -eq 1 ]]; then
     echo "ERROR: one or more health checks failed"

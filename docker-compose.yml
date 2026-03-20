@@ -146,16 +146,31 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:0.3.0
+    container_name: docker-socket-proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      CONTAINERS: 1
+      NETWORKS: 1
+      POST: 0
+    networks:
+      - internal
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   alloy:
     image: grafana/alloy:v1.14.1
     container_name: alloy
     volumes:
       - ./services/alloy:/etc/alloy:ro
       - alloy_data:/var/lib/alloy/data
-      # Docker socket: container discovery + log tailing.
-      # Grants effective root
-      # TODO: replace with docker-socket-proxy.
-      - /var/run/docker.sock:/var/run/docker.sock:ro
       # /proc: CPU, memory, load, network counters
       - /proc:/host/proc:ro
       # /sys: hardware topology, device stats
@@ -174,6 +189,8 @@ services:
         condition: service_healthy
       prometheus:
         condition: service_healthy
+      docker-socket-proxy:
+        condition: service_started
     networks:
       - internal
     read_only: true
