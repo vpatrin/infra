@@ -11,7 +11,7 @@ services:
       # coupette.club frontend dist files (prod-only, deployed by coupette CI)
       - /srv/coupette:/srv/coupette:ro
 
-  postgres:
+  shared-postgres:
     restart: unless-stopped
     env_file: ./services/postgres/.env.prod
     mem_limit: 1g
