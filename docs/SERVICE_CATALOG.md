@@ -121,9 +121,9 @@ Example from coupette's deploy script:
 
 **Do not change the script path, arguments, or output format** without updating app deploy scripts that call it.
 
-## App Deployment Assumptions
+## App Contract
 
-These assumptions apply to [coupette](https://github.com/vpatrin/coupette) — the main app on this platform. See its [PRODUCTION.md](https://github.com/vpatrin/coupette/blob/main/docs/PRODUCTION.md) for the full deploy process.
+Platform guarantees and expectations for apps on this VPS. Currently applies to [coupette](https://github.com/vpatrin/coupette) — see its [PRODUCTION.md](https://github.com/vpatrin/coupette/blob/main/docs/PRODUCTION.md) for the full deploy process.
 
 ### Working directory
 
@@ -138,6 +138,16 @@ Infra services must be healthy before app deploys can succeed:
 3. `internal` network must exist (all containers attach to it)
 
 If `make restart` is run on infra, app backends may lose postgres connectivity for ~10-30 seconds. App health checks should tolerate this.
+
+### Observability
+
+Prometheus scrapes app backends for application-level metrics. Apps must expose a `/metrics` endpoint on their internal port.
+
+| App | Target | Metrics |
+| --- | --- | --- |
+| coupette-backend | `coupette-backend:8001/metrics` | `http_request_duration_seconds`, `http_requests_total`, `coupette_*` custom metrics |
+
+If an app renames its container, changes its port, or changes metric names, the corresponding Prometheus scrape target and Grafana dashboard panels in this repo must be updated.
 
 ### Timer scheduling
 
