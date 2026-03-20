@@ -56,7 +56,8 @@ services:
         max-file: "3"
 
   umami:
-    image: ghcr.io/umami-software/umami:postgresql-v2.17.0
+    # TODO: switch to pinned image
+    image: ghcr.io/umami-software/umami:postgresql-latest
     container_name: umami
     depends_on:
       shared-postgres:
@@ -178,7 +179,7 @@ services:
     read_only: true
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
-    cap_add: [DAC_READ_SEARCH]
+    cap_add: [DAC_READ_SEARCH, DAC_OVERRIDE]
     logging:
       driver: json-file
       options:

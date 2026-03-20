@@ -14,9 +14,6 @@ UNITS_DST="/etc/systemd/system"
 command -v sops >/dev/null || { echo "ERROR: sops not found in PATH"; exit 1; }
 [[ -n "${SOPS_AGE_KEY:-}" ]] || { echo "ERROR: SOPS_AGE_KEY not set"; exit 1; }
 
-echo "==> Pulling latest infra repo..."
-git -C "${INFRA_DIR}" pull
-
 ENCRYPTED_SERVICES=(postgres umami grafana)
 
 echo "==> Decrypting secrets..."
@@ -97,8 +94,8 @@ check_health() {
 
 check_health "postgres"    "docker exec shared-postgres pg_isready -U postgres"
 check_health "caddy"       "curl -sf --max-time 5 https://victorpatrin.dev"
-check_health "umami"       "docker exec umami wget --quiet --spider --timeout=5 http://localhost:3000"
-check_health "uptime-kuma" "docker exec uptime-kuma wget --quiet --spider --timeout=5 http://localhost:3001"
+check_health "umami"       "docker exec umami wget --quiet --spider --timeout=5 http://umami:3000"
+check_health "uptime-kuma" "docker exec uptime-kuma curl -sf --max-time 5 http://localhost:3001"
 check_health "loki"        "docker exec loki wget --quiet --spider --timeout=5 http://localhost:3100/ready"
 check_health "prometheus"  "docker exec prometheus wget --quiet --spider --timeout=5 http://localhost:9090/-/healthy"
 check_health "grafana"     "docker exec grafana wget --quiet --spider --timeout=5 http://localhost:3000/api/health"
