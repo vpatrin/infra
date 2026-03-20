@@ -4,11 +4,33 @@ Grafana + Loki + Prometheus + Alloy. All internal-only — no public routes. Acc
 
 ## Data flow
 
-```text
-Docker containers ──logs──→ Alloy ──push──→ Loki ──query──→ Grafana
-Host (CPU/mem/disk) ──metrics──→ Alloy ──remote_write──→ Prometheus ──query──→ Grafana
-Prometheus ──self-scrape──→ Prometheus
-Alloy ──scrape──→ Prometheus
+```mermaid
+graph LR
+  subgraph Sources
+    D[Docker containers]
+    H[Host /proc /sys /]
+  end
+
+  subgraph Collection
+    A[Alloy]
+  end
+
+  subgraph Storage
+    L[Loki]
+    P[Prometheus]
+  end
+
+  G[Grafana]
+
+  D -- "logs (docker socket)" --> A
+  H -- "metrics (node exporter)" --> A
+  A -- "push (HTTP)" --> L
+  A -- "remote_write" --> P
+  P -- "scrape /metrics" --> P
+  P -- "scrape /metrics" --> A
+  P -- "scrape /metrics" --> L
+  L -- "LogQL queries" --> G
+  P -- "PromQL queries" --> G
 ```
 
 Alloy is the single collector. It reads Docker logs via the socket and host metrics via `/proc`, `/sys`, `/`. Everything flows through it — no other container talks to Loki or Prometheus directly (except Grafana for queries).
@@ -23,7 +45,7 @@ Config: `services/alloy/config.alloy`
 
 **Metrics:** Runs a built-in `node_exporter` (CPU, memory, disk, network) using host-mounted `/proc`, `/sys`, `/`. Scrapes every 15s, remote-writes to Prometheus.
 
-Host mounts give Alloy read access to the entire filesystem. Mitigated by `no-new-privileges` + `cap_drop: ALL`. TODO: replace with docker-socket-proxy (#68).
+Host mounts give Alloy read access to the entire filesystem. Mitigated by `read_only`, `no-new-privileges`, and `cap_drop: ALL`. Docker socket mounted read-only for log tailing.
 
 ### Loki (log storage)
 
