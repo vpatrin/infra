@@ -8,6 +8,24 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # Major bumps require manual migration/validation
+      - dependency-name: "pgvector/pgvector"
+        update-types: [version-update:semver-major, version-update:semver-minor]
+      - dependency-name: "caddy"
+        update-types: [version-update:semver-major]
+      - dependency-name: "ghcr.io/umami-software/umami"
+        update-types: [version-update:semver-major]
+      - dependency-name: "louislam/uptime-kuma"
+        update-types: [version-update:semver-major]
+      - dependency-name: "grafana/grafana"
+        update-types: [version-update:semver-major]
+      - dependency-name: "grafana/loki"
+        update-types: [version-update:semver-major]
+      - dependency-name: "prom/prometheus"
+        update-types: [version-update:semver-major]
+      - dependency-name: "grafana/alloy"
+        update-types: [version-update:semver-major]
 
   # GitHub Actions versions
   - package-ecosystem: github-actions
