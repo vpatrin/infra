@@ -4,11 +4,33 @@ Grafana + Loki + Prometheus + Alloy. All internal-only — no public routes. Acc
 
 ## Data flow
 
-```text
-Docker containers ──logs──→ Alloy ──push──→ Loki ──query──→ Grafana
-Host (CPU/mem/disk) ──metrics──→ Alloy ──remote_write──→ Prometheus ──query──→ Grafana
-Prometheus ──self-scrape──→ Prometheus
-Alloy ──scrape──→ Prometheus
+```mermaid
+graph LR
+  subgraph Sources
+    D[Docker containers]
+    H[Host /proc /sys /]
+  end
+
+  subgraph Collection
+    A[Alloy]
+  end
+
+  subgraph Storage
+    L[Loki]
+    P[Prometheus]
+  end
+
+  G[Grafana]
+
+  D -- "logs (docker socket)" --> A
+  H -- "metrics (node exporter)" --> A
+  A -- "push (HTTP)" --> L
+  A -- "remote_write" --> P
+  P -- "scrape /metrics" --> P
+  P -- "scrape /metrics" --> A
+  P -- "scrape /metrics" --> L
+  L -- "LogQL queries" --> G
+  P -- "PromQL queries" --> G
 ```
 
 Alloy is the single collector. It reads Docker logs via the socket and host metrics via `/proc`, `/sys`, `/`. Everything flows through it — no other container talks to Loki or Prometheus directly (except Grafana for queries).
@@ -23,7 +45,7 @@ Config: `services/alloy/config.alloy`
 
 **Metrics:** Runs a built-in `node_exporter` (CPU, memory, disk, network) using host-mounted `/proc`, `/sys`, `/`. Scrapes every 15s, remote-writes to Prometheus.
 
-Host mounts give Alloy read access to the entire filesystem. Mitigated by `no-new-privileges` + `cap_drop: ALL`. TODO: replace with docker-socket-proxy (#68).
+Host mounts give Alloy read access to the entire filesystem. Mitigated by `read_only`, `no-new-privileges`, and `cap_drop: ALL`. Docker socket mounted read-only for log tailing.
 
 ### Loki (log storage)
 
@@ -51,6 +73,8 @@ Scrape targets:
 | `prometheus` | `localhost:9090` | Self-metrics (query latency, storage, scrape health) |
 | `alloy` | `alloy:12345` | Collector health, pipeline metrics |
 | `loki` | `loki:3100` | Log pipeline health (ingestion rate, compactor, query latency) |
+| `caddy` | `caddy:2019` | HTTP request rates, response codes, latency histograms |
+| `coupette-backend` | `coupette-backend:8001` | App request latency, error rates, recommendation pipeline metrics |
 
 Query with PromQL in Grafana. Example: `node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes`.
 
@@ -62,9 +86,9 @@ Datasources (provisioned as code, not editable in UI):
 - **Prometheus** — default datasource, `http://prometheus:9090`
 - **Loki** — `http://loki:3100`
 
-Dashboard provider reads JSON files from `services/grafana/dashboards/` (mounted read-only). Currently empty — export dashboards as JSON and commit here to make them survive volume loss.
+Dashboard provider reads JSON files from `services/grafana/dashboards/` (mounted read-only). Provisioned dashboards: Platform Overview (host resources, containers, logs, Caddy traffic) and PostgreSQL (connections, performance, table health, database size).
 
-Access: `localhost:3002` via SSH tunnel (`make tunnel`) or dev override.
+Access: `localhost:3002` via SSH tunnel (`make tunnel`), or `localhost:3003` locally via `docker-compose.dev.yml`.
 
 ## Config files
 
@@ -104,7 +128,4 @@ The `disk-alert` systemd timer fires at 85% disk usage.
 
 ## What's not covered yet
 
-- **Caddy metrics** — needs `metrics` global option in Caddyfile + Prometheus scrape target (Phase 8b)
-- **postgres_exporter** — connections, query latency, dead tuples, pgvector stats (Phase 8b)
-- **Coupette app metrics** — structured logs, `/metrics` endpoint, RAG quality dashboard (Phase 8c)
 - **Alerting rules** — Grafana alerting or Prometheus alertmanager (Phase 8c)

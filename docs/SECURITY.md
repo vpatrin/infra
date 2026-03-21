@@ -20,7 +20,7 @@ All services communicate over a shared Docker network (`internal`). Only Caddy b
 | Caddy | `0.0.0.0:80`, `0.0.0.0:443` | Internet |
 | All others | — | Internal network only |
 
-No service except Caddy has a host port binding in the base compose. Dev port bindings (PostgreSQL, Grafana, Prometheus, Alloy) are in `docker-compose.override.yml`. Production adds localhost-only bindings for SSH tunnel access to the observability stack.
+No service except Caddy has a host port binding in the base compose. Dev port bindings (PostgreSQL, Grafana, Prometheus, Alloy) are in `docker-compose.dev.yml`. Production adds localhost-only bindings for SSH tunnel access to the observability stack.
 
 ---
 

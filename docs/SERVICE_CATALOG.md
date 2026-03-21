@@ -76,13 +76,13 @@ Adding or modifying a route requires a PR to this repo — app repos do not touc
 | Loki | loki | 3100 | — | — | infra |
 | Prometheus | prometheus | 9090 | `127.0.0.1:9090` | — | infra |
 | Alloy | alloy | 12345 | `127.0.0.1:12345` | — | infra |
-| Grafana | grafana | 3000 | `127.0.0.1:3002` | — | infra |
+| Grafana | grafana | 3000 | `127.0.0.1:3003` (dev) / `127.0.0.1:3002` (prod) | — | infra |
 | Coupette backend | coupette-backend | 8001 | — | `coupette.club/api` | coupette |
 | Coupette bot | coupette-bot | — | — | — | coupette |
 | Coupette scraper | coupette-scraper | — | — | — (systemd timer) | coupette |
 | Coupette frontend | — | — | — | `coupette.club` (static, served by Caddy) | coupette |
 
-Dev bindings are defined in `docker-compose.override.yml` (auto-loaded). Only Caddy has host port bindings in the base compose. Production adds localhost bindings for SSH tunnel access to the observability stack (`docker-compose.prod.yml`).
+Dev bindings are defined in `docker-compose.dev.yml` (loaded via `make up`). Only Caddy has host port bindings in the base compose. Production adds localhost bindings for SSH tunnel access to the observability stack (`docker-compose.prod.yml`).
 
 Only Caddy is internet-facing. Everything else is internal Docker network or localhost-only.
 
@@ -121,9 +121,9 @@ Example from coupette's deploy script:
 
 **Do not change the script path, arguments, or output format** without updating app deploy scripts that call it.
 
-## App Deployment Assumptions
+## App Contract
 
-These assumptions apply to [coupette](https://github.com/vpatrin/coupette) — the main app on this platform. See its [PRODUCTION.md](https://github.com/vpatrin/coupette/blob/main/docs/PRODUCTION.md) for the full deploy process.
+Platform guarantees and expectations for apps on this VPS. Currently applies to [coupette](https://github.com/vpatrin/coupette) — see its [PRODUCTION.md](https://github.com/vpatrin/coupette/blob/main/docs/PRODUCTION.md) for the full deploy process.
 
 ### Working directory
 
@@ -138,6 +138,16 @@ Infra services must be healthy before app deploys can succeed:
 3. `internal` network must exist (all containers attach to it)
 
 If `make restart` is run on infra, app backends may lose postgres connectivity for ~10-30 seconds. App health checks should tolerate this.
+
+### Observability
+
+Prometheus scrapes app backends for application-level metrics. Apps must expose a `/metrics` endpoint on their internal port.
+
+| App | Target | Metrics |
+| --- | --- | --- |
+| coupette-backend | `coupette-backend:8001/metrics` | `http_request_duration_seconds`, `http_requests_total`, `coupette_*` custom metrics |
+
+If an app renames its container, changes its port, or changes metric names, the corresponding Prometheus scrape target and Grafana dashboard panels in this repo must be updated.
 
 ### Timer scheduling
 

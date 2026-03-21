@@ -123,7 +123,7 @@ journalctl -u pg-backup.service --since "1 week ago"
 
 Docker container logs are stored at `/var/lib/docker/containers/<id>/<id>-json.log`. Each service has log rotation configured in its `docker-compose.yml` (10MB max per file, 3 files retained = 30MB cap per service).
 
-Alloy auto-discovers all containers and ships their logs to Loki for centralized querying (7d retention). See [guides/OBSERVABILITY.md](guides/OBSERVABILITY.md) for LogQL examples and adding app logs.
+Alloy auto-discovers all containers and ships their logs to Loki for centralized querying (7d retention). See [OBSERVABILITY.md](OBSERVABILITY.md) for LogQL examples and adding app logs.
 
 - **Centralized**: Grafana → Explore → Loki (`{container="caddy"} |= "error"`)
 - **Direct**: `make logs` or `docker logs caddy`

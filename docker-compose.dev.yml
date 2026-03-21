@@ -1,5 +1,5 @@
 # Dev overrides — env files + localhost port bindings for direct access.
-# Auto-loaded by `docker compose up` (no -f flag needed).
+# Not auto-loaded. Use: make up (or docker compose -f ... -f docker-compose.dev.yml up)
 services:
   shared-postgres:
     env_file: ./services/postgres/.env
@@ -18,12 +18,13 @@ services:
   grafana:
     env_file: ./services/grafana/.env
     ports:
-      - "127.0.0.1:3002:3000"
+      - "127.0.0.1:3003:3000"
 
   prometheus:
     ports:
       - "127.0.0.1:9090:9090"
 
   alloy:
+    env_file: ./services/alloy/.env
     ports:
       - "127.0.0.1:12345:12345"

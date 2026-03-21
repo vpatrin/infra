@@ -108,14 +108,14 @@ Coupette's RAG pipeline needs structured metrics and log aggregation. `docker lo
 
 ### Phase 8a — Stack + Platform Dashboard
 
-- [ ] ADR: `decisions/0008-observability-stack.md`
+- [x] ADR: `decisions/0008-observability-stack.md`
 - [x] Add Grafana, Loki, Prometheus, Alloy to `docker-compose.yml`
 - [x] Alloy config: Docker log collection via socket + node metrics
 - [x] Prometheus scrape config: Alloy, Prometheus self-metrics
 - [x] Grafana provisioning: datasources (Loki + Prometheus), dashboard provider
-- [ ] Platform Overview dashboard (container status, CPU/memory/disk, log volume, error rates, systemd timer health)
+- [x] Platform Overview dashboard (container status, CPU/memory/disk, log volume, error rates, systemd timer health)
 - [x] Temporary localhost port bindings for Grafana (until WireGuard in Phase 9)
-- [x] `docs/guides/OBSERVABILITY.md` — stack overview, config walkthrough, querying with LogQL/PromQL, adding dashboards
+- [x] `docs/OBSERVABILITY.md` — stack overview, config walkthrough, querying with LogQL/PromQL, adding dashboards
 - [x] Update SERVICE_CATALOG.md, INFRASTRUCTURE.md, SECURITY.md
 
 ### Phase 8b — Additional Exporters

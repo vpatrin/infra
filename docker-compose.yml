@@ -39,9 +39,10 @@ services:
       - ./services/postgres/init-scripts:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
-      interval: 5s
+      interval: 15s
       timeout: 3s
       retries: 5
+      start_period: 15s
     networks:
       - internal
     security_opt: [no-new-privileges:true]
@@ -59,6 +60,12 @@ services:
     # TODO: switch to pinned image
     image: ghcr.io/umami-software/umami:postgresql-latest
     container_name: umami
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --output-document=- http://localhost:3000/api/heartbeat || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
       shared-postgres:
         condition: service_healthy
@@ -146,37 +153,31 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  docker-socket-proxy:
-    image: tecnativa/docker-socket-proxy:0.3.0
-    container_name: docker-socket-proxy
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    environment:
-      CONTAINERS: 1
-      NETWORKS: 1
-      POST: 0
-    networks:
-      - internal
-    security_opt: [no-new-privileges:true]
-    cap_drop: [ALL]
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-
   alloy:
     image: grafana/alloy:v1.14.1
     container_name: alloy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --output-document=- http://localhost:12345/-/ready || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     volumes:
       - ./services/alloy:/etc/alloy:ro
       - alloy_data:/var/lib/alloy/data
+      # Docker socket for log collection
+      # TODO: evaluate security implications of this mount, and consider alternatives like a log forwarder sidecar or journald socket (if we switch to journald for container logging).
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       # /proc: CPU, memory, load, network counters
       - /proc:/host/proc:ro
       # /sys: hardware topology, device stats
       - /sys:/host/sys:ro
       # rootfs: disk capacity, usage, inodes (node_filesystem_* metrics)
       - /:/host/root:ro
+      # Docker data: container metadata for cAdvisor metrics
+      - /var/lib/docker:/var/lib/docker:ro
+      # Systemd journal: timer/service logs (pg-backup, disk-alert, coupette timers)
+      - /var/log/journal:/var/log/journal:ro
     command:
       - "run"
       - "--server.http.listen-addr=0.0.0.0:12345"
@@ -189,8 +190,6 @@ services:
         condition: service_healthy
       prometheus:
         condition: service_healthy
-      docker-socket-proxy:
-        condition: service_started
     networks:
       - internal
     read_only: true

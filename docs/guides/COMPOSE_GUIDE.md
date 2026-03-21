@@ -30,21 +30,23 @@ logic, split into three files with clear roles:
 | File | Role | When it's used |
 |------|------|----------------|
 | `docker-compose.yml` | Base config — hardened, prod-safe defaults | Always |
-| `docker-compose.override.yml` | Dev overrides — volume mounts, hot reload | Automatically on `docker compose up` |
+| `docker-compose.dev.yml` | Dev overrides — env files, port bindings, hot reload | Explicitly: `-f docker-compose.yml -f docker-compose.dev.yml` |
 | `docker-compose.prod.yml` | Prod overrides — pre-built images, restart policy | Explicitly: `-f docker-compose.yml -f docker-compose.prod.yml` |
 
 ### Why three files
 
-Docker Compose auto-loads `docker-compose.override.yml` when you run
-`docker compose up` without `-f` flags. This means:
+We name the dev file `docker-compose.dev.yml` (not `.override.yml`) so
+it's never auto-loaded — running `docker compose up` on prod without
+`-f` flags only picks up the base file. Both dev and prod require
+explicit `-f` flags:
 
-- **Dev**: `docker compose up` — builds locally, mounts code, enables
-  hot reload. Zero flags needed.
+- **Dev**: `docker compose -f docker-compose.yml -f docker-compose.dev.yml up`
+  — adds env files, port bindings, hot reload.
 - **Prod**: `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d`
-  — skips the override, uses pre-built images from GHCR.
+  — adds restart policy, mem limits, pre-built images.
 
 The base file is prod-safe by default (hardened, no volume mounts, no
-`--reload`). Dev convenience is layered on top via the override, not
+port bindings). Dev convenience is layered on top via the dev file, not
 baked in.
 
 ### Base file (`docker-compose.yml`)
@@ -98,7 +100,7 @@ Key decisions:
 - **`env_file: .env`**: secrets stay in `.env` (gitignored), never
   inline in the compose file.
 
-### Dev override (`docker-compose.override.yml`)
+### Dev override (`docker-compose.dev.yml`)
 
 Minimal — only what changes for local development:
 
@@ -111,8 +113,7 @@ services:
 ```
 
 Volume mounts overlay the baked-in code with your local files. The
-command override adds `--reload` so uvicorn watches for changes. This
-file is auto-loaded — no flags needed.
+command override adds `--reload` so uvicorn watches for changes.
 
 ### Prod override (`docker-compose.prod.yml`)
 
@@ -240,9 +241,9 @@ without duplication.
 
 | Task | Command |
 |------|---------|
-| Dev (default) | `docker compose up` (auto-loads override) |
-| Dev (rebuild) | `docker compose up --build` |
-| Dev (with postgres) | `docker compose --profile dev up` |
+| Dev (default) | `docker compose -f docker-compose.yml -f docker-compose.dev.yml up` |
+| Dev (rebuild) | `docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build` |
+| Dev (with postgres) | `docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile dev up` |
 | Prod deploy | `IMAGE_TAG=v1.3.0 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d` |
 | Prod migrate | Same `-f` flags with `run --rm migrate` |
 | Prod logs | Same `-f` flags with `logs -f backend` |
