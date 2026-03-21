@@ -23,6 +23,7 @@ Public repo — no secrets, no credentials.
 - Database: PostgreSQL 16 + pgvector (shared instance, 2 databases: saq_sommelier, umami)
 - Analytics: Umami (self-hosted, privacy-friendly)
 - Monitoring: Uptime Kuma (status page + alerting)
+- Observability: Grafana + Loki + Prometheus + Alloy (logs, metrics, dashboards)
 - VPS: Hetzner CX22 (4GB RAM, 40GB SSD, Debian 13)
 - DNS: `victorpatrin.dev` + wildcard `*` → VPS IP (Porkbun)
 - Network: `internal` Docker network (external, shared across all compose stacks)
@@ -61,24 +62,31 @@ infra/
 │   │   └── .env.example
 │   ├── umami/
 │   │   └── .env.example
-│   └── uptime-kuma/               # Zero-config, data in Docker volume
+│   ├── alloy/                     # Log + metrics collector config
+│   ├── grafana/                   # Dashboards + provisioning
+│   ├── loki/                      # Log aggregation config
+│   └── prometheus/                # Metrics scrape config
 ├── docs/
 │   ├── ROADMAP.md                 # Phased infrastructure plan
 │   ├── INFRASTRUCTURE.md          # Server setup, backups, logging
 │   ├── SERVICE_CATALOG.md         # Service inventory + platform contract
 │   ├── SECURITY.md                # Platform security posture
+│   ├── OBSERVABILITY.md           # Grafana, Loki, Prometheus, Alloy
 │   ├── decisions/                 # Architecture decision records
 │   │   ├── 0001-hetzner-single-vps.md
-│   │   ├── 0002-caddy-reverse-proxy.md
-│   │   ├── 0003-shared-postgres.md
-│   │   ├── 0004-docker-compose-orchestration.md
-│   │   ├── 0005-systemd-timers.md
-│   │   └── 0006-consolidate-repos.md
+│   │   ├── ...
+│   │   └── 0008-observability-stack.md
 │   └── guides/                    # Reusable how-to guides
 │       ├── COMPOSE_GUIDE.md
 │       ├── DOCKERFILE_GUIDE.md
 │       ├── GITHUB_SETUP.md
 │       └── VPS_SETUP.md
+├── .github/
+│   ├── workflows/
+│   │   ├── ci.yml                 # PR checks: compose, shellcheck, gitleaks
+│   │   ├── deploy.yml             # Production deploy (workflow dispatch)
+│   │   └── dependabot-auto-merge.yml
+│   └── dependabot.yml
 ├── .claude/
 │   ├── COMMANDS.md                # Virtual team overview
 │   └── commands/                  # Slash command definitions
@@ -114,7 +122,7 @@ I handle all deployments manually. Do not run any deployment commands on prod wi
 ssh web-01
 cd ~/infra
 git pull
-make reload    # No-downtime Caddyfile reload
+make reload-caddy  # No-downtime Caddyfile reload
 # OR
 make restart   # Full container restart (if docker-compose.yml changed)
 ```

@@ -118,18 +118,16 @@ Coupette's RAG pipeline needs structured metrics and log aggregation. `docker lo
 - [x] `docs/OBSERVABILITY.md` — stack overview, config walkthrough, querying with LogQL/PromQL, adding dashboards
 - [x] Update SERVICE_CATALOG.md, INFRASTRUCTURE.md, SECURITY.md
 
-### Phase 8b — Additional Exporters
+### Phase 8b — Additional Exporters ✅
 
-- [ ] Caddy Prometheus metrics — `metrics` global option in Caddyfile, Prometheus scrape target (no extra container)
-- [ ] postgres_exporter — connections, query latency, table sizes, dead tuples, pgvector index stats
-- [ ] Postgres dashboard in Grafana
-- [ ] systemd journal logs — Alloy `loki.source.journal` for timer/service logs (pg-backup, disk-alert, coupette timers)
-- [ ] systemd unit status metrics — Alloy `prometheus.exporter.unix` with `systemd` collector enabled, dashboard for timer success/failure/last-run
+- [x] Caddy Prometheus metrics — `metrics` global option in Caddyfile, Prometheus scrape target (no extra container)
+- [x] postgres_exporter — Alloy embedded `prometheus.exporter.postgres` (no extra container)
+- [x] Postgres dashboard in Grafana
+- [x] systemd journal logs — Alloy `loki.source.journal` for timer/service logs (pg-backup, disk-alert, coupette timers)
 
-### Phase 8c — Application Dashboards (blocked on coupette contract)
+### Phase 8c — Application Dashboards
 
-- [ ] Coupette emits structured JSON logs (event, query, similarity scores, latency, token usage)
-- [ ] Coupette exposes Prometheus metrics at `/metrics`
+- [x] Coupette exposes Prometheus metrics at `/metrics`
 - [ ] Recommendations & RAG Quality dashboard (latency, similarity distribution, token cost, zero-candidate rate)
 - [ ] Scraper & Data Pipeline dashboard (run duration, products scraped, embedding rate)
 - [ ] Alerting rules (low similarity, high error rate, scraper failure)
@@ -163,18 +161,6 @@ Break-glass recovery: Hetzner web console (browser-based, always available, no S
 - [ ] Verify: Hetzner web console still works as break-glass path
 - [ ] Update GitHub Actions deploy workflow — SSH via WireGuard or keep a scoped exception (deploy key from GitHub IP ranges)
 
-### Private DNS
-
-- [ ] CoreDNS as a Compose service on the `internal` network — resolves `*.internal` to `10.0.0.1`, forwards everything else upstream
-- [ ] WireGuard client config: `DNS = 10.0.0.1` — Mac uses CoreDNS when tunnel is up
-- [ ] DNS records: `grafana.internal`, `prometheus.internal`, `loki.internal`
-- [ ] CoreDNS config as code in `services/coredns/Corefile`
-
-### Observability lockdown
-
-- [ ] Remove Grafana/Prometheus/Loki localhost port bindings from `docker-compose.yml`
-- [ ] Access via tunnel only: `http://grafana.internal:3000`, `http://prometheus.internal:9090`
-
 ### Documentation
 
 - [ ] `docs/guides/WIREGUARD_SETUP.md` — server config, peer setup, key generation, macOS client, troubleshooting, break-glass procedure
@@ -182,15 +168,10 @@ Break-glass recovery: Hetzner web console (browser-based, always available, no S
 - [ ] Update INFRASTRUCTURE.md — SSH access method change
 - [ ] ADR: `decisions/0009-wireguard-vpn.md`
 
-## Backlog
-
-Scoped, ready-to-pick-up work that doesn't belong to a phase.
-
-- [ ] Add `Content-Security-Policy` header to Caddyfile `(security_headers)` snippet (#69)
-
 ## Ideas (unscoped)
 
 - [ ] Staging environment — same VPS, separate ports + DB, promotion pattern
 - [ ] Multi-node — second VPS, load balancing (only if traffic demands)
 - [ ] HashiCorp Vault — centralized secrets with RBAC (overkill until team grows)
 - [ ] Postgres tuning — `shared_buffers`, `effective_cache_size`, `work_mem` for pgvector workload on 4GB VPS
+- [ ] Structured JSON logging for Coupette — `structlog`/`python-json-logger`, enables LogQL field queries in Loki

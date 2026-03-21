@@ -29,7 +29,7 @@ A PostgreSQL 16 container with pgvector runs as `shared-postgres` on the `intern
 | Image | `pgvector/pgvector:0.8.2-pg16` |
 | Internal port | 5432 |
 | Host binding | `127.0.0.1:5433` (dev override only, for DBeaver/Alembic) |
-| Health check | `pg_isready` every 5s |
+| Health check | `pg_isready` every 15s |
 
 ### Databases
 
