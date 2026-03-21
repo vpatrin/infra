@@ -15,7 +15,7 @@ services:
     networks:
       - internal
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:80 -o /dev/null"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:2019/config/ -o /dev/null"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -90,7 +90,7 @@ services:
     networks:
       - internal
     healthcheck:
-      test: ["CMD-SHELL", "node -e 'fetch(\"http://localhost:3001/api/status-page/heartbeat\").then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))'"]
+      test: ["CMD-SHELL", "node -e 'fetch(\"http://localhost:3001\").then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))'"]
       interval: 15s
       timeout: 5s
       retries: 5
