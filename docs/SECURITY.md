@@ -28,7 +28,7 @@ No service except Caddy has a host port binding in the base compose. Dev port bi
 
 Caddy handles automatic HTTPS via Let's Encrypt (ACME). Certificates are auto-renewed — no manual intervention required.
 
-- HSTS enabled automatically by Caddy on all HTTPS sites
+- HSTS with 2-year max-age (`max-age=63072000; includeSubDomains`)
 - HTTP → HTTPS redirect handled automatically
 
 ---
@@ -43,6 +43,9 @@ Applied to all sites via a shared Caddyfile snippet:
 | `X-Frame-Options` | `DENY` | Prevent clickjacking |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` | Limit referrer leakage |
 | `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` | Disable unused browser APIs |
+| `Strict-Transport-Security` | `max-age=63072000; includeSubDomains` | Force HTTPS for 2 years |
+| `X-XSS-Protection` | `0` | Disable deprecated XSS auditor |
+| `Content-Security-Policy` | per-site (see Caddyfile) | Restrict resource origins |
 | `Server` | (removed) | Prevent server fingerprinting |
 
 ---
@@ -70,7 +73,7 @@ Every container in `docker-compose.yml` follows these security defaults:
 | Uptime Kuma | (none) | Runs as root, no privilege drop |
 | Loki | (none) | Log storage only |
 | Prometheus | (none) | Metrics storage only |
-| Alloy | `DAC_READ_SEARCH` | Read Docker socket + host filesystems for metrics |
+| Alloy | `DAC_READ_SEARCH`, `DAC_OVERRIDE` | Read Docker socket + host filesystems for metrics |
 | Grafana | (none) | Runs as uid 472, dirs pre-set at build time |
 
 ### Additional hardening
