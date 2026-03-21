@@ -57,7 +57,7 @@ services:
         max-file: "3"
 
   umami:
-    # TODO: switch to pinned image
+    # No pinned postgresql-* tags available for v3 — only :postgresql-latest
     image: ghcr.io/umami-software/umami:postgresql-latest
     container_name: umami
     depends_on:
