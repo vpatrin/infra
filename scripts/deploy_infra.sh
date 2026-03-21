@@ -98,7 +98,6 @@ check_health_inspect "postgres"   "shared-postgres"
 check_health_inspect "caddy"
 check_health_inspect "umami"
 check_health_inspect "uptime-kuma"
-check_health_inspect "loki"
 check_health_inspect "prometheus"
 check_health_inspect "grafana"
 
