@@ -108,15 +108,12 @@ check_health_cmd() {
 
 # Services with compose healthchecks — reuse via docker inspect
 check_health_inspect "postgres"   "shared-postgres"
+check_health_inspect "caddy"
 check_health_inspect "umami"
+check_health_inspect "uptime-kuma"
 check_health_inspect "loki"
 check_health_inspect "prometheus"
 check_health_inspect "grafana"
-check_health_inspect "alloy"
-
-# Services without compose healthchecks — manual checks
-check_health_cmd "caddy"       "curl -sf --max-time 5 https://victorpatrin.dev"
-check_health_cmd "uptime-kuma" "docker exec uptime-kuma curl -sf --max-time 5 http://localhost:3001"
 
 if [[ "${FAILED}" -eq 1 ]]; then
     echo "ERROR: one or more health checks failed"
