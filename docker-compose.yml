@@ -208,7 +208,7 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
       - ./services/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./services/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./services/grafana/dashboards:/etc/grafana/dashboards:ro
     depends_on:
       loki:
         condition: service_healthy
