@@ -17,10 +17,6 @@
 	}
 }
 
-(csp) {
-	header Content-Security-Policy "default-src 'self'; script-src 'self' https://analytics.victorpatrin.dev; connect-src 'self' https://analytics.victorpatrin.dev; img-src 'self' data:; style-src 'self' 'unsafe-inline'"
-}
-
 # =============================================================================
 # Homepage
 # =============================================================================
@@ -31,7 +27,7 @@ www.victorpatrin.dev {
 
 victorpatrin.dev {
 	import security_headers
-	import csp
+	header Content-Security-Policy "default-src 'self'; script-src 'self' https://analytics.victorpatrin.dev; connect-src 'self' https://analytics.victorpatrin.dev; img-src 'self' data:; style-src 'self' 'unsafe-inline'"
 	# Reduces bandwidth and speeds up page loads
 	encode zstd gzip
 	root * /srv/homepage
@@ -48,7 +44,7 @@ www.coupette.club {
 
 coupette.club {
 	import security_headers
-	import csp
+	header Content-Security-Policy "default-src 'self'; script-src 'self' https://analytics.victorpatrin.dev https://telegram.org; connect-src 'self' https://analytics.victorpatrin.dev; frame-src https://oauth.telegram.org; img-src 'self' data:; style-src 'self' 'unsafe-inline'"
 	encode zstd gzip
 	# API requests proxied to backend container
 	handle /api/* {
@@ -82,6 +78,7 @@ status.victorpatrin.dev {
 # Catch-all — reject requests to unknown hostnames or bare IP
 # ==============================================================================
 
+# Unknown hosts on :443 fail at TLS handshake (no matching certificate)
 :80 {
 	respond 404
 }
