@@ -20,12 +20,12 @@ jobs:
       - uses: actions/checkout@v6
       - name: Create .env files from examples
         run: |
-          for dir in services/postgres services/umami services/grafana; do
+          for dir in services/postgres services/umami services/grafana services/alloy; do
             cp "$dir/.env.example" "$dir/.env"
             cp "$dir/.env.example" "$dir/.env.prod"
           done
-      - name: Validate dev compose (base + override)
-        run: docker compose config --quiet
+      - name: Validate dev compose (base + dev)
+        run: docker compose -f docker-compose.yml -f docker-compose.dev.yml config --quiet
       - name: Validate prod compose (base + prod)
         run: docker compose -f docker-compose.yml -f docker-compose.prod.yml config --quiet
 
