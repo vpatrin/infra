@@ -93,19 +93,6 @@ check_health_inspect() {
     FAILED=1
 }
 
-check_health_cmd() {
-    local name="$1" cmd="$2" retries=5 delay=3
-    for _ in $(seq 1 "${retries}"); do
-        if eval "${cmd}" > /dev/null 2>&1; then
-            echo "  ✓ ${name}"
-            return 0
-        fi
-        sleep "${delay}"
-    done
-    echo "  ✗ ${name}"
-    FAILED=1
-}
-
 # Services with compose healthchecks — reuse via docker inspect
 check_health_inspect "postgres"   "shared-postgres"
 check_health_inspect "caddy"
