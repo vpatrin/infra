@@ -153,10 +153,25 @@ Before creating a PR, always:
 - No bashisms if `#!/bin/sh` — stick to POSIX
 
 ### docker-compose.yml
-- Follow existing service patterns (image, ports, volumes, networks, restart policy)
 - Service names match container names
 - Volumes declared explicitly (named or bind mounts)
 - Environment via `env_file`, never inline secrets
+- Consistent property order within each service definition:
+
+  1. `image`, `container_name`
+  2. `command`
+  3. `shm_size`
+  4. `volumes`, `tmpfs`
+  5. `env_file`
+  6. `ports`
+  7. `depends_on`
+  8. `networks`
+  9. `healthcheck`
+  10. `restart`, `mem_limit`
+  11. `read_only`
+  12. `security_opt`, `cap_drop`, `cap_add`
+  13. `logging`
+- Override files (prod/dev) follow the same relative order
 
 ### Makefile
 - `.PHONY` declarations for all targets

@@ -2,9 +2,6 @@ services:
   caddy:
     image: caddy:2.11.2
     container_name: caddy
-    ports:
-      - "80:80"
-      - "443:443"
     volumes:
       # Caddy configuration (directory mount for live reload)
       - ./services/caddy:/etc/caddy:ro
@@ -12,10 +9,13 @@ services:
       - ./services/homepage:/srv/homepage:ro
       - caddy_data:/data
       - caddy_config:/config
+    ports:
+      - "80:80"
+      - "443:443"
     networks:
       - internal
     healthcheck:
-      test: ["CMD", "caddy", "validate", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:80 -o /dev/null"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -37,14 +37,14 @@ services:
     volumes:
       - shared-postgres_pgdata:/var/lib/postgresql/data
       - ./services/postgres/init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - internal
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 15s
       timeout: 3s
       retries: 5
       start_period: 15s
-    networks:
-      - internal
     security_opt: [no-new-privileges:true]
     # Drop everything, then re-add only what Postgres needs to init its data dir.
     cap_drop: [ALL]
@@ -60,17 +60,17 @@ services:
     # TODO: switch to pinned image
     image: ghcr.io/umami-software/umami:postgresql-latest
     container_name: umami
-    healthcheck:
-      test: ["CMD-SHELL", "wget --quiet --tries=1 --output-document=- http://localhost:3000/api/heartbeat || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
     depends_on:
       shared-postgres:
         condition: service_healthy
     networks:
       - internal
+    healthcheck:
+      test: ["CMD-SHELL", "node -e 'fetch(\"http://localhost:3000/api/heartbeat\").then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))'"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     read_only: true
     tmpfs:
       - /tmp:noexec,nosuid,size=64m
@@ -89,6 +89,12 @@ services:
       - uptime-kuma_uptime-kuma-data:/app/data
     networks:
       - internal
+    healthcheck:
+      test: ["CMD-SHELL", "node -e 'fetch(\"http://localhost:3001/api/status-page/heartbeat\").then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))'"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
     logging:
@@ -104,10 +110,10 @@ services:
   loki:
     image: grafana/loki:3.5.12
     container_name: loki
+    command: -config.file=/etc/loki/loki.yaml
     volumes:
       - ./services/loki:/etc/loki:ro
       - loki_data:/loki
-    command: -config.file=/etc/loki/loki.yaml
     networks:
       - internal
     healthcheck:
@@ -128,14 +134,14 @@ services:
   prometheus:
     image: prom/prometheus:v3.10.0
     container_name: prometheus
-    volumes:
-      - ./services/prometheus:/etc/prometheus:ro
-      - prometheus_data:/prometheus
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
       - "--storage.tsdb.retention.time=7d"
       - "--web.enable-remote-write-receiver"
+    volumes:
+      - ./services/prometheus:/etc/prometheus:ro
+      - prometheus_data:/prometheus
     networks:
       - internal
     healthcheck:
@@ -156,12 +162,13 @@ services:
   alloy:
     image: grafana/alloy:v1.14.1
     container_name: alloy
-    healthcheck:
-      test: ["CMD-SHELL", "wget --quiet --tries=1 --output-document=- http://localhost:12345/-/ready || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
+    command:
+      - "run"
+      - "--server.http.listen-addr=0.0.0.0:12345"
+      - "--storage.path=/var/lib/alloy/data"
+      - "--disable-reporting"
+      - "--stability.level=generally-available"
+      - "/etc/alloy/config.alloy"
     volumes:
       - ./services/alloy:/etc/alloy:ro
       - alloy_data:/var/lib/alloy/data
@@ -178,13 +185,6 @@ services:
       - /var/lib/docker:/var/lib/docker:ro
       # Systemd journal: timer/service logs (pg-backup, disk-alert, coupette timers)
       - /var/log/journal:/var/log/journal:ro
-    command:
-      - "run"
-      - "--server.http.listen-addr=0.0.0.0:12345"
-      - "--storage.path=/var/lib/alloy/data"
-      - "--disable-reporting"
-      - "--stability.level=generally-available"
-      - "/etc/alloy/config.alloy"
     depends_on:
       loki:
         condition: service_healthy
