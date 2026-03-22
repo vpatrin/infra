@@ -168,7 +168,7 @@
         "defaults": {
           "color": { "mode": "palette-classic" },
           "custom": {
-            "fillOpacity": 15,
+            "fillOpacity": 0,
             "lineWidth": 2,
             "lineInterpolation": "smooth",
             "showPoints": "never",
@@ -231,32 +231,43 @@
       ]
     },
     {
-      "type": "timeseries",
-      "title": "Temp bytes written per second",
+      "type": "gauge",
+      "title": "Index hit ratio",
+      "description": "Fraction of index reads served from cache vs disk. Below 0.99 with pgvector means index scans are hitting disk — check shared_buffers or index size.",
       "gridPos": { "h": 8, "w": 8, "x": 16, "y": 8 },
-      "id": 13,
+      "id": 14,
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": {
-            "fillOpacity": 15,
-            "lineWidth": 2,
-            "lineInterpolation": "smooth",
-            "showPoints": "never",
-            "spanNulls": false
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 0.95 },
+              { "color": "green", "value": 0.99 }
+            ]
           },
-          "unit": "Bps"
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
         }
       },
       "options": {
-        "tooltip": { "mode": "multi", "sort": "desc" },
-        "legend": { "displayMode": "list", "placement": "bottom" }
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "orientation": "auto",
+        "sizing": "auto"
       },
       "targets": [
         {
-          "expr": "sum by (datname) (rate(pg_stat_database_temp_bytes{datname!~\"template.*|postgres\"}[5m]))",
-          "legendFormat": "{{datname}}",
+          "expr": "sum(pg_stat_user_indexes_idx_blks_hit) / (sum(pg_stat_user_indexes_idx_blks_hit) + sum(pg_stat_user_indexes_idx_blks_read))",
+          "legendFormat": "",
           "refId": "A"
         }
       ]
@@ -446,7 +457,7 @@
         "defaults": {
           "color": { "mode": "palette-classic" },
           "custom": {
-            "fillOpacity": 15,
+            "fillOpacity": 0,
             "lineWidth": 2,
             "lineInterpolation": "smooth",
             "showPoints": "never",
