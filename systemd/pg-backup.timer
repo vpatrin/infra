@@ -1,8 +1,8 @@
 [Unit]
-Description=Weekly PostgreSQL backup (Sunday 02:00, day before scraper)
+Description=Daily PostgreSQL backup to S3
 
 [Timer]
-OnCalendar=Sun *-*-* 02:00:00
+OnCalendar=*-*-* 02:30:00
 Persistent=true
 
 [Install]

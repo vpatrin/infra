@@ -71,7 +71,7 @@ See [OBSERVABILITY.md](OBSERVABILITY.md) for the full observability stack (Grafa
 
 ## Backups
 
-Weekly automated backups via systemd timer.
+Daily automated backups to AWS S3 via systemd timer. No local retention — S3 is the primary store.
 
 ### What's stateful
 
@@ -79,14 +79,24 @@ See [SECURITY.md](SECURITY.md#volume-security) for the full volume inventory and
 
 ### Strategy
 
-- Weekly `pg_dump` per database (compressed), retained for 30 days
-- systemd timer: Sunday 02:00 (day before Monday scraper)
-- Pre-deploy dumps via `./scripts/postgres_backup.sh <db_name>` (called by deploy scripts)
-- Storage: `/var/backups/postgres/` (~2MB per dump × 2 DBs × 4 weeks = ~16MB)
+- Daily `pg_dump` per database (compressed) → AWS S3 (`s3://victorpatrin-backups/postgres/`)
+- 30-day retention via S3 lifecycle rule
+- systemd timer: daily at 02:30 UTC
+- Fails loudly on upload failure (exit non-zero → Uptime Kuma alert)
+
+### S3 structure
+
+```text
+s3://victorpatrin-backups/postgres/
+  saq_sommelier/YYYYMMDD.sql.gz
+  umami/YYYYMMDD.sql.gz
+```
 
 ### Setup on VPS
 
 Handled automatically by `deploy_infra.sh` — it syncs all units from `systemd/` to `/etc/systemd/system/`.
+
+AWS credentials for the `infra-backup` IAM user are in `/etc/infra/aws-infra-backup.env` (root-owned, `0600`). Contains `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION`, and `S3_BUCKET`.
 
 ### Manual backup
 
@@ -97,20 +107,23 @@ Handled automatically by `deploy_infra.sh` — it syncs all units from `systemd/
 
 ### Restore
 
-Backups are gzipped SQL dumps in `/var/backups/postgres/`. To restore:
+Download the dump from S3, then restore:
 
 ```bash
 # List available backups
-ls -lh /var/backups/postgres/
+aws s3 ls s3://victorpatrin-backups/postgres/saq_sommelier/
 
-# Restore into an existing database (replays the dump — safe for additive restores)
-gunzip -c /var/backups/postgres/saq_sommelier_YYYYMMDD.sql.gz | \
+# Download a specific dump
+aws s3 cp s3://victorpatrin-backups/postgres/saq_sommelier/YYYYMMDD.sql.gz /tmp/
+
+# Restore into an existing database
+gunzip -c /tmp/YYYYMMDD.sql.gz | \
   docker exec -i shared-postgres psql -U postgres -d saq_sommelier
 
 # Full rebuild (drop + recreate + restore)
 docker exec shared-postgres psql -U postgres -c "DROP DATABASE saq_sommelier;"
 docker exec shared-postgres psql -U postgres -c "CREATE DATABASE saq_sommelier OWNER saq_sommelier;"
-gunzip -c /var/backups/postgres/saq_sommelier_YYYYMMDD.sql.gz | \
+gunzip -c /tmp/YYYYMMDD.sql.gz | \
   docker exec -i shared-postgres psql -U postgres -d saq_sommelier
 
 # Verify
@@ -154,40 +167,32 @@ Uptime Kuma polls services via HTTP and alerts on downtime via Telegram (`@victo
 
 Daily systemd timer checks disk usage on `/`. If usage exceeds 85%, sends a Telegram alert via `@victor_uptime_bot`. Not routed through Uptime Kuma — the timer always runs and the disk is always queryable, so push/pull monitoring doesn't apply.
 
-Credentials (`BOT_TOKEN`, `CHAT_ID`) stored in `/etc/push-monitor/disk-alert.env` (root-owned, `0600`).
+Credentials (`BOT_TOKEN`, `CHAT_ID`) stored in `secrets/telegram-alerts-bot.env.enc` (sops-encrypted), decrypted to `/etc/infra/telegram-alerts-bot.env` by `deploy_infra.sh`.
 
 ### Push monitors (systemd timers)
 
 Scheduled jobs (backups, scrapers) report success to Uptime Kuma push monitors. If a heartbeat doesn't arrive within the grace period, Uptime Kuma sends a Telegram alert.
 
-| Job          | Monitor Type | Heartbeat | Grace |
-|--------------|--------------|-----------|-------|
-| `pg-backup`  | Push         | 7 days    | 1 day |
+| Job          | Monitor Type | Heartbeat | Grace   |
+|--------------|--------------|-----------|---------|
+| `pg-backup`  | Push         | 1 day     | 6 hours |
 
-Push URLs are stored in `/etc/push-monitor/<job>.env` on the VPS (root-owned, `0600`). Systemd loads them via `EnvironmentFile` (mandatory — unit won't start without it), and `ExecStartPost=-` calls `scripts/push-monitor.sh` on success. See `pg-backup.service` for the reference implementation.
+Push URLs are stored in `/etc/infra/<monitor>.env` on the VPS (root-owned, `0600`). Systemd loads them via `EnvironmentFile`, and `ExecStartPost=-` calls `scripts/push-monitor.sh` on success. See `pg-backup.service` for the reference implementation.
 
 #### Adding a push monitor
 
 1. Create the push monitor in Uptime Kuma (set heartbeat interval and grace period)
-2. Store the push URL on the VPS:
+2. Create `secrets/<monitor>.env` with the push URL, encrypt with sops:
 
    ```bash
-   sudo mkdir -p /etc/push-monitor
-   sudo tee /etc/push-monitor/<job>.env > /dev/null <<EOF
-   PUSH_URL=<paste push URL from Uptime Kuma>
-   EOF
-   sudo chmod 600 /etc/push-monitor/<job>.env
+   echo "PUSH_URL=<paste push URL>" > secrets/<monitor>.env
+   sops --encrypt --input-type dotenv --output-type json secrets/<monitor>.env > secrets/<monitor>.env.enc
+   rm secrets/<monitor>.env
    ```
 
-3. Add `EnvironmentFile=/etc/push-monitor/<job>.env` and `ExecStartPost=-/.../scripts/push-monitor.sh ${PUSH_URL}` to the systemd service unit
-4. Copy updated unit files and reload:
-
-   ```bash
-   sudo cp <service-file> <timer-file> /etc/systemd/system/
-   sudo systemctl daemon-reload
-   sudo systemctl reenable <job>.timer
-   ```
-5. Test: `sudo systemctl start <job>.service` and verify heartbeat in Uptime Kuma
+3. Add the secret name to `ENCRYPTED_SECRETS` in `scripts/deploy_infra.sh`
+4. Add `EnvironmentFile=/etc/infra/<monitor>.env` and `ExecStartPost=-/.../scripts/push-monitor.sh ${PUSH_URL}` to the systemd service unit
+5. Deploy and test: `sudo systemctl start <job>.service`, verify heartbeat in Uptime Kuma
 
 ## Deployment
 

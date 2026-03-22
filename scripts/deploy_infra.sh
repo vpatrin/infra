@@ -15,14 +15,26 @@ command -v sops >/dev/null || { echo "ERROR: sops not found in PATH"; exit 1; }
 [[ -n "${SOPS_AGE_KEY:-}" ]] || { echo "ERROR: SOPS_AGE_KEY not set"; exit 1; }
 
 ENCRYPTED_SERVICES=(postgres umami grafana alloy)
+ENCRYPTED_SECRETS=(aws-infra-backup monitor-backups telegram-alerts-bot)
 
 echo "==> Decrypting secrets..."
 (
     umask 077  # owner-only from creation — no race window unlike chmod after write
+
+    # Service-level secrets (Docker Compose env files)
     for svc in "${ENCRYPTED_SERVICES[@]}"; do
         enc="${INFRA_DIR}/services/${svc}/.env.prod.enc"
         [[ -f "${enc}" ]] || { echo "ERROR: ${enc} not found"; exit 1; }
         sops --decrypt --output-type dotenv "${enc}" > "${INFRA_DIR}/services/${svc}/.env.prod"
+    done
+
+    # Infra-level secrets (host systemd timers, push monitors)
+    sudo mkdir -p /etc/infra
+    for secret in "${ENCRYPTED_SECRETS[@]}"; do
+        enc="${INFRA_DIR}/secrets/${secret}.env.enc"
+        [[ -f "${enc}" ]] || { echo "ERROR: ${enc} not found"; exit 1; }
+        sops --decrypt --output-type dotenv "${enc}" | sudo tee "/etc/infra/${secret}.env" > /dev/null
+        sudo chmod 600 "/etc/infra/${secret}.env"
     done
 )
 
@@ -30,6 +42,13 @@ echo "==> Decrypting secrets..."
 for svc in "${ENCRYPTED_SERVICES[@]}"; do
     env_file="${INFRA_DIR}/services/${svc}/.env.prod"
     if [[ ! -s "${env_file}" ]]; then
+        echo "ERROR: ${env_file} is empty after decryption"
+        exit 1
+    fi
+done
+for secret in "${ENCRYPTED_SECRETS[@]}"; do
+    env_file="/etc/infra/${secret}.env"
+    if ! sudo test -s "${env_file}"; then
         echo "ERROR: ${env_file} is empty after decryption"
         exit 1
     fi

@@ -1,36 +1,31 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Backup individual PostgreSQL databases from the shared-postgres container.
+# Backup PostgreSQL databases to AWS S3.
+# Retention handled by S3 lifecycle rule (30-day expiry).
 # Usage:
 #   ./postgres_backup.sh              # Dump all databases
-#   ./postgres_backup.sh saq_sommelier # Dump a single database (used by deploy scripts)
+#   ./postgres_backup.sh saq_sommelier # Dump a single database
 
-BACKUP_DIR="/var/backups/postgres"
+S3_BUCKET="${S3_BUCKET:-victorpatrin-backups}"
+S3_PREFIX="postgres"
 CONTAINER="shared-postgres"
 PG_USER="postgres"
-RETENTION_DAYS=30
 DATE=$(date +%Y%m%d)
 
 DATABASES=("saq_sommelier" "umami")
 
-# If a specific database is requested, only dump that one
 if [[ $# -ge 1 ]]; then
     DATABASES=("$1")
 fi
 
-mkdir -p "$BACKUP_DIR"
-
 for db in "${DATABASES[@]}"; do
-    file="${BACKUP_DIR}/${db}_${DATE}.sql.gz"
-    echo "Backing up ${db}..."
-    docker exec "$CONTAINER" pg_dump -U "$PG_USER" "$db" | gzip > "${file}.tmp"
-    mv "${file}.tmp" "$file"
-    echo "  -> ${file} ($(du -h "$file" | cut -f1))"
-done
+    s3_path="s3://${S3_BUCKET}/${S3_PREFIX}/${db}/${DATE}.sql.gz"
 
-# Clean up backups older than retention period
-echo "Cleaning up backups older than ${RETENTION_DAYS} days..."
-find "$BACKUP_DIR" -name "*.sql.gz" -mtime +"$RETENTION_DAYS" -delete
+    echo "Dumping ${db} → ${s3_path}..."
+    docker exec "${CONTAINER}" pg_dump -U "${PG_USER}" "${db}" | gzip | \
+        aws s3 cp - "${s3_path}" --quiet
+    echo "  uploaded"
+done
 
 echo "Done."

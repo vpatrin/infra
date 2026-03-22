@@ -1,13 +1,12 @@
 [Unit]
-Description=PostgreSQL database backup
+Description=PostgreSQL database backup to S3
 After=docker.service
 Requires=docker.service
 
 [Service]
 Type=oneshot
-EnvironmentFile=/etc/push-monitor/pg-backup.env
-ExecStartPre=+/usr/bin/mkdir -p /var/backups/postgres
-ExecStartPre=+/usr/bin/chown victor:victor /var/backups/postgres
+EnvironmentFile=/etc/infra/aws-infra-backup.env
+EnvironmentFile=/etc/infra/monitor-backups.env
 ExecStart=/home/deploy/infra/scripts/postgres_backup.sh
 ExecStartPost=-/home/deploy/infra/scripts/push-monitor.sh ${PUSH_URL}
 User=victor
