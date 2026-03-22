@@ -67,11 +67,11 @@ infra/
 │   ├── loki/                      # Log aggregation config
 │   └── prometheus/                # Metrics scrape config
 ├── docs/
-│   ├── ROADMAP.md                 # Phased infrastructure plan
-│   ├── INFRASTRUCTURE.md          # Server setup, backups, logging
-│   ├── SERVICE_CATALOG.md         # Service inventory + platform contract
-│   ├── SECURITY.md                # Platform security posture
+│   ├── ARCHITECTURE.md            # VPS, network, services, backups, deployment
 │   ├── OBSERVABILITY.md           # Grafana, Loki, Prometheus, Alloy
+│   ├── APP_CONTRACT.md            # Platform contract for app repos
+│   ├── SECURITY.md                # Platform security posture + hardening log
+│   ├── ROADMAP.md                 # Phased infrastructure plan
 │   ├── decisions/                 # Architecture decision records
 │   │   ├── 0001-hetzner-single-vps.md
 │   │   ├── ...
@@ -79,8 +79,9 @@ infra/
 │   └── guides/                    # Reusable how-to guides
 │       ├── COMPOSE_GUIDE.md
 │       ├── DOCKERFILE_GUIDE.md
-│       ├── GITHUB_SETUP.md
-│       └── VPS_SETUP.md
+│       ├── CADDY_GUIDE.md
+│       ├── GITHUB_SETUP_GUIDE.md
+│       └── VPS_SETUP_GUIDE.md
 ├── .github/
 │   ├── workflows/
 │   │   ├── ci.yml                 # PR checks: compose, shellcheck, gitleaks

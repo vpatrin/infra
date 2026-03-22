@@ -1,6 +1,6 @@
-# Infrastructure Overview
+# Architecture
 
-Single Hetzner VPS running all services behind a Caddy reverse proxy. Designed for simplicity — one server, one entry point, minimal moving parts.
+Single Hetzner VPS running all services behind a Caddy reverse proxy. One server, one entry point, minimal moving parts.
 
 ## VPS
 
@@ -11,7 +11,7 @@ Single Hetzner VPS running all services behind a Caddy reverse proxy. Designed f
 - **Swap**: 2GB at `/swapfile`, swappiness=10
 - **DNS**: `victorpatrin.dev` + wildcard `*.victorpatrin.dev` → VPS IP (Porkbun)
 
-## Architecture
+## Topology
 
 ```text
 Internet
@@ -31,34 +31,51 @@ Only Caddy binds to host ports 80/443 in the base compose.
 Grafana binds to localhost:3002 in prod (for SSH tunnel access).
 ```
 
-See [SERVICE_CATALOG.md](SERVICE_CATALOG.md) for the full service inventory and port mapping.
+For full VPS setup instructions, see [guides/VPS_SETUP_GUIDE.md](guides/VPS_SETUP_GUIDE.md).
 
-For full VPS setup instructions, see [guides/VPS_SETUP.md](guides/VPS_SETUP.md).
+## Services
+
+| Service | Container | Port | Dev binding | Domain | Owner |
+|---------|-----------|------|------------|--------|-------|
+| Caddy | caddy | 80, 443 | `0.0.0.0:80`, `0.0.0.0:443` (base) | all (reverse proxy) | infra |
+| PostgreSQL | shared-postgres | 5432 | `127.0.0.1:5433` | — | infra |
+| Umami | umami | 3000 | `127.0.0.1:3000` | `analytics.victorpatrin.dev` | infra |
+| Uptime Kuma | uptime-kuma | 3001 | `127.0.0.1:3001` | `status.victorpatrin.dev` | infra |
+| Loki | loki | 3100 | — | — | infra |
+| Prometheus | prometheus | 9090 | `127.0.0.1:9090` | — | infra |
+| Alloy | alloy | 12345 | `127.0.0.1:12345` | — | infra |
+| Grafana | grafana | 3000 | `127.0.0.1:3003` (dev) / `127.0.0.1:3002` (prod) | — | infra |
+| Coupette backend | coupette-backend | 8001 | — | `coupette.club/api` | coupette |
+| Coupette bot | coupette-bot | — | — | — | coupette |
+| Coupette scraper | coupette-scraper | — | — | — (systemd timer) | coupette |
+| Coupette frontend | — | — | — | `coupette.club` (static, served by Caddy) | coupette |
+
+Dev bindings are defined in `docker-compose.dev.yml` (loaded via `make up`). Only Caddy has host port bindings in the base compose. Production adds localhost bindings for SSH tunnel access to the observability stack (`docker-compose.prod.yml`).
+
+Only Caddy is internet-facing. Everything else is internal Docker network or localhost-only.
+
+### Port convention
+
+- **One public entry point:** Caddy on 80/443. Nothing else is internet-facing.
+- **Custom APIs:** 8000, 8001, 8002… as projects are added.
+- **Third-party services:** keep vendor default ports (Umami 3000, Uptime Kuma 3001).
+- **Match internal and host ports:** when host-exposing for dev, use `8001:8001`.
 
 ## Security
 
 See [SECURITY.md](SECURITY.md) for the full platform security posture (firewall, TLS, headers, container hardening, SSH, secrets management).
 
+## Observability
+
+See [OBSERVABILITY.md](OBSERVABILITY.md) for the full observability stack (Grafana, Loki, Prometheus, Alloy — data flow, config, querying).
+
 ## Backups
 
-Weekly automated backups via systemd timer ([#6](https://github.com/vpatrin/infra/issues/6)).
+Weekly automated backups via systemd timer.
 
 ### What's stateful
 
-| Data | Location | Risk |
-|------|----------|------|
-| PostgreSQL (2 databases) | Docker volume `shared-postgres_pgdata` | **High** — user data, product catalog, analytics |
-| Uptime Kuma | Docker volume `uptime-kuma_uptime-kuma-data` | Medium — monitoring config + history, reconfigurable |
-| Grafana | Docker volume `grafana_data` | Low — dashboards should be provisioned as code |
-| Prometheus | Docker volume `prometheus_data` | Low — metrics rebuilt from scrape targets (7d retention) |
-| Loki | Docker volume `loki_data` | Low — logs rebuilt from Docker log tailing (7d retention) |
-| Alloy | Docker volume `alloy_data` | Low — collector WAL, transient, rebuilt on restart |
-| Caddy TLS certs | Docker volume `caddy_data` | Low — auto-renewed by ACME |
-| Caddy config | Docker volume `caddy_config` | Low — regenerated from Caddyfile |
-
-### What's stateless
-
-Everything else. All service containers can be rebuilt from their repos. Static sites are in git. Observability data rebuilds from live sources.
+See [SECURITY.md](SECURITY.md#volume-security) for the full volume inventory and risk assessment. Only PostgreSQL is high-risk — everything else is recoverable (auto-renewed certs, rebuildable metrics/logs, reconfigurable monitoring).
 
 ### Strategy
 
@@ -104,11 +121,11 @@ After restoring an app database, re-run the app's migrations to ensure schema is
 
 ## PostgreSQL Extensions
 
-See [SERVICE_CATALOG.md](SERVICE_CATALOG.md#required-extensions) for the full extensions table. If rebuilding postgres from scratch, `vector` is created automatically by the init script. `pg_trgm` is created by coupette's migrations — run `alembic upgrade head` after restore.
+See [APP_CONTRACT.md](APP_CONTRACT.md#required-extensions) for the full extensions table. If rebuilding postgres from scratch, `vector` is created automatically by the init script. `pg_trgm` is created by coupette's migrations — run `alembic upgrade head` after restore.
 
 ## Systemd Timers
 
-See [SERVICE_CATALOG.md](SERVICE_CATALOG.md#timer-scheduling) for the full timer inventory and scheduling diagram.
+See [APP_CONTRACT.md](APP_CONTRACT.md#timer-scheduling) for the full timer inventory and scheduling diagram.
 
 ```bash
 # Check all timers
@@ -131,18 +148,7 @@ Alloy auto-discovers all containers and ships their logs to Loki for centralized
 
 ## Monitoring
 
-| Tool | URL | Purpose |
-|------|-----|---------|
-| Grafana | `localhost:3002` (SSH tunnel) | Dashboards — logs, metrics, system overview |
-| Prometheus | Internal only | Metrics storage (7d retention) |
-| Loki | Internal only | Log aggregation (7d retention) |
-| Alloy | Internal only | Log + metrics collector (Docker + node) |
-| Uptime Kuma | `status.victorpatrin.dev` | Uptime monitoring, alerts on downtime |
-| Umami | `analytics.victorpatrin.dev` | Privacy-friendly web analytics |
-
-### HTTP monitors
-
-Uptime Kuma polls services via HTTP and alerts on downtime via Telegram (`@victor_uptime_bot`).
+Uptime Kuma polls services via HTTP and alerts on downtime via Telegram (`@victor_uptime_bot`). Grafana dashboards accessible via `localhost:3002` (SSH tunnel) — see [OBSERVABILITY.md](OBSERVABILITY.md).
 
 ### Disk usage alert
 
@@ -200,11 +206,3 @@ make reload-caddy
 ```
 
 Each project repo has its own deploy process. See [coupette PRODUCTION.md](https://github.com/vpatrin/coupette/blob/main/docs/PRODUCTION.md) for app-level deployment.
-
-## Scalability
-
-This is a single-VPS setup. Scaling considerations if needed:
-
-- **Vertical**: upgrade the Hetzner plan (more CPU/RAM/disk).
-- **Horizontal**: not designed for it — would require splitting services across servers, adding a load balancer, and externalizing PostgreSQL. Not planned.
-- **Current headroom**: the VPS runs ~10 containers (4 core + 4 observability + coupette). Memory budget is tight at 3.5GB reserved of 4GB — monitor after observability stack is live.

@@ -33,8 +33,8 @@ Before reviewing, silently:
 3. Read all shell scripts (`services/postgres/backups/*.sh`, `scripts/*.sh`)
 4. Read all systemd units (`services/postgres/backups/*.service`, `*.timer`)
 5. Read `Makefile` for target definitions
-6. Read `docs/SERVICE_CATALOG.md` for service inventory and port assignments
-7. Read `docs/INFRASTRUCTURE.md` for operational context
+6. Read `docs/APP_CONTRACT.md` for service contracts and port assignments
+7. Read `docs/ARCHITECTURE.md` for operational context
 
 ## Validation matrix
 
@@ -52,7 +52,7 @@ For each config file type in scope, validate:
 - [ ] Volume mounts point to paths that exist in the repo (bind mounts) or are declared (named volumes)
 - [ ] Named volumes with `external: true` match the actual volume names on the VPS
 - [ ] All services on the `internal` network (required for Caddy routing)
-- [ ] Port bindings don't conflict (check against `docs/SERVICE_CATALOG.md`)
+- [ ] Port bindings don't conflict (check against `docs/ARCHITECTURE.md`)
 - [ ] Container names unique across all compose projects on the VPS (infra + app repos)
 - [ ] `depends_on` ordering correct for services that need postgres or other deps
 - [ ] Image versions pinned

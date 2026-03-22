@@ -1,6 +1,8 @@
-# Service Catalog
+# App Contract
 
-All services on the platform, how they connect, and what app repos depend on. If any contract changes, app deploy scripts must be updated in the same logical change.
+Platform guarantees and expectations for apps on this VPS. If any contract changes, app deploy scripts must be updated in the same logical change.
+
+Currently applies to [coupette](https://github.com/vpatrin/coupette) — see its [PRODUCTION.md](https://github.com/vpatrin/coupette/blob/main/docs/PRODUCTION.md) for the full deploy process.
 
 ---
 
@@ -65,41 +67,9 @@ Caddy is the only internet-facing container. It routes traffic to app backends b
 
 Adding or modifying a route requires a PR to this repo — app repos do not touch the [Caddyfile](../services/caddy/Caddyfile).
 
-### Service inventory
-
-| Service | Container | Port | Dev binding | Domain | Owner |
-|---------|-----------|------|------------|--------|-------|
-| Caddy | caddy | 80, 443 | `0.0.0.0:80`, `0.0.0.0:443` (base) | all (reverse proxy) | infra |
-| PostgreSQL | shared-postgres | 5432 | `127.0.0.1:5433` | — | infra |
-| Umami | umami | 3000 | `127.0.0.1:3000` | `analytics.victorpatrin.dev` | infra |
-| Uptime Kuma | uptime-kuma | 3001 | `127.0.0.1:3001` | `status.victorpatrin.dev` | infra |
-| Loki | loki | 3100 | — | — | infra |
-| Prometheus | prometheus | 9090 | `127.0.0.1:9090` | — | infra |
-| Alloy | alloy | 12345 | `127.0.0.1:12345` | — | infra |
-| Grafana | grafana | 3000 | `127.0.0.1:3003` (dev) / `127.0.0.1:3002` (prod) | — | infra |
-| Coupette backend | coupette-backend | 8001 | — | `coupette.club/api` | coupette |
-| Coupette bot | coupette-bot | — | — | — | coupette |
-| Coupette scraper | coupette-scraper | — | — | — (systemd timer) | coupette |
-| Coupette frontend | — | — | — | `coupette.club` (static, served by Caddy) | coupette |
-
-Dev bindings are defined in `docker-compose.dev.yml` (loaded via `make up`). Only Caddy has host port bindings in the base compose. Production adds localhost bindings for SSH tunnel access to the observability stack (`docker-compose.prod.yml`).
-
-Only Caddy is internet-facing. Everything else is internal Docker network or localhost-only.
-
-### Port convention
-
-- **One public entry point:** Caddy on 80/443. Nothing else is internet-facing.
-- **Custom APIs:** 8000, 8001, 8002… as projects are added.
-- **Third-party services:** keep vendor default ports (Umami 3000, Uptime Kuma 3001).
-- **Match internal and host ports:** when host-exposing for dev, use `8001:8001`.
-
 ### Adding a new app route
 
-1. Open a PR to this repo adding a domain block to `services/caddy/Caddyfile`
-2. Ensure the app container name is unique and joins the `internal` network
-3. Allocate the next sequential port (APIs: 8000+, third-party: keep vendor default)
-4. Update the service inventory table above
-5. Deploy: `git pull && make reload` on VPS (no downtime)
+Adding or modifying a route requires a PR to this repo. See [CADDY_GUIDE.md](guides/CADDY_GUIDE.md#adding-a-new-route) for the full procedure.
 
 ## Backup Script
 
@@ -121,25 +91,7 @@ Example from coupette's deploy script:
 
 **Do not change the script path, arguments, or output format** without updating app deploy scripts that call it.
 
-## App Contract
-
-Platform guarantees and expectations for apps on this VPS. Currently applies to [coupette](https://github.com/vpatrin/coupette) — see its [PRODUCTION.md](https://github.com/vpatrin/coupette/blob/main/docs/PRODUCTION.md) for the full deploy process.
-
-### Working directory
-
-Coupette is deployed to `/opt/coupette` on the VPS. Systemd timer units use `WorkingDirectory=/opt/coupette`. The deploy script writes an `.image-tag` file there that timers read to pull the correct container image version.
-
-### Deploy dependency order
-
-Infra services must be healthy before app deploys can succeed:
-
-1. `shared-postgres` must be healthy (app backends connect on startup)
-2. `caddy` must be running (routes traffic to app containers)
-3. `internal` network must exist (all containers attach to it)
-
-If `make restart` is run on infra, app backends may lose postgres connectivity for ~10-30 seconds. App health checks should tolerate this.
-
-### Observability
+## Observability
 
 Prometheus scrapes app backends for application-level metrics. Apps must expose a `/metrics` endpoint on their internal port.
 
@@ -149,7 +101,21 @@ Prometheus scrapes app backends for application-level metrics. Apps must expose 
 
 If an app renames its container, changes its port, or changes metric names, the corresponding Prometheus scrape target and Grafana dashboard panels in this repo must be updated.
 
-### Timer scheduling
+## Deploy Dependencies
+
+Infra services must be healthy before app deploys can succeed:
+
+1. `shared-postgres` must be healthy (app backends connect on startup)
+2. `caddy` must be running (routes traffic to app containers)
+3. `internal` network must exist (all containers attach to it)
+
+If `make restart` is run on infra, app backends may lose postgres connectivity for ~10-30 seconds. App health checks should tolerate this.
+
+## Working Directory
+
+Coupette is deployed to `/opt/coupette` on the VPS. Systemd timer units use `WorkingDirectory=/opt/coupette`. The deploy script writes an `.image-tag` file there that timers read to pull the correct container image version.
+
+## Timer Scheduling
 
 Timers are sequenced to avoid conflicts and ensure pre-job backups:
 
@@ -186,10 +152,6 @@ A dedicated `deploy` system user owns all repos and runs CI workloads. It has no
 
 A dedicated `github_actions_deploy` ed25519 key authenticates GitHub Actions to the VPS as the `deploy` user. It is stored as `SSH_DEPLOY_KEY` in GitHub Actions secrets on both repos. App repos must use this key — do not use personal SSH keys in CI.
 
-### Infra deploy
+### Deploy process
 
-Infra deploys are triggered manually via GitHub Actions (workflow dispatch). The workflow validates Caddyfile + compose, then runs `deploy_infra.sh` on the VPS as `deploy`.
-
-### App deploy
-
-App repos trigger their own deploy workflows. After a successful deploy, the app is responsible for running its own `deploy.sh` on the VPS. Infra guarantees the platform contract (network, postgres, Caddy routes) is intact before any app deploy runs.
+See [ARCHITECTURE.md](ARCHITECTURE.md#deployment) for how infra deploys work. App repos trigger their own deploy workflows — infra guarantees the platform contract (network, postgres, Caddy routes) is intact before any app deploy runs.
