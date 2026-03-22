@@ -1,35 +1,25 @@
-<!-- Based on https://github.com/joelparkerhenderson/architecture-decision-record (MADR) -->
-
-# ADR NNNN: Title
+# ADR NNNN: Short Decision Title
 
 **Date:** YYYY-MM-DD
-**Status:** Proposed | Accepted | Deprecated | Superseded by [ADR NNNN](NNNN-title.md)
-
----
+**Status:** Proposed | Accepted | Deprecated | Superseded by [NNNN](NNNN-xxx.md)
 
 ## Context
 
-What is the issue that we're seeing that is motivating this decision or change?
+What is the problem or constraint driving this decision?
 
-## Decision Drivers
+## Options considered
 
-- Driver 1
-- Driver 2
-
-## Options Considered
-
-### Option A
-
-Description, pros, cons.
-
-### Option B
-
-Description, pros, cons.
+1. **Option A** — brief description.
+2. **Option B** — brief description.
 
 ## Decision
 
-What is the change that we're proposing and/or doing? Why this option over the others?
+Which option was chosen and how it works in one sentence.
+
+## Rationale
+
+Why this option wins over the alternatives (2-4 bullets).
 
 ## Consequences
 
-What becomes easier or more difficult to do because of this change?
+What changes, what becomes easier, what becomes harder.
