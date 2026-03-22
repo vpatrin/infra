@@ -73,23 +73,18 @@ Adding or modifying a route requires a PR to this repo. See [CADDY_GUIDE.md](gui
 
 ## Backup Script
 
-The backup script is called by app deploy scripts before running migrations.
+Daily Postgres backups to AWS S3 via systemd timer. No local retention — S3 is the primary store.
 
 | Property | Value |
 |----------|-------|
 | Path on VPS | `/home/deploy/infra/scripts/postgres_backup.sh` |
 | Interface | `./scripts/postgres_backup.sh [db_name]` — dumps one DB, or all if no argument |
-| Output | `/var/backups/postgres/<db_name>_YYYYMMDD.sql.gz` |
-| Retention | 30 days |
+| Destination | `s3://victorpatrin-backups/postgres/` |
+| Retention | 30 days (S3 lifecycle rule) |
+| Schedule | Daily at 02:30 UTC |
 | Container | Runs `pg_dump` inside `shared-postgres` via `docker exec` |
 
-Example from coupette's deploy script:
-
-```bash
-/home/deploy/infra/scripts/postgres_backup.sh saq_sommelier
-```
-
-**Do not change the script path, arguments, or output format** without updating app deploy scripts that call it.
+The script is no longer called by app deploy scripts — coupette handles its own pre-migration backups if needed.
 
 ## Observability
 
@@ -122,16 +117,14 @@ Timers are sequenced to avoid conflicts and ensure pre-job backups:
 ```text
 Daily (UTC):
   02:00  coupette-availability (stock refresh, ~5-18 min) [app-owned]
+  02:30  pg-backup (daily dump of all databases → AWS S3)
   06:00  disk-alert (disk usage check, alerts if >85%)
-
-Sunday (UTC):
-  02:00  pg-backup (weekly dump of all databases)
 
 Monday (UTC):
   03:00  coupette-scraper (scrape → enrich → embed, ~1-2 hours) [app-owned]
 ```
 
-Backup runs Sunday, a full day before the Monday scraper — ensuring a clean pre-scrape dump. All timers use `Persistent=true` — if the VPS is down during the scheduled time, the job runs on next boot.
+All timers use `Persistent=true` — if the VPS is down during the scheduled time, the job runs on next boot.
 
 ## Deployment
 
