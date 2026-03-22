@@ -175,6 +175,8 @@ services:
       - /sys:/host/sys:ro
       # rootfs: disk capacity, usage, inodes (node_filesystem_* metrics)
       - /:/host/root:ro
+      # cgroup v2: per-container CPU, memory, I/O accounting
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
       # Docker data: container metadata for cAdvisor metrics
       - /var/lib/docker:/var/lib/docker:ro
       # Systemd journal: timer/service logs (pg-backup, disk-alert, coupette timers)

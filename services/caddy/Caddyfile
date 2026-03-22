@@ -1,5 +1,9 @@
 # https://caddyserver.com/docs/caddyfile
 {
+	# Binds to all interfaces so Alloy can scrape metrics from the Docker network.
+	# Not exposed to the host — only reachable within the internal network.
+	# TODO: replace with NetworkPolicy on K3s to restrict access to Alloy only.
+	admin 0.0.0.0:2019
 	servers {
 		metrics
 	}
@@ -44,7 +48,7 @@ www.coupette.club {
 
 coupette.club {
 	import security_headers
-	header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-eval' https://analytics.victorpatrin.dev https://telegram.org; connect-src 'self' https://analytics.victorpatrin.dev; frame-src https://oauth.telegram.org; img-src 'self' data:; style-src 'self' 'unsafe-inline'"
+	header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-eval' https://analytics.victorpatrin.dev https://telegram.org; connect-src 'self' https://analytics.victorpatrin.dev; frame-src https://oauth.telegram.org; img-src 'self' data:; font-src 'self' data:; style-src 'self' 'unsafe-inline'"
 	encode zstd gzip
 	# API requests proxied to backend container
 	handle /api/* {
