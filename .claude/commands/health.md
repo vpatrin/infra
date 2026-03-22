@@ -22,8 +22,8 @@ Before auditing, silently:
 2. Run `git diff main --stat` to see if there's uncommitted branch work
 3. Read `docker-compose.yml` for all service definitions
 4. Read `services/caddy/Caddyfile` for routing config
-5. Read `docs/INFRASTRUCTURE.md` for operational context
-6. Read `docs/SERVICE_CATALOG.md` for service inventory and port assignments
+5. Read `docs/ARCHITECTURE.md` for operational context
+6. Read `docs/APP_CONTRACT.md` for service contracts and port assignments
 
 ## Surface checklist (default)
 

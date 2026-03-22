@@ -23,8 +23,8 @@ Before responding, silently read what's relevant:
 **For questions about specific topics:**
 - Read the config files relevant to the question (compose, Caddyfile, scripts, systemd units, etc.)
 - Read `docs/decisions/0006-consolidate-repos.md` if the question relates to the consolidation plan
-- Read `docs/INFRASTRUCTURE.md` for server context
-- Read `docs/SERVICE_CATALOG.md` for port assignments
+- Read `docs/ARCHITECTURE.md` for server context
+- Read `docs/APP_CONTRACT.md` for port assignments and service contracts
 
 **Full repo mode (`--full`):**
 1. Read `docker-compose.yml` — all service definitions

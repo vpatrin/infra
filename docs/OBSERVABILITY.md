@@ -126,6 +126,3 @@ Both Loki and Prometheus retain 7 days. At current scale (~10 containers, 15s sc
 
 The `disk-alert` systemd timer fires at 85% disk usage.
 
-## What's not covered yet
-
-- **Alerting rules** — Grafana alerting or Prometheus alertmanager (Phase 8c)

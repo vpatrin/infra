@@ -44,7 +44,7 @@ Input: a branch name, issue number, or topic. Use `$ARGUMENTS` as the input. If 
    - Abstraction layers (templates, variable substitution) for configs that change once a year
    - Environment variables for values that never change across environments (there's only one VPS)
    - Comments explaining obvious directives (`# Restart the container` above `restart: unless-stopped`)
-8. **Doc updates** — if the PR changes infrastructure (new service, new route, port change), verify the relevant docs are updated: `docs/SERVICE_CATALOG.md`, `docs/INFRASTRUCTURE.md`, `README.md`.
+8. **Doc updates** — if the PR changes infrastructure (new service, new route, port change), verify the relevant docs are updated: `docs/ARCHITECTURE.md`, `docs/APP_CONTRACT.md`, `README.md`.
 9. Categorize findings in a table:
 
 | # | File | Finding | Severity | Fix |

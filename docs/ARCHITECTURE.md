@@ -1,6 +1,6 @@
-# Infrastructure Overview
+# Architecture
 
-Single Hetzner VPS running all services behind a Caddy reverse proxy. Designed for simplicity — one server, one entry point, minimal moving parts.
+Single Hetzner VPS running all services behind a Caddy reverse proxy. One server, one entry point, minimal moving parts.
 
 ## VPS
 
@@ -11,7 +11,7 @@ Single Hetzner VPS running all services behind a Caddy reverse proxy. Designed f
 - **Swap**: 2GB at `/swapfile`, swappiness=10
 - **DNS**: `victorpatrin.dev` + wildcard `*.victorpatrin.dev` → VPS IP (Porkbun)
 
-## Architecture
+## Topology
 
 ```text
 Internet
@@ -31,17 +31,47 @@ Only Caddy binds to host ports 80/443 in the base compose.
 Grafana binds to localhost:3002 in prod (for SSH tunnel access).
 ```
 
-See [SERVICE_CATALOG.md](SERVICE_CATALOG.md) for the full service inventory and port mapping.
+For full VPS setup instructions, see [guides/VPS_SETUP_GUIDE.md](guides/VPS_SETUP_GUIDE.md).
 
-For full VPS setup instructions, see [guides/VPS_SETUP.md](guides/VPS_SETUP.md).
+## Services
+
+| Service | Container | Port | Dev binding | Domain | Owner |
+|---------|-----------|------|------------|--------|-------|
+| Caddy | caddy | 80, 443 | `0.0.0.0:80`, `0.0.0.0:443` (base) | all (reverse proxy) | infra |
+| PostgreSQL | shared-postgres | 5432 | `127.0.0.1:5433` | — | infra |
+| Umami | umami | 3000 | `127.0.0.1:3000` | `analytics.victorpatrin.dev` | infra |
+| Uptime Kuma | uptime-kuma | 3001 | `127.0.0.1:3001` | `status.victorpatrin.dev` | infra |
+| Loki | loki | 3100 | — | — | infra |
+| Prometheus | prometheus | 9090 | `127.0.0.1:9090` | — | infra |
+| Alloy | alloy | 12345 | `127.0.0.1:12345` | — | infra |
+| Grafana | grafana | 3000 | `127.0.0.1:3003` (dev) / `127.0.0.1:3002` (prod) | — | infra |
+| Coupette backend | coupette-backend | 8001 | — | `coupette.club/api` | coupette |
+| Coupette bot | coupette-bot | — | — | — | coupette |
+| Coupette scraper | coupette-scraper | — | — | — (systemd timer) | coupette |
+| Coupette frontend | — | — | — | `coupette.club` (static, served by Caddy) | coupette |
+
+Dev bindings are defined in `docker-compose.dev.yml` (loaded via `make up`). Only Caddy has host port bindings in the base compose. Production adds localhost bindings for SSH tunnel access to the observability stack (`docker-compose.prod.yml`).
+
+Only Caddy is internet-facing. Everything else is internal Docker network or localhost-only.
+
+### Port convention
+
+- **One public entry point:** Caddy on 80/443. Nothing else is internet-facing.
+- **Custom APIs:** 8000, 8001, 8002… as projects are added.
+- **Third-party services:** keep vendor default ports (Umami 3000, Uptime Kuma 3001).
+- **Match internal and host ports:** when host-exposing for dev, use `8001:8001`.
 
 ## Security
 
 See [SECURITY.md](SECURITY.md) for the full platform security posture (firewall, TLS, headers, container hardening, SSH, secrets management).
 
+## Observability
+
+See [OBSERVABILITY.md](OBSERVABILITY.md) for the full observability stack (Grafana, Loki, Prometheus, Alloy — data flow, config, querying).
+
 ## Backups
 
-Weekly automated backups via systemd timer ([#6](https://github.com/vpatrin/infra/issues/6)).
+Weekly automated backups via systemd timer.
 
 ### What's stateful
 
@@ -104,11 +134,11 @@ After restoring an app database, re-run the app's migrations to ensure schema is
 
 ## PostgreSQL Extensions
 
-See [SERVICE_CATALOG.md](SERVICE_CATALOG.md#required-extensions) for the full extensions table. If rebuilding postgres from scratch, `vector` is created automatically by the init script. `pg_trgm` is created by coupette's migrations — run `alembic upgrade head` after restore.
+See [APP_CONTRACT.md](APP_CONTRACT.md#required-extensions) for the full extensions table. If rebuilding postgres from scratch, `vector` is created automatically by the init script. `pg_trgm` is created by coupette's migrations — run `alembic upgrade head` after restore.
 
 ## Systemd Timers
 
-See [SERVICE_CATALOG.md](SERVICE_CATALOG.md#timer-scheduling) for the full timer inventory and scheduling diagram.
+See [APP_CONTRACT.md](APP_CONTRACT.md#timer-scheduling) for the full timer inventory and scheduling diagram.
 
 ```bash
 # Check all timers
@@ -203,8 +233,8 @@ Each project repo has its own deploy process. See [coupette PRODUCTION.md](https
 
 ## Scalability
 
-This is a single-VPS setup. Scaling considerations if needed:
+Single-VPS setup. Scaling options:
 
 - **Vertical**: upgrade the Hetzner plan (more CPU/RAM/disk).
 - **Horizontal**: not designed for it — would require splitting services across servers, adding a load balancer, and externalizing PostgreSQL. Not planned.
-- **Current headroom**: the VPS runs ~10 containers (4 core + 4 observability + coupette). Memory budget is tight at 3.5GB reserved of 4GB — monitor after observability stack is live.
+- **Current headroom**: ~10 containers (4 core + 4 observability + coupette). Memory budget is tight at 3.5GB reserved of 4GB.

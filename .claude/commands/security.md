@@ -34,7 +34,7 @@ Before auditing, silently:
 4. Read systemd units (`services/postgres/backups/*.service`, `*.timer`) for privilege escalation
 5. Read `.env.example` files to understand what secrets are expected
 6. Read `.gitignore` to verify `.env` files and secrets are excluded
-7. Read `docs/INFRASTRUCTURE.md` for server hardening context
+7. Read `docs/ARCHITECTURE.md` for server hardening context
 8. Check all checklist items against the full codebase, not just a diff
 
 ## Audit checklist

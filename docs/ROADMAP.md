@@ -6,29 +6,29 @@ Infrastructure-level concerns only — app-level roadmaps live in their respecti
 
 ---
 
-## Phase 0 — Foundation ✅
+## Phase 0 — Foundation (2026-02-21) ✅
 
 Caddy reverse proxy, static homepage, basic Makefile.
 
-## Phase 1 — Consolidation ✅
+## Phase 1 — Consolidation (2026-03-16) ✅
 
 Absorb shared-postgres, umami, uptime-kuma into single repo. Restructure into `services/` layout. Single root `docker-compose.yml`. CI + Dependabot. Container security hardening (cap_drop, read-only, healthchecks, mem_limit).
 
 *(#22–#30)*
 
-## Phase 2 — Documentation & Contracts ✅
+## Phase 2 — Documentation & Contracts (2026-03-17) ✅
 
 Make the platform legible. Zero blast radius — no running services touched.
 
 - [x] `ROADMAP.md` — this file
-- [x] `SERVICE_CATALOG.md` — service inventory + platform contract for app repos
+- [x] `APP_CONTRACT.md` — service inventory + platform contract for app repos
 - [x] `SECURITY.md` — platform security posture
-- [x] `INFRASTRUCTURE.md` updates — restore procedure, systemd timer inventory, extension requirements
+- [x] `ARCHITECTURE.md` updates — restore procedure, systemd timer inventory, extension requirements
 - [x] `decisions/` — ADR directory with consolidation decision record
 
 *(#31)*
 
-## Phase 3 — Monitoring & Alerts ✅
+## Phase 3 — Monitoring & Alerts (2026-03-17) ✅
 
 First real alerting. Know when things break instead of discovering it weeks later.
 
@@ -38,7 +38,7 @@ First real alerting. Know when things break instead of discovering it weeks late
 
 *(#33, #34, #35, #39)*
 
-## Phase 4 — Continuous Deployment ✅
+## Phase 4 — Continuous Deployment (2026-03-18) ✅
 
 No more manual deploys. Tag push deploys coupette. One-click deploys infra.
 
@@ -46,12 +46,49 @@ No more manual deploys. Tag push deploys coupette. One-click deploys infra.
 - [x] sops + age encrypted secrets (#45)
 - [x] `deploy_infra.sh` — idempotent deploy script (#44)
 - [x] GitHub Actions workflow — manual dispatch (#44)
-- [x] `SERVICE_CATALOG.md` — deploy key pattern documented
+- [x] `APP_CONTRACT.md` — deploy key pattern documented
 - [x] Coupette CD — `deploy.sh` + tag-push workflow (coupette repo)
+
+## Phase 8 — Observability (2026-03-19) ✅ *(done before Phase 5 — Compose-first observability before DR automation)*
+
+Platform observability on Compose. Grafana + Loki + Prometheus + Alloy — learn the stack with fast feedback loops before K3s migration.
+
+Coupette's RAG pipeline needs structured metrics and log aggregation. `docker logs` and `journalctl` don't answer "is retrieval quality degrading?" or "what's the daily LLM cost?" Compose-first, then migrate alongside everything else in the K3s phase.
+
+### Phase 8a — Stack + Platform Dashboard (2026-03-19)
+
+- [x] ADR: `decisions/0008-observability-stack.md`
+- [x] Add Grafana, Loki, Prometheus, Alloy to `docker-compose.yml`
+- [x] Alloy config: Docker log collection via socket + node metrics
+- [x] Prometheus scrape config: Alloy, Prometheus self-metrics
+- [x] Grafana provisioning: datasources (Loki + Prometheus), dashboard provider
+- [x] Platform Overview dashboard (container status, CPU/memory/disk, log volume, error rates, systemd timer health)
+- [x] Temporary localhost port bindings for Grafana (until WireGuard in Phase 9)
+- [x] `docs/OBSERVABILITY.md` — stack overview, config walkthrough, querying with LogQL/PromQL, adding dashboards
+- [x] Update APP_CONTRACT.md, ARCHITECTURE.md, SECURITY.md
+
+### Phase 8b — Additional Exporters (2026-03-21) ✅
+
+- [x] Caddy Prometheus metrics — `metrics` global option in Caddyfile, Prometheus scrape target (no extra container)
+- [x] postgres_exporter — Alloy embedded `prometheus.exporter.postgres` (no extra container)
+- [x] Postgres dashboard in Grafana
+- [x] systemd journal logs — Alloy `loki.source.journal` for timer/service logs (pg-backup, disk-alert, coupette timers)
+
+### Phase 8c — Application Dashboards
+
+- [x] Coupette exposes Prometheus metrics at `/metrics`
+- [ ] Recommendations & RAG Quality dashboard (latency, similarity distribution, token cost, zero-candidate rate)
+- [ ] Scraper & Data Pipeline dashboard (run duration, products scraped, embedding rate)
+- [ ] Alerting rules (low similarity, high error rate, scraper failure)
+
+*Remaining items depend on coupette exposing structured metrics and custom counters (#63). Dashboards can't be built until the app emits the data.*
+
+---
 
 ## Phase 5 — Disaster Recovery
 
-web-01 dies → fully operational replacement in one session, no data loss.
+**Context:** web-01 is a single point of failure. If it dies, recovery is manual — SSH in, re-provision, restore from backups. No runbook, no automation, no offsite backups.
+**Action:** Daily Postgres dumps to Hetzner Object Storage with tiered retention. Terraform for VPS provisioning. Ansible for full server configuration. DR runbook with tested recovery flow.
 
 ### Backup strategy
 
@@ -84,7 +121,8 @@ web-01 dies → fully operational replacement in one session, no data loss.
 
 ## Phase 6 — Kubernetes
 
-Docker Compose → K3s + Flux GitOps. Only when scaling demands it or for portfolio signal — not before.
+**Context:** Docker Compose works for a single VPS, but doesn't support rolling updates, auto-healing, or GitOps natively. K3s would add these without the overhead of full K8s.
+**Action:** Install K3s via Ansible, bootstrap Flux for GitOps, migrate services to K8s manifests (stateless first, then stateful).
 
 - [ ] K3s install via Ansible role
 - [ ] Flux bootstrap — watches `k8s/` path
@@ -93,50 +131,18 @@ Docker Compose → K3s + Flux GitOps. Only when scaling demands it or for portfo
 
 ## Phase 7 — Automated Deployment
 
-Helm-based CD. Tag push → GitOps deploy. Replaces GitHub Actions SSH deploy pattern from Phase 4.
+**Context:** Phase 4's SSH-based deploy works but doesn't leverage K8s capabilities. Helm + Flux would give declarative deploys with rollback.
+**Action:** Helm charts for all services, Flux image automation for tag-push deploys, health check gates with automatic rollback.
 
 - [ ] Helm charts for infra services + coupette
 - [ ] Flux image automation — tag push triggers rollout
 - [ ] Health check gate + rollback
 - [ ] Retire `deploy_infra.sh` and `deploy.sh` SSH-based workflows
 
-## Phase 8 — Observability
-
-Platform observability on Compose. Grafana + Loki + Prometheus + Alloy — learn the stack with fast feedback loops before K3s migration.
-
-Coupette's RAG pipeline needs structured metrics and log aggregation. `docker logs` and `journalctl` don't answer "is retrieval quality degrading?" or "what's the daily LLM cost?" Compose-first, then migrate alongside everything else in the K3s phase.
-
-### Phase 8a — Stack + Platform Dashboard
-
-- [x] ADR: `decisions/0008-observability-stack.md`
-- [x] Add Grafana, Loki, Prometheus, Alloy to `docker-compose.yml`
-- [x] Alloy config: Docker log collection via socket + node metrics
-- [x] Prometheus scrape config: Alloy, Prometheus self-metrics
-- [x] Grafana provisioning: datasources (Loki + Prometheus), dashboard provider
-- [x] Platform Overview dashboard (container status, CPU/memory/disk, log volume, error rates, systemd timer health)
-- [x] Temporary localhost port bindings for Grafana (until WireGuard in Phase 9)
-- [x] `docs/OBSERVABILITY.md` — stack overview, config walkthrough, querying with LogQL/PromQL, adding dashboards
-- [x] Update SERVICE_CATALOG.md, INFRASTRUCTURE.md, SECURITY.md
-
-### Phase 8b — Additional Exporters ✅
-
-- [x] Caddy Prometheus metrics — `metrics` global option in Caddyfile, Prometheus scrape target (no extra container)
-- [x] postgres_exporter — Alloy embedded `prometheus.exporter.postgres` (no extra container)
-- [x] Postgres dashboard in Grafana
-- [x] systemd journal logs — Alloy `loki.source.journal` for timer/service logs (pg-backup, disk-alert, coupette timers)
-
-### Phase 8c — Application Dashboards
-
-- [x] Coupette exposes Prometheus metrics at `/metrics`
-- [ ] Recommendations & RAG Quality dashboard (latency, similarity distribution, token cost, zero-candidate rate)
-- [ ] Scraper & Data Pipeline dashboard (run duration, products scraped, embedding rate)
-- [ ] Alerting rules (low similarity, high error rate, scraper failure)
-
 ## Phase 9 — WireGuard VPN
 
-Zero-trust network access to the VPS. All admin traffic (SSH, observability, database) moves behind a WireGuard tunnel. Port 22 closes on the public interface. The only internet-facing ports are 80, 443, and 51820/udp.
-
-Break-glass recovery: Hetzner web console (browser-based, always available, no SSH required).
+**Context:** SSH and observability tools are exposed on the public interface. Port 22 is brute-forced daily (fail2ban mitigates, but the surface exists). Moving admin traffic behind a VPN eliminates the exposure entirely.
+**Action:** Host-level WireGuard tunnel, peer setup for dev machine, SSH hardened to listen only on tunnel interface. Break-glass via Hetzner web console.
 
 ### Host-level WireGuard
 
@@ -163,10 +169,23 @@ Break-glass recovery: Hetzner web console (browser-based, always available, no S
 
 ### Documentation
 
-- [ ] `docs/guides/WIREGUARD_SETUP.md` — server config, peer setup, key generation, macOS client, troubleshooting, break-glass procedure
+- [ ] `docs/guides/WIREGUARD_SETUP_GUIDE.md` — server config, peer setup, key generation, macOS client, troubleshooting, break-glass procedure
 - [ ] Update SECURITY.md — new network posture, attack surface reduction
-- [ ] Update INFRASTRUCTURE.md — SSH access method change
+- [ ] Update ARCHITECTURE.md — SSH access method change
 - [ ] ADR: `decisions/0009-wireguard-vpn.md`
+
+---
+
+## Backlog
+
+Concrete housekeeping — not phased, ship when convenient.
+
+- [ ] Rename `saq_sommelier` in backup script (#21)
+- [ ] GitHub production environment for deploy workflow (#54)
+- [ ] Move `git pull` out of `deploy_infra.sh` into CI workflow (#76)
+- [ ] Umami crash-loop — Prisma schema-engine missing for ARM64 (#77)
+- [ ] Rename uptime-kuma volume to follow naming convention (#79)
+- [ ] Enable `pg_stat_statements` for query monitoring (#96)
 
 ## Ideas (unscoped)
 
