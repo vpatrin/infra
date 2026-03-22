@@ -5,8 +5,8 @@ Requires=docker.service
 
 [Service]
 Type=oneshot
-EnvironmentFile=/etc/infra/aws-infra-backup.env
-EnvironmentFile=/etc/infra/monitor-backups.env
+EnvironmentFile=/home/deploy/infra/secrets/aws-infra-backup.env
+EnvironmentFile=/home/deploy/infra/secrets/monitor-backups.env
 ExecStart=/home/deploy/infra/scripts/postgres_backup.sh
 ExecStartPost=-/home/deploy/infra/scripts/push-monitor.sh ${PUSH_URL}
 User=victor

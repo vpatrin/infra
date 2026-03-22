@@ -29,12 +29,10 @@ echo "==> Decrypting secrets..."
     done
 
     # Infra-level secrets (host systemd timers, push monitors)
-    sudo mkdir -p /etc/infra
     for secret in "${ENCRYPTED_SECRETS[@]}"; do
         enc="${INFRA_DIR}/secrets/${secret}.env.enc"
         [[ -f "${enc}" ]] || { echo "ERROR: ${enc} not found"; exit 1; }
-        sops --decrypt --output-type dotenv "${enc}" | sudo tee "/etc/infra/${secret}.env" > /dev/null
-        sudo chmod 600 "/etc/infra/${secret}.env"
+        sops --decrypt --output-type dotenv "${enc}" > "${INFRA_DIR}/secrets/${secret}.env"
     done
 )
 
@@ -47,8 +45,8 @@ for svc in "${ENCRYPTED_SERVICES[@]}"; do
     fi
 done
 for secret in "${ENCRYPTED_SECRETS[@]}"; do
-    env_file="/etc/infra/${secret}.env"
-    if ! sudo test -s "${env_file}"; then
+    env_file="${INFRA_DIR}/secrets/${secret}.env"
+    if [[ ! -s "${env_file}" ]]; then
         echo "ERROR: ${env_file} is empty after decryption"
         exit 1
     fi

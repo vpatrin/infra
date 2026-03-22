@@ -96,7 +96,7 @@ s3://victorpatrin-backups/postgres/
 
 Handled automatically by `deploy_infra.sh` — it syncs all units from `systemd/` to `/etc/systemd/system/`.
 
-AWS credentials for the `infra-backup` IAM user are in `/etc/infra/aws-infra-backup.env` (root-owned, `0600`). Contains `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION`, and `S3_BUCKET`.
+AWS credentials for the `infra-backup` IAM user are in `secrets/aws-infra-backup.env` (decrypted from `.env.enc` by `deploy_infra.sh`). Contains `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION`, and `S3_BUCKET`.
 
 ### Manual backup
 
@@ -167,7 +167,7 @@ Uptime Kuma polls services via HTTP and alerts on downtime via Telegram (`@victo
 
 Daily systemd timer checks disk usage on `/`. If usage exceeds 85%, sends a Telegram alert via `@victor_uptime_bot`. Not routed through Uptime Kuma — the timer always runs and the disk is always queryable, so push/pull monitoring doesn't apply.
 
-Credentials (`BOT_TOKEN`, `CHAT_ID`) stored in `secrets/telegram-alerts-bot.env.enc` (sops-encrypted), decrypted to `/etc/infra/telegram-alerts-bot.env` by `deploy_infra.sh`.
+Credentials (`BOT_TOKEN`, `CHAT_ID`) stored in `secrets/telegram-alerts-bot.env.enc` (sops-encrypted), decrypted to `secrets/telegram-alerts-bot.env` by `deploy_infra.sh`.
 
 ### Push monitors (systemd timers)
 
@@ -177,7 +177,7 @@ Scheduled jobs (backups, scrapers) report success to Uptime Kuma push monitors. 
 |--------------|--------------|-----------|---------|
 | `pg-backup`  | Push         | 1 day     | 6 hours |
 
-Push URLs are stored in `/etc/infra/<monitor>.env` on the VPS (root-owned, `0600`). Systemd loads them via `EnvironmentFile`, and `ExecStartPost=-` calls `scripts/push-monitor.sh` on success. See `pg-backup.service` for the reference implementation.
+Push URLs are stored in `secrets/<monitor>.env.enc` (sops-encrypted), decrypted to `secrets/<monitor>.env` by `deploy_infra.sh`. Systemd loads them via `EnvironmentFile`, and `ExecStartPost=-` calls `scripts/push-monitor.sh` on success. See `pg-backup.service` for the reference implementation.
 
 #### Adding a push monitor
 
