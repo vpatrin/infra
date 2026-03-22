@@ -88,30 +88,31 @@ Coupette's RAG pipeline needs structured metrics and log aggregation. `docker lo
 ## Phase 5 — Disaster Recovery
 
 **Context:** web-01 is a single point of failure. If it dies, recovery is manual — SSH in, re-provision, restore from backups. No runbook, no automation, no offsite backups.
-**Action:** Daily Postgres dumps to Hetzner Object Storage with tiered retention. Terraform for VPS provisioning. Ansible for full server configuration. DR runbook with tested recovery flow.
+**Action:** Daily Postgres dumps to AWS S3 (provider diversity). Terraform for VPS provisioning (state in Hetzner Object Storage). Ansible for full server configuration. DR runbook with tested recovery flow.
 
 ### Backup strategy
 
-- [ ] Daily Postgres dumps (all DBs) → Hetzner Object Storage — 3-tier retention (daily 7d / weekly 4w / monthly 3m)
-- [ ] Backup script updated — offload to object storage, prune per retention policy
+- [ ] Daily Postgres dumps (all DBs) → AWS S3 — 3-tier retention (daily 7d / weekly 4w / monthly 3m)
+- [ ] Backup script rewritten — S3 as primary (no local retention), fail loudly on upload failure
 - [ ] Restore smoke test — verify current dumps restore into a throwaway container before trusting offsite
 
 ### Terraform
 
 - [ ] Hetzner VPS (Debian 13) + SSH key registration
 - [ ] Hetzner firewall rules (22, 80, 443)
+- [ ] State backend in Hetzner Object Storage (bucket created manually)
 - [ ] CI gate — `terraform validate` on PR
 - [ ] Outputs VPS IP for Ansible inventory
 
 ### Ansible
 
 - [ ] `requirements.yml` — `geerlingguy.security`, `geerlingguy.docker`
-- [ ] `roles/base` — swap, timezone, locale, Docker log rotation, sops
+- [ ] `roles/base` — swap, timezone, locale, Docker log rotation, sops + age
 - [ ] `roles/security` — SSH hardening, fail2ban, ufw (wraps `geerlingguy.security`)
 - [ ] `roles/docker` — Docker + Compose plugin (wraps `geerlingguy.docker`)
-- [ ] `roles/infra` — clone infra + coupette repos, `internal` network, compose up, `deploy_infra.sh`
-- [ ] `roles/timers` — provision infra systemd units (pg-backup, disk-alert, push monitors)
-- [ ] Ansible vault — all secrets (Postgres, Umami, Telegram token, push monitor URLs, Hetzner Object Storage credentials, SSH deploy key public key, coupette `.env`)
+- [ ] `roles/infra` — clone infra + coupette repos, `internal` network, sops-encrypted `.env.prod` files, compose up (all services incl. observability stack)
+- [ ] `roles/timers` — provision systemd units (pg-backup, disk-alert)
+- [ ] Ansible vault — sops age key, SSH deploy key, AWS S3 credentials, Hetzner Object Storage credentials, push monitor URLs
 - [ ] CI gate — `ansible-lint` on PR
 
 ### DR runbook + validation
@@ -180,12 +181,11 @@ Coupette's RAG pipeline needs structured metrics and log aggregation. `docker lo
 
 Concrete housekeeping — not phased, ship when convenient.
 
-- [ ] Rename `saq_sommelier` in backup script (#21)
-- [ ] GitHub production environment for deploy workflow (#54)
-- [ ] Move `git pull` out of `deploy_infra.sh` into CI workflow (#76)
-- [ ] Umami crash-loop — Prisma schema-engine missing for ARM64 (#77)
+- [ ] Rename `saq_sommelier` in backup script — blocked on coupette DB rename (#21, coupette #423)
 - [ ] Rename uptime-kuma volume to follow naming convention (#79)
 - [ ] Enable `pg_stat_statements` for query monitoring (#96)
+- [ ] Run security hardening audits — docker-bench, Lynis, ssh-audit (#56). Informs Phase 9.
+- [ ] Evaluate GitHub organization for shared workflows (#73)
 
 ## Ideas (unscoped)
 
