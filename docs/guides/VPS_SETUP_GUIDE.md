@@ -483,11 +483,14 @@ A dedicated `deploy` user runs CI workloads (GitHub Actions). It is separate fro
 ```bash
 sudo adduser --disabled-password --gecos '' deploy
 sudo usermod -aG docker deploy
+sudo chmod 711 /home/deploy
 ```
 
 `--disabled-password` means no password and no password-based login. SSH key only. No sudo.
 
 Adding `deploy` to the `docker` group allows it to run `docker compose` commands without root.
+
+`chmod 711` allows other users (e.g. `victor` running systemd timers) to traverse `/home/deploy/` without being able to list its contents. Required because systemd units run as `victor` but reference scripts and secrets in `/home/deploy/infra/`.
 
 ### Scoped sudo for systemd
 
