@@ -69,11 +69,7 @@ Adding or modifying a route requires a PR to this repo — app repos do not touc
 
 ### Adding a new app route
 
-1. Open a PR to this repo adding a domain block to `services/caddy/Caddyfile`
-2. Ensure the app container name is unique and joins the `internal` network
-3. Allocate the next sequential port (APIs: 8000+, third-party: keep vendor default)
-4. Update the service inventory table in [ARCHITECTURE.md](ARCHITECTURE.md#services)
-5. Deploy: `git pull && make reload` on VPS (no downtime)
+Adding or modifying a route requires a PR to this repo. See [CADDY_GUIDE.md](guides/CADDY_GUIDE.md#adding-a-new-route) for the full procedure.
 
 ## Backup Script
 
@@ -156,10 +152,6 @@ A dedicated `deploy` system user owns all repos and runs CI workloads. It has no
 
 A dedicated `github_actions_deploy` ed25519 key authenticates GitHub Actions to the VPS as the `deploy` user. It is stored as `SSH_DEPLOY_KEY` in GitHub Actions secrets on both repos. App repos must use this key — do not use personal SSH keys in CI.
 
-### Infra deploy
+### Deploy process
 
-Infra deploys are triggered manually via GitHub Actions (workflow dispatch). The workflow validates Caddyfile + compose, then runs `deploy_infra.sh` on the VPS as `deploy`.
-
-### App deploy
-
-App repos trigger their own deploy workflows. After a successful deploy, the app is responsible for running its own `deploy.sh` on the VPS. Infra guarantees the platform contract (network, postgres, Caddy routes) is intact before any app deploy runs.
+See [ARCHITECTURE.md](ARCHITECTURE.md#deployment) for how infra deploys work. App repos trigger their own deploy workflows — infra guarantees the platform contract (network, postgres, Caddy routes) is intact before any app deploy runs.

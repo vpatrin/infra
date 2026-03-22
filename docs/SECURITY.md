@@ -151,47 +151,39 @@ Backups cover PostgreSQL only. All other volumes are considered recoverable — 
 ### 2026-03-09 — Container hardening (#14)
 
 **Context:** All containers ran with default capabilities — full Linux capability set, no memory limits, no log rotation.
-**Action:** Added `cap_drop: ALL` + minimal `cap_add`, `no-new-privileges`, log rotation (10MB × 3), healthchecks to every service. Umami set to `read_only: true`.
-**Result:** Zero capabilities for most containers. Only Caddy (`NET_BIND_SERVICE`), PostgreSQL (`SETUID/SETGID/CHOWN/FOWNER/DAC_READ_SEARCH`), and Alloy (`DAC_READ_SEARCH/DAC_OVERRIDE`) have caps.
+**Action:** Added `cap_drop: ALL` + minimal `cap_add`, `no-new-privileges`, log rotation (10MB × 3), healthchecks to every service. Umami set to `read_only: true`. Only three services retain caps: Caddy (`NET_BIND_SERVICE`), PostgreSQL (`SETUID/SETGID/CHOWN/FOWNER/DAC_READ_SEARCH`), Alloy (`DAC_READ_SEARCH/DAC_OVERRIDE`).
 
 ### 2026-03-09 — Security headers (#12)
 
 **Context:** Caddy served traffic with no security headers — no HSTS, no CSP, no clickjacking protection.
-**Action:** Added shared Caddyfile snippet with HSTS (2yr), X-Frame-Options DENY, CSP, Referrer-Policy, Permissions-Policy. Removed Server header.
-**Result:** All sites behind Caddy inherit security headers. Per-site CSP overrides where needed.
+**Action:** Added shared Caddyfile snippet with HSTS (2yr), X-Frame-Options DENY, CSP, Referrer-Policy, Permissions-Policy. Removed Server header. All sites inherit via `import security_headers`; per-site CSP overrides where needed.
 
 ### 2026-03-16 — Service consolidation (#23, #25)
 
 **Context:** PostgreSQL, Umami, and Uptime Kuma ran as separate repos with inconsistent security posture.
 **Action:** Absorbed all services into single repo. Applied uniform hardening (cap_drop, no-new-privileges, log rotation) across all containers.
-**Result:** Single security baseline for all platform services.
 
 ### 2026-03-17 — Push monitor credentials (#39)
 
 **Context:** Push monitor URLs (Uptime Kuma heartbeat endpoints) needed to be accessible to systemd timers without being in the repo.
 **Action:** Stored push URLs in `/etc/push-monitor/<job>.env` (root-owned, `0600`). Systemd units load via `EnvironmentFile`.
-**Result:** Credentials isolated from repo, readable only by root/systemd.
 
 ### 2026-03-18 — sops + age secrets management (#45, #46)
 
 **Context:** Production `.env` files lived on the VPS with no encryption, no version control, no audit trail. Losing the VPS meant losing all secrets.
-**Action:** Encrypted all production secrets with sops + age, committed as `.env.prod.enc`. Deploy script decrypts at deploy time with `SOPS_AGE_KEY`. Decrypted files created with `umask 077`.
-**Result:** Secrets are version-controlled (encrypted), recoverable from git, and deploy-time only on disk.
+**Action:** Encrypted all production secrets with sops + age, committed as `.env.prod.enc`. Deploy script decrypts at deploy time with `SOPS_AGE_KEY`. Decrypted files created with `umask 077`. Secrets now version-controlled (encrypted), recoverable from git, deploy-time only on disk.
 
 ### 2026-03-18 — Deploy user isolation (#44)
 
 **Context:** CI deploys ran as `victor` (admin user) — overprivileged for automated workloads.
-**Action:** Created dedicated `deploy` system user with scoped sudo (systemd commands only). Dedicated ed25519 SSH deploy key for GitHub Actions.
-**Result:** CI workloads run with minimal privileges. Admin and automation are separate users.
+**Action:** Created dedicated `deploy` system user with scoped sudo (systemd commands only). Dedicated ed25519 SSH deploy key for GitHub Actions. Admin (`victor`) and automation (`deploy`) are now separate users with separate privilege sets.
 
 ### 2026-03-19 — Observability stack security (#75)
 
 **Context:** Alloy needs host filesystem access (`/proc`, `/sys`, `/`) for node metrics and Docker socket for log collection — broad attack surface.
-**Action:** `read_only: true`, `no-new-privileges`, `cap_drop: ALL` + only `DAC_READ_SEARCH/DAC_OVERRIDE`. Docker socket mounted read-only. All observability services internal-only (no host port bindings in base compose).
-**Result:** Observability stack has no internet exposure. Alloy's host access is read-only with minimal capabilities.
+**Action:** `read_only: true`, `no-new-privileges`, `cap_drop: ALL` + only `DAC_READ_SEARCH/DAC_OVERRIDE`. Docker socket mounted read-only. All observability services internal-only — no host port bindings in base compose, no internet exposure.
 
 ### 2026-03-21 — Per-site CSP headers (#92)
 
 **Context:** All sites shared a single CSP policy. Coupette needed `unsafe-eval` for a Telegram widget, but other sites shouldn't have it.
-**Action:** Moved CSP to per-site configuration in Caddyfile. Each domain block defines its own CSP policy.
-**Result:** Tighter CSP per site. Only coupette.club allows `unsafe-eval`.
+**Action:** Moved CSP to per-site configuration in Caddyfile. Each domain block defines its own CSP policy — only `coupette.club` allows `unsafe-eval`.

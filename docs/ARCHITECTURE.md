@@ -75,20 +75,7 @@ Weekly automated backups via systemd timer.
 
 ### What's stateful
 
-| Data | Location | Risk |
-|------|----------|------|
-| PostgreSQL (2 databases) | Docker volume `shared-postgres_pgdata` | **High** — user data, product catalog, analytics |
-| Uptime Kuma | Docker volume `uptime-kuma_uptime-kuma-data` | Medium — monitoring config + history, reconfigurable |
-| Grafana | Docker volume `grafana_data` | Low — dashboards should be provisioned as code |
-| Prometheus | Docker volume `prometheus_data` | Low — metrics rebuilt from scrape targets (7d retention) |
-| Loki | Docker volume `loki_data` | Low — logs rebuilt from Docker log tailing (7d retention) |
-| Alloy | Docker volume `alloy_data` | Low — collector WAL, transient, rebuilt on restart |
-| Caddy TLS certs | Docker volume `caddy_data` | Low — auto-renewed by ACME |
-| Caddy config | Docker volume `caddy_config` | Low — regenerated from Caddyfile |
-
-### What's stateless
-
-Everything else. All service containers can be rebuilt from their repos. Static sites are in git. Observability data rebuilds from live sources.
+See [SECURITY.md](SECURITY.md#volume-security) for the full volume inventory and risk assessment. Only PostgreSQL is high-risk — everything else is recoverable (auto-renewed certs, rebuildable metrics/logs, reconfigurable monitoring).
 
 ### Strategy
 
@@ -161,18 +148,7 @@ Alloy auto-discovers all containers and ships their logs to Loki for centralized
 
 ## Monitoring
 
-| Tool | URL | Purpose |
-|------|-----|---------|
-| Grafana | `localhost:3002` (SSH tunnel) | Dashboards — logs, metrics, system overview |
-| Prometheus | Internal only | Metrics storage (7d retention) |
-| Loki | Internal only | Log aggregation (7d retention) |
-| Alloy | Internal only | Log + metrics collector (Docker + node) |
-| Uptime Kuma | `status.victorpatrin.dev` | Uptime monitoring, alerts on downtime |
-| Umami | `analytics.victorpatrin.dev` | Privacy-friendly web analytics |
-
-### HTTP monitors
-
-Uptime Kuma polls services via HTTP and alerts on downtime via Telegram (`@victor_uptime_bot`).
+Uptime Kuma polls services via HTTP and alerts on downtime via Telegram (`@victor_uptime_bot`). Grafana dashboards accessible via `localhost:3002` (SSH tunnel) — see [OBSERVABILITY.md](OBSERVABILITY.md).
 
 ### Disk usage alert
 
@@ -230,11 +206,3 @@ make reload-caddy
 ```
 
 Each project repo has its own deploy process. See [coupette PRODUCTION.md](https://github.com/vpatrin/coupette/blob/main/docs/PRODUCTION.md) for app-level deployment.
-
-## Scalability
-
-Single-VPS setup. Scaling options:
-
-- **Vertical**: upgrade the Hetzner plan (more CPU/RAM/disk).
-- **Horizontal**: not designed for it — would require splitting services across servers, adding a load balancer, and externalizing PostgreSQL. Not planned.
-- **Current headroom**: ~10 containers (4 core + 4 observability + coupette). Memory budget is tight at 3.5GB reserved of 4GB.

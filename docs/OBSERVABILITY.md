@@ -90,33 +90,11 @@ Dashboard provider reads JSON files from `services/grafana/dashboards/` (mounted
 
 Access: `localhost:3002` via SSH tunnel (`make tunnel`), or `localhost:3003` locally via `docker-compose.dev.yml`.
 
-## Config files
+## Adding an app
 
-| File | What it controls |
-|------|-----------------|
-| `services/alloy/config.alloy` | Log collection targets, metric exporters, push endpoints |
-| `services/prometheus/prometheus.yml` | Scrape targets, intervals, retention |
-| `services/loki/loki.yaml` | Storage backend, retention, compaction |
-| `services/grafana/provisioning/datasources/datasources.yaml` | Grafana → Prometheus/Loki connection |
-| `services/grafana/provisioning/dashboards/dashboards.yaml` | Dashboard file provider config |
-| `services/grafana/dashboards/*.json` | Dashboard definitions (commit here to persist) |
+**Logs:** Nothing to do. Alloy auto-discovers all containers via the Docker socket. Filter in Grafana with `{container="your-container-name"}`.
 
-## Adding a new scrape target
-
-1. Add a `scrape_configs` entry in `services/prometheus/prometheus.yml`
-2. The target must be reachable on the `internal` network by container name
-3. Deploy — Prometheus picks up the new config on restart
-
-## Adding app logs
-
-Nothing to do. Alloy auto-discovers all containers on the Docker socket. Any new container on the VPS gets its logs shipped to Loki automatically. Filter in Grafana with `{container="your-container-name"}`.
-
-## Adding app metrics
-
-The app must expose a `/metrics` endpoint (Prometheus format). Then:
-
-1. Add a scrape target in `prometheus.yml` pointing to `container-name:port`
-2. Build a Grafana dashboard querying those metrics
+**Metrics:** The app must expose a `/metrics` endpoint (Prometheus format). Then add a `scrape_configs` entry in `services/prometheus/prometheus.yml` pointing to `container-name:port` on the `internal` network. Prometheus picks up the new config on restart.
 
 ## Retention and disk
 
