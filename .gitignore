@@ -13,6 +13,9 @@
 # Claude (commit commands + docs, ignore local settings)
 .claude/settings.local.json
 
+# Ansible vault — created by setup.sh, encrypted locally
+ansible/group_vars/all/vault.yml
+
 # Environment variables — plaintext ignored, encrypted (.enc) committed
 **/*.env
 **/*.env.prod
