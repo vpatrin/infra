@@ -3,6 +3,7 @@ name: CI
 on:
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -56,6 +57,21 @@ jobs:
             echo "Checking $script..."
             shellcheck --severity=warning "$script"
           done
+
+  terraform:
+    name: Validate Terraform
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v6
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.14.7"
+      - name: Terraform init and validate
+        working-directory: terraform
+        run: |
+          terraform init -backend=false
+          terraform validate
 
   gitleaks:
     name: Gitleaks
