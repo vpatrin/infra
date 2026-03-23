@@ -5,6 +5,8 @@ Requires=docker.service
 
 [Service]
 Type=oneshot
+Nice=19
+IOSchedulingClass=idle
 EnvironmentFile=/home/deploy/infra/secrets/aws-infra-backup.env
 EnvironmentFile=/home/deploy/infra/secrets/monitor-backups.env
 ExecStart=/home/deploy/infra/scripts/postgres_backup.sh
