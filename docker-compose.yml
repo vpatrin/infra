@@ -154,7 +154,7 @@ services:
         max-file: "3"
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.51.0
+    image: ghcr.io/google/cadvisor@sha256:5534ae91cbf3428998d60428d107cfdd97272d80658534ac6e54d8ce3b0c4d72
     container_name: cadvisor
     volumes:
       - /:/rootfs:ro
@@ -167,6 +167,8 @@ services:
       - "--disable_metrics=advtcp,cpu_topology,cpuset,hugetlb,memory_numa,process,referenced_memory,resctrl,sched,tcp,udp"
     networks:
       - internal
+    pid: host
+    cgroup: host
     read_only: true
     security_opt: [no-new-privileges:true]
     restart: unless-stopped
