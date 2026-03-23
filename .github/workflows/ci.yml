@@ -75,6 +75,21 @@ jobs:
           terraform init -backend=false
           terraform validate
 
+  ansible:
+    name: Lint Ansible
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install ansible-lint
+        run: pip install ansible-lint
+      - name: Install Galaxy roles and collections
+        working-directory: ansible
+        run: ansible-galaxy install -r requirements.yml
+      - name: Run ansible-lint
+        working-directory: ansible
+        run: ansible-lint
+
   gitleaks:
     name: Gitleaks
     runs-on: ubuntu-latest
