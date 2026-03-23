@@ -64,7 +64,7 @@
     {
       "type": "stat",
       "title": "Request Rate",
-      "gridPos": { "h": 5, "w": 7, "x": 3, "y": 1 },
+      "gridPos": { "h": 5, "w": 5, "x": 3, "y": 1 },
       "id": 20,
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
@@ -92,8 +92,39 @@
     },
     {
       "type": "stat",
+      "title": "p50 Latency",
+      "gridPos": { "h": 5, "w": 5, "x": 8, "y": 1 },
+      "id": 23,
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"coupette-backend\"}[5m]))) * 1000",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 200 },
+              { "color": "red", "value": 500 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area"
+      }
+    },
+    {
+      "type": "stat",
       "title": "p95 Latency",
-      "gridPos": { "h": 5, "w": 7, "x": 10, "y": 1 },
+      "gridPos": { "h": 5, "w": 5, "x": 13, "y": 1 },
       "id": 21,
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
@@ -123,8 +154,8 @@
     },
     {
       "type": "stat",
-      "title": "Error Rate",
-      "gridPos": { "h": 5, "w": 7, "x": 17, "y": 1 },
+      "title": "5xx Error Rate",
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 1 },
       "id": 22,
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
@@ -168,7 +199,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum by (handler) (rate(http_request_duration_seconds_count{job=\"coupette-backend\"}[5m]))",
+          "expr": "topk(5, sum by (handler) (rate(http_request_duration_seconds_count{job=\"coupette-backend\"}[5m])))",
           "legendFormat": "{{ handler }}",
           "refId": "A"
         }
@@ -178,7 +209,7 @@
           "unit": "reqps",
           "min": 0,
           "custom": {
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "lineWidth": 2,
             "spanNulls": false
           },
@@ -186,7 +217,7 @@
         }
       },
       "options": {
-        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] }
+        "legend": { "displayMode": "list", "placement": "bottom" }
       }
     },
     {
@@ -197,7 +228,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le, handler) (rate(http_request_duration_seconds_bucket{job=\"coupette-backend\"}[5m]))) * 1000",
+          "expr": "topk(5, histogram_quantile(0.95, sum by (le, handler) (rate(http_request_duration_seconds_bucket{job=\"coupette-backend\"}[5m]))) * 1000)",
           "legendFormat": "{{ handler }}",
           "refId": "A"
         }
@@ -215,66 +246,222 @@
         }
       },
       "options": {
-        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] }
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Search",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 15 },
+      "collapsed": false,
+      "id": 40
+    },
+    {
+      "type": "stat",
+      "title": "Search Rate",
+      "gridPos": { "h": 5, "w": 8, "x": 0, "y": 16 },
+      "id": 41,
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(http_request_duration_seconds_count{job=\"coupette-backend\", handler=\"/api/products\"}[5m]))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "area"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Search p95",
+      "gridPos": { "h": 5, "w": 8, "x": 8, "y": 16 },
+      "id": 42,
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"coupette-backend\", handler=\"/api/products\"}[5m]))) * 1000",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 500 },
+              { "color": "red", "value": 1000 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Facets p95",
+      "gridPos": { "h": 5, "w": 8, "x": 16, "y": 16 },
+      "id": 44,
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"coupette-backend\", handler=\"/api/products/facets\"}[5m]))) * 1000",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 500 },
+              { "color": "red", "value": 1000 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area"
       }
     },
     {
       "type": "row",
       "title": "Recommendations",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 15 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 },
       "collapsed": false,
       "id": 6
     },
     {
-      "type": "timeseries",
-      "title": "Pipeline Duration by Stage",
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 16 },
+      "type": "bargauge",
+      "title": "Chat Latency p95",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 23 },
       "id": 7,
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le, stage) (rate(coupette_recommendation_duration_seconds_bucket[5m]))) * 1000",
-          "legendFormat": "p95 {{ stage }}",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(coupette_recommendation_duration_seconds_bucket{stage=\"retrieval\"}[5m]))) * 1000",
+          "legendFormat": "Semantic Search",
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.50, sum by (le, stage) (rate(coupette_recommendation_duration_seconds_bucket[5m]))) * 1000",
-          "legendFormat": "p50 {{ stage }}",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(coupette_recommendation_duration_seconds_bucket{stage=\"embed\"}[5m]))) * 1000",
+          "legendFormat": "Query Embedding",
           "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(coupette_recommendation_duration_seconds_bucket{stage=\"llm\"}[5m]))) * 1000",
+          "legendFormat": "Claude Calls",
+          "refId": "C"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(coupette_recommendation_duration_seconds_bucket{stage=\"total\"}[5m]))) * 1000",
+          "legendFormat": "Total",
+          "refId": "D"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "ms",
           "min": 0,
-          "custom": {
-            "fillOpacity": 0,
-            "lineWidth": 2,
-            "spanNulls": false
-          },
-          "color": { "mode": "palette-classic" }
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 5000 },
+              { "color": "red", "value": 10000 }
+            ]
+          }
         }
       },
       "options": {
-        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] }
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "namePlacement": "auto",
+        "valueMode": "color"
+      }
+    },
+    {
+      "type": "bargauge",
+      "title": "Claude Calls p95",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 23 },
+      "id": 11,
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(coupette_llm_call_duration_seconds_bucket{service=\"intent\"}[5m]))) * 1000",
+          "legendFormat": "Intent Classification",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(coupette_llm_call_duration_seconds_bucket{service=\"curation\"}[5m]))) * 1000",
+          "legendFormat": "Wine Curation",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(coupette_llm_call_duration_seconds_bucket{service=\"sommelier\"}[5m]))) * 1000",
+          "legendFormat": "Sommelier Chat",
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 3000 },
+              { "color": "red", "value": 5000 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "namePlacement": "auto",
+        "valueMode": "color"
       }
     },
     {
       "type": "timeseries",
-      "title": "Candidates per Recommendation",
-      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 16 },
-      "id": 8,
+      "title": "Pipeline Errors",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 23 },
+      "id": 12,
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(coupette_recommendation_candidates_bucket[5m])))",
-          "legendFormat": "p95",
+          "expr": "sum by (error_type) (rate(coupette_recommendation_pipeline_errors_total[5m]))",
+          "legendFormat": "{{ error_type }}",
           "refId": "A"
-        },
-        {
-          "expr": "histogram_quantile(0.50, sum by (le) (rate(coupette_recommendation_candidates_bucket[5m])))",
-          "legendFormat": "p50",
-          "refId": "B"
         }
       ],
       "fieldConfig": {
@@ -294,120 +481,115 @@
       }
     },
     {
-      "type": "timeseries",
-      "title": "LLM Latency p95",
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 16 },
-      "id": 11,
+      "type": "row",
+      "title": "Costs",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 31 },
+      "collapsed": false,
+      "id": 50
+    },
+    {
+      "type": "stat",
+      "title": "Claude Tokens (30d)",
+      "gridPos": { "h": 6, "w": 4, "x": 0, "y": 32 },
+      "id": 51,
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le, service) (rate(coupette_llm_call_duration_seconds_bucket[5m]))) * 1000",
-          "legendFormat": "p95 {{ service }}",
+          "expr": "sum(increase(coupette_llm_tokens_total{direction=\"in\"}[30d]))",
+          "legendFormat": "Input",
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.50, sum by (le, service) (rate(coupette_llm_call_duration_seconds_bucket[5m]))) * 1000",
-          "legendFormat": "p50 {{ service }}",
+          "expr": "sum(increase(coupette_llm_tokens_total{direction=\"out\"}[30d]))",
+          "legendFormat": "Output",
           "refId": "B"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ms",
-          "min": 0,
-          "custom": {
-            "fillOpacity": 0,
-            "lineWidth": 2,
-            "spanNulls": false
-          },
-          "color": { "mode": "palette-classic" }
+          "unit": "short",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          }
         }
       },
       "options": {
-        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] }
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
       }
     },
     {
-      "type": "piechart",
-      "title": "Intent Classifications",
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 24 },
-      "id": 9,
+      "type": "stat",
+      "title": "Claude Cost (30d)",
+      "description": "Haiku 4.5 — $1/MTok in, $5/MTok out",
+      "gridPos": { "h": 6, "w": 4, "x": 4, "y": 32 },
+      "id": 52,
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum by (intent_type) (increase(coupette_intent_classifications_total[1h]))",
-          "legendFormat": "{{ intent_type }}",
+          "expr": "(sum(increase(coupette_llm_tokens_total{direction=\"in\"}[30d])) / 1000000 * 1) + (sum(increase(coupette_llm_tokens_total{direction=\"out\"}[30d])) / 1000000 * 5)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 5 },
+              { "color": "red", "value": 20 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "type": "bargauge",
+      "title": "Tokens by Service (30d)",
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 32 },
+      "id": 53,
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (service) (increase(coupette_llm_tokens_total[30d]))",
+          "legendFormat": "{{ service }}",
           "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "color": { "mode": "palette-classic" }
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          }
         }
       },
       "options": {
-        "pieType": "donut",
-        "reduceOptions": { "calcs": ["lastNotNull"] },
-        "legend": { "displayMode": "table", "placement": "right", "calcs": ["sum"] }
-      }
-    },
-    {
-      "type": "timeseries",
-      "title": "Token Usage",
-      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 24 },
-      "id": 10,
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [
-        {
-          "expr": "sum by (service, direction) (rate(coupette_llm_tokens_total[5m]))",
-          "legendFormat": "{{ service }} {{ direction }}",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "min": 0,
-          "custom": {
-            "fillOpacity": 10,
-            "lineWidth": 2,
-            "spanNulls": false
-          },
-          "color": { "mode": "palette-classic" }
-        }
-      },
-      "options": {
-        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] }
-      }
-    },
-    {
-      "type": "timeseries",
-      "title": "Pipeline Errors",
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 24 },
-      "id": 12,
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [
-        {
-          "expr": "sum by (error_type) (rate(coupette_recommendation_pipeline_errors_total[5m]))",
-          "legendFormat": "{{ error_type }}",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "min": 0,
-          "custom": {
-            "fillOpacity": 10,
-            "lineWidth": 2,
-            "spanNulls": false
-          },
-          "color": { "mode": "palette-classic" }
-        }
-      },
-      "options": {
-        "legend": { "displayMode": "table", "placement": "right", "calcs": ["sum"] }
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "namePlacement": "auto",
+        "valueMode": "color"
       }
     }
   ]

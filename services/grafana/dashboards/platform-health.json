@@ -24,7 +24,7 @@
     {
       "type": "stat",
       "title": "Containers",
-      "gridPos": { "h": 6, "w": 4, "x": 0, "y": 1 },
+      "gridPos": { "h": 3, "w": 4, "x": 0, "y": 1 },
       "id": 3,
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
@@ -59,6 +59,45 @@
         }
       },
       "description": "Running containers. Red if fewer than expected."
+    },
+    {
+      "type": "stat",
+      "title": "Observability",
+      "gridPos": { "h": 3, "w": 4, "x": 0, "y": 4 },
+      "id": 18,
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "count(up == 1)",
+          "legendFormat": "up",
+          "refId": "A"
+        },
+        {
+          "expr": "count(up)",
+          "legendFormat": "total",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 8 }
+            ]
+          },
+          "unit": "none"
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "description": "Scrape targets reporting UP. Expand Internals to see details."
     },
     {
       "type": "gauge",
@@ -325,13 +364,13 @@
     },
     {
       "type": "stat",
-      "title": "Error Rate",
+      "title": "5xx Error Rate",
       "gridPos": { "h": 5, "w": 6, "x": 12, "y": 14 },
       "id": 14,
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum(rate(caddy_http_requests_total{code=~\"[45].*\"}[5m])) / sum(rate(caddy_http_requests_total[5m])) * 100",
+          "expr": "sum(rate(caddy_http_requests_total{code=~\"5.*\"}[5m])) / sum(rate(caddy_http_requests_total[5m])) * 100",
           "refId": "A"
         }
       ],
@@ -378,7 +417,7 @@
           "unit": "Bps",
           "min": 0,
           "custom": {
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "lineWidth": 1,
             "spanNulls": false
           },
@@ -399,7 +438,7 @@
         {
           "type": "stat",
           "title": "VPS Uptime",
-          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 20 },
+          "gridPos": { "h": 3, "w": 4, "x": 0, "y": 20 },
           "id": 12,
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "targets": [
@@ -427,7 +466,7 @@
         {
           "type": "table",
           "title": "Scrape Targets",
-          "gridPos": { "h": 8, "w": 18, "x": 6, "y": 20 },
+          "gridPos": { "h": 6, "w": 12, "x": 4, "y": 20 },
           "id": 2,
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "targets": [
@@ -463,6 +502,19 @@
               "custom": { "align": "auto" }
             },
             "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "Target" },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      { "type": "value", "options": { "integrations/unix": { "text": "Node Exporter" } } },
+                      { "type": "value", "options": { "integrations/cadvisor": { "text": "cAdvisor" } } },
+                      { "type": "value", "options": { "integrations/postgres": { "text": "Postgres Exporter" } } }
+                    ]
+                  }
+                ]
+              },
               {
                 "matcher": { "id": "byName", "options": "Status" },
                 "properties": [

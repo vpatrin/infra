@@ -92,8 +92,8 @@ Coupette's RAG pipeline needs structured metrics and log aggregation. `docker lo
 
 ### Backup strategy
 
-- [ ] Daily Postgres dumps (all DBs) → AWS S3 — 30-day retention via S3 lifecycle rule
-- [ ] Backup script rewritten — S3 as primary (no local retention), fail loudly on upload failure
+- [x] Daily Postgres dumps (all DBs) → AWS S3 — 30-day retention via S3 lifecycle rule
+- [x] Backup script rewritten — S3 as primary (no local retention), fail loudly on upload failure
 - [ ] Restore smoke test — verify current dumps restore into a throwaway container before trusting offsite
 
 ### Terraform
@@ -189,6 +189,7 @@ Concrete housekeeping — not phased, ship when convenient.
 
 ## Ideas (unscoped)
 
+- [ ] Coupette analytics dashboard — intent distribution, user engagement, search patterns (separate from ops dashboards)
 - [ ] Staging environment — same VPS, separate ports + DB, promotion pattern
 - [ ] Multi-node — second VPS, load balancing (only if traffic demands)
 - [ ] HashiCorp Vault — centralized secrets with RBAC (overkill until team grows)
