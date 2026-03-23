@@ -21,6 +21,11 @@ scrape_configs:
     static_configs:
       - targets: ["caddy:2019"]
 
+  # Container metrics
+  - job_name: "cadvisor"
+    static_configs:
+      - targets: ["cadvisor:8080"]
+
   # App monitoring
   - job_name: "coupette-backend"
     static_configs:

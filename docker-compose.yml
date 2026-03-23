@@ -153,6 +153,29 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.51.0
+    container_name: cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+    command:
+      - "--docker_only=true"
+      - "--housekeeping_interval=15s"
+      - "--disable_metrics=advtcp,cpu_topology,cpuset,hugetlb,memory_numa,process,referenced_memory,resctrl,sched,tcp,udp"
+    networks:
+      - internal
+    read_only: true
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   alloy:
     image: grafana/alloy:v1.14.1
     container_name: alloy
@@ -166,7 +189,7 @@ services:
     volumes:
       - ./services/alloy:/etc/alloy:ro
       - alloy_data:/var/lib/alloy/data
-      # loki.source.docker + cadvisor: container log tailing + container discovery
+      # loki.source.docker: container log tailing
       - /var/run/docker.sock:/var/run/docker.sock:ro
       # loki.source.journal: systemd timer/service logs
       - /var/log/journal:/var/log/journal:ro
@@ -176,10 +199,6 @@ services:
       - /sys:/host/sys:ro
       # node_exporter (rootfs_path): disk capacity, usage, inodes
       - /:/host/root:ro
-      # cadvisor: container metadata, overlay filesystem info
-      - /var/lib/docker:/var/lib/docker:ro
-      # cadvisor: containerd runtime socket for per-container metrics
-      - /run/containerd/containerd.sock:/run/containerd/containerd.sock:ro
     depends_on:
       loki:
         condition: service_started

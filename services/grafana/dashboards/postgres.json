@@ -13,6 +13,11 @@
     "to": "now"
   },
   "tags": ["postgresql", "database"],
+  "links": [
+    { "title": "Platform Health", "url": "/d/platform-health", "type": "link", "icon": "dashboard" },
+    { "title": "Coupette", "url": "/d/coupette", "type": "link", "icon": "apps" },
+    { "title": "Logs", "url": "/d/logs", "type": "link", "icon": "document-info" }
+  ],
   "panels": [
     {
       "type": "row",
