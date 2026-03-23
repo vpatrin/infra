@@ -1,7 +1,7 @@
 {
   "uid": "logs",
   "title": "Logs",
-  "description": "Infrastructure, application, and scheduled job logs via Loki",
+  "description": "Application, infrastructure, and scheduled job logs via Loki",
   "schemaVersion": 39,
   "version": 1,
   "timezone": "browser",
@@ -21,30 +21,60 @@
   "templating": {
     "list": [
       {
-        "name": "search",
-        "label": "Search all logs",
-        "type": "textbox",
-        "current": { "text": "", "value": "" }
+        "name": "app",
+        "label": "App",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "loki" },
+        "query": "label_values({container=~\"coupette-.*\"}, container)",
+        "current": { "text": "All", "value": "$__all" },
+        "includeAll": true,
+        "allValue": "coupette-.*",
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "infra",
+        "label": "Infra",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "loki" },
+        "query": "label_values({container!~\"coupette-.*\"}, container)",
+        "current": { "text": "All", "value": "$__all" },
+        "includeAll": true,
+        "allValue": "caddy|shared-postgres|grafana|alloy|loki|prometheus|uptime-kuma|cadvisor|umami",
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "unit",
+        "label": "Job",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "loki" },
+        "query": "label_values(unit)",
+        "current": { "text": "All", "value": "$__all" },
+        "includeAll": true,
+        "allValue": ".+",
+        "refresh": 2,
+        "sort": 1
       }
     ]
   },
   "panels": [
     {
       "type": "row",
-      "title": "Infrastructure",
+      "title": "Application",
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
       "collapsed": false,
-      "id": 1
+      "id": 3
     },
     {
       "type": "logs",
-      "title": "Infra Logs",
+      "title": "App Logs",
       "gridPos": { "h": 12, "w": 24, "x": 0, "y": 1 },
-      "id": 2,
+      "id": 4,
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
-          "expr": "{container=~\"caddy|shared-postgres|grafana|alloy|loki|prometheus|uptime-kuma|cadvisor\"} |~ \"(?i)$search\"",
+          "expr": "{container=~\"$app\"}",
           "refId": "A"
         }
       ],
@@ -61,20 +91,20 @@
     },
     {
       "type": "row",
-      "title": "Application",
+      "title": "Infrastructure",
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 },
       "collapsed": false,
-      "id": 3
+      "id": 1
     },
     {
       "type": "logs",
-      "title": "App Logs",
+      "title": "Infra Logs",
       "gridPos": { "h": 12, "w": 24, "x": 0, "y": 14 },
-      "id": 4,
+      "id": 2,
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
-          "expr": "{container=~\"coupette-backend|coupette-bot.*\"} |~ \"(?i)$search\"",
+          "expr": "{container=~\"$infra\"}",
           "refId": "A"
         }
       ],
@@ -105,7 +135,7 @@
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{job=\"systemd-journal\"}",
+              "expr": "{unit=~\"$unit\"}",
               "refId": "A"
             }
           ],

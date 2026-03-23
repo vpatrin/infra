@@ -27,8 +27,19 @@ loki.source.docker "containers" {
 
 // Systemd journal logs (timer/service logs: pg-backup, disk-alert, coupette timers)
 loki.source.journal "systemd" {
+  forward_to    = [loki.relabel.journal.receiver]
+  path          = "/var/log/journal"
+  relabel_rules = loki.relabel.journal.rules
+  labels        = { job = "systemd-journal" }
+}
+
+loki.relabel "journal" {
   forward_to = [loki.write.default.receiver]
-  path       = "/var/log/journal"
+
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "unit"
+  }
 }
 
 loki.write "default" {
