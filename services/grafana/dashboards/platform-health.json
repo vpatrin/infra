@@ -84,7 +84,7 @@
             "mode": "absolute",
             "steps": [
               { "color": "red", "value": null },
-              { "color": "green", "value": 9 }
+              { "color": "green", "value": 8 }
             ]
           },
           "unit": "none"
@@ -97,7 +97,7 @@
         "textMode": "value",
         "reduceOptions": { "calcs": ["lastNotNull"] }
       },
-      "description": "Scrape targets reporting UP (expected: 9). Expand Internals to see details."
+      "description": "Scrape targets reporting UP (expected: 8). Expand Internals to see details."
     },
     {
       "type": "gauge",
