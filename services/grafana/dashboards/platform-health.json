@@ -238,11 +238,13 @@
         {
           "expr": "container_health_state{name!=\"\", health_status=\"unhealthy\"}",
           "legendFormat": "{{ name }} UNHEALTHY",
+          "instant": true,
           "refId": "A"
         },
         {
           "expr": "(time() - container_start_time_seconds{name!=\"\"}) < 300",
           "legendFormat": "{{ name }} RESTARTED",
+          "instant": true,
           "refId": "B"
         }
       ],
