@@ -1,13 +1,13 @@
 {
   "uid": "logs",
   "title": "Logs",
-  "description": "Container and systemd logs via Loki",
+  "description": "Infrastructure, application, and scheduled job logs via Loki",
   "schemaVersion": 39,
   "version": 1,
   "timezone": "browser",
   "editable": true,
   "graphTooltip": 1,
-  "refresh": "30s",
+  "refresh": "",
   "time": {
     "from": "now-1h",
     "to": "now"
@@ -21,71 +21,60 @@
   "templating": {
     "list": [
       {
-        "name": "container",
-        "label": "Container",
-        "type": "query",
-        "datasource": { "type": "loki", "uid": "loki" },
-        "query": { "label": "container", "stream": "", "type": 1 },
-        "current": { "text": "All", "value": "$__all" },
-        "includeAll": true,
-        "allValue": ".+",
-        "refresh": 2,
-        "sort": 1
-      },
-      {
         "name": "search",
-        "label": "Search",
+        "label": "Search all logs",
         "type": "textbox",
         "current": { "text": "", "value": "" }
-      },
-      {
-        "name": "level",
-        "label": "Level",
-        "type": "custom",
-        "current": { "text": "All", "value": "" },
-        "options": [
-          { "text": "All", "value": "", "selected": true },
-          { "text": "Error", "value": "error|fatal" },
-          { "text": "Warn", "value": "warn" },
-          { "text": "Info", "value": "info" }
-        ],
-        "query": "error,warn,info"
-      },
-      {
-        "name": "job",
-        "label": "Job",
-        "type": "custom",
-        "current": { "text": "All", "value": "$__all" },
-        "includeAll": true,
-        "allValue": "pg-backup.*|disk-alert.*|coupette-.*",
-        "options": [
-          { "text": "All", "value": "$__all", "selected": true },
-          { "text": "Backup", "value": "pg-backup.*" },
-          { "text": "Disk Alert", "value": "disk-alert.*" },
-          { "text": "Scraper", "value": "coupette-scraper.*" },
-          { "text": "Availability", "value": "coupette-availability.*" }
-        ],
-        "query": "pg-backup.*,disk-alert.*,coupette-scraper.*,coupette-availability.*"
       }
     ]
   },
   "panels": [
     {
       "type": "row",
-      "title": "Container Logs",
+      "title": "Infrastructure",
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
       "collapsed": false,
       "id": 1
     },
     {
       "type": "logs",
-      "title": "$container",
-      "gridPos": { "h": 20, "w": 24, "x": 0, "y": 1 },
+      "title": "Infra Logs",
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 1 },
       "id": 2,
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
-          "expr": "{container=~\"$container\"} |~ \"(?i)$search\" |~ \"(?i)$level\"",
+          "expr": "{container=~\"caddy|shared-postgres|grafana|alloy|loki|prometheus|uptime-kuma|cadvisor\"} |~ \"(?i)$search\"",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Application",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 },
+      "collapsed": false,
+      "id": 3
+    },
+    {
+      "type": "logs",
+      "title": "App Logs",
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 14 },
+      "id": 4,
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "{container=~\"coupette-backend|coupette-bot.*\"} |~ \"(?i)$search\"",
           "refId": "A"
         }
       ],
@@ -103,20 +92,20 @@
     {
       "type": "row",
       "title": "Scheduled Jobs",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 26 },
       "collapsed": true,
-      "id": 3,
+      "id": 5,
       "panels": [
         {
           "type": "logs",
           "title": "Job Logs",
           "description": "Backups, alerts, scraper, availability (via journald)",
-          "gridPos": { "h": 12, "w": 24, "x": 0, "y": 22 },
-          "id": 4,
+          "gridPos": { "h": 12, "w": 24, "x": 0, "y": 27 },
+          "id": 6,
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{unit=~\"$job\"}",
+              "expr": "{job=\"systemd-journal\"}",
               "refId": "A"
             }
           ],

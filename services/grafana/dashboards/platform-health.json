@@ -34,7 +34,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "count(container_last_seen{name!=\"\"} > (time() - 120))",
+          "expr": "count(container_last_seen{name!=\"\", name!~\".*-run-.*\"} > (time() - 120))",
           "legendFormat": "",
           "refId": "A"
         }
@@ -84,7 +84,7 @@
             "mode": "absolute",
             "steps": [
               { "color": "red", "value": null },
-              { "color": "green", "value": 9 }
+              { "color": "green", "value": 8 }
             ]
           },
           "unit": "none"
@@ -97,7 +97,7 @@
         "textMode": "value",
         "reduceOptions": { "calcs": ["lastNotNull"] }
       },
-      "description": "Scrape targets reporting UP (expected: 9). Expand Internals to see details."
+      "description": "Scrape targets reporting UP (expected: 8). Expand Internals to see details."
     },
     {
       "type": "gauge",
@@ -238,11 +238,13 @@
         {
           "expr": "container_health_state{name!=\"\", health_status=\"unhealthy\"}",
           "legendFormat": "{{ name }} UNHEALTHY",
+          "instant": true,
           "refId": "A"
         },
         {
           "expr": "(time() - container_start_time_seconds{name!=\"\"}) < 300",
           "legendFormat": "{{ name }} RESTARTED",
+          "instant": true,
           "refId": "B"
         }
       ],
@@ -301,29 +303,16 @@
           }
         },
         {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "pattern": "^(name|Value #A|Value #B)$"
+            }
+          }
+        },
+        {
           "id": "organize",
           "options": {
-            "excludeByName": {
-              "Time": true,
-              "Time 1": true,
-              "Time 2": true,
-              "__name__": true,
-              "__name__ 1": true,
-              "__name__ 2": true,
-              "instance": true,
-              "instance 1": true,
-              "instance 2": true,
-              "job": true,
-              "job 1": true,
-              "job 2": true,
-              "id": true,
-              "id 1": true,
-              "id 2": true,
-              "image": true,
-              "image 1": true,
-              "image 2": true,
-              "cpu": true
-            },
             "renameByName": {
               "name": "Container",
               "Value #A": "CPU %",
