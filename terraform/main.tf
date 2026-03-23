@@ -1,3 +1,7 @@
+# =============================================================================
+# Backend & providers
+# =============================================================================
+
 terraform {
   required_version = ">= 1.5"
 
@@ -8,6 +12,7 @@ terraform {
     }
   }
 
+  # State in Hetzner Object Storage (S3-compatible)
   backend "s3" {
     bucket = "victorpatrin-terraform-state"
     key    = "infra/terraform.tfstate"
@@ -26,12 +31,20 @@ terraform {
 }
 
 provider "hcloud" {
-  # Set via HCLOUD_TOKEN env var
+  # Authenticated via HCLOUD_TOKEN env var (project-scoped)
 }
+
+# =============================================================================
+# SSH key (must already exist in the Hetzner project)
+# =============================================================================
 
 data "hcloud_ssh_key" "default" {
   name = var.ssh_key_name
 }
+
+# =============================================================================
+# Server
+# =============================================================================
 
 resource "hcloud_server" "web" {
   name        = var.server_name
@@ -50,6 +63,10 @@ resource "hcloud_server" "web" {
     env  = "production"
   }
 }
+
+# =============================================================================
+# Firewall — inbound TCP only, all outbound allowed (default)
+# =============================================================================
 
 resource "hcloud_firewall" "web" {
   name = var.firewall_name

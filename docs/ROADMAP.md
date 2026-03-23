@@ -98,11 +98,13 @@ Coupette's RAG pipeline needs structured metrics and log aggregation. `docker lo
 
 ### Terraform
 
-- [ ] Hetzner VPS (Debian 13) + SSH key registration
-- [ ] Hetzner firewall rules (22, 80, 443)
-- [ ] State backend in Hetzner Object Storage (bucket created manually)
-- [ ] CI gate — `terraform validate` on PR
-- [ ] Outputs VPS IP for Ansible inventory
+- [x] Hetzner VPS (Debian 13) + SSH key registration
+- [x] Hetzner firewall rules (22, 80, 443)
+- [x] State backend in Hetzner Object Storage (bucket created manually)
+- [x] CI gate — `terraform validate` + `fmt -check` on PR
+- [x] Outputs VPS IP for Ansible inventory
+
+*(#101, PR #117)*
 
 ### Ansible
 

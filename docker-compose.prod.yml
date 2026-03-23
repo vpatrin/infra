@@ -38,6 +38,10 @@ services:
     restart: unless-stopped
     mem_limit: 256m
 
+  cadvisor:
+    restart: unless-stopped
+    mem_limit: 128m
+
   grafana:
     env_file: ./services/grafana/.env.prod
     ports:

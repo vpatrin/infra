@@ -33,6 +33,8 @@ services:
   shared-postgres:
     image: pgvector/pgvector:0.8.2-pg16
     container_name: shared-postgres
+    # Postgres uses /dev/shm for parallel query workers, sorting, and hash joins.
+    # Docker default is 64mb — too small for pgvector workloads. 256mb matches pg defaults.
     shm_size: 256mb
     volumes:
       - shared-postgres_pgdata:/var/lib/postgresql/data
@@ -57,8 +59,7 @@ services:
         max-file: "3"
 
   umami:
-    # No pinned postgresql-* tags available for v3 — only :postgresql-latest
-    image: ghcr.io/umami-software/umami:postgresql-latest
+    image: ghcr.io/umami-software/umami@sha256:28f263fe06f79ebffa5a6a6e9bd33b7a278e9342a88e0bdac812416c9f9e4361
     container_name: umami
     depends_on:
       shared-postgres:
@@ -156,22 +157,21 @@ services:
   cadvisor:
     image: ghcr.io/google/cadvisor@sha256:5534ae91cbf3428998d60428d107cfdd97272d80658534ac6e54d8ce3b0c4d72
     container_name: cadvisor
+    command:
+      - "--docker_only=true"
+      - "--housekeeping_interval=15s"
+      - "--disable_metrics=advtcp,cpu_topology,cpuset,hugetlb,memory_numa,process,referenced_memory,resctrl,sched,tcp,udp"
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
       - /sys:/sys:ro
       - /var/lib/docker:/var/lib/docker:ro
-    command:
-      - "--docker_only=true"
-      - "--housekeeping_interval=15s"
-      - "--disable_metrics=advtcp,cpu_topology,cpuset,hugetlb,memory_numa,process,referenced_memory,resctrl,sched,tcp,udp"
     networks:
       - internal
     pid: host
     cgroup: host
     read_only: true
     security_opt: [no-new-privileges:true]
-    restart: unless-stopped
     logging:
       driver: json-file
       options:

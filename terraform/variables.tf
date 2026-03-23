@@ -1,3 +1,7 @@
+# =============================================================================
+# Server
+# =============================================================================
+
 variable "server_name" {
   description = "Server hostname"
   type        = string
@@ -23,10 +27,14 @@ variable "image" {
 }
 
 variable "ssh_key_name" {
-  description = "Name of the SSH key in Hetzner Cloud"
+  description = "Name of the SSH key in Hetzner Cloud (must match exactly)"
   type        = string
-  default     = "victor.patrin@protonmail.com"
+  default     = "victor-laptop"
 }
+
+# =============================================================================
+# Firewall
+# =============================================================================
 
 variable "firewall_name" {
   description = "Name of the cloud firewall"
@@ -40,14 +48,18 @@ variable "ingress_ports" {
   default     = ["22", "80", "443"]
 }
 
+# =============================================================================
+# Protection & backups
+# =============================================================================
+
 variable "backups" {
-  description = "Enable automated Hetzner backups"
+  description = "Enable automated Hetzner backups (~€0.70/month)"
   type        = bool
   default     = true
 }
 
 variable "delete_protection" {
-  description = "Prevent accidental deletion"
+  description = "Prevent accidental server deletion and rebuild"
   type        = bool
   default     = true
 }
