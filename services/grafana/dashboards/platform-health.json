@@ -34,7 +34,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "count(container_last_seen{name!=\"\"} > (time() - 120))",
+          "expr": "count(container_last_seen{name!=\"\", name!~\".*-run-.*\"} > (time() - 120))",
           "legendFormat": "",
           "refId": "A"
         }
@@ -301,29 +301,16 @@
           }
         },
         {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "pattern": "^(name|Value #A|Value #B)$"
+            }
+          }
+        },
+        {
           "id": "organize",
           "options": {
-            "excludeByName": {
-              "Time": true,
-              "Time 1": true,
-              "Time 2": true,
-              "__name__": true,
-              "__name__ 1": true,
-              "__name__ 2": true,
-              "instance": true,
-              "instance 1": true,
-              "instance 2": true,
-              "job": true,
-              "job 1": true,
-              "job 2": true,
-              "id": true,
-              "id 1": true,
-              "id 2": true,
-              "image": true,
-              "image 1": true,
-              "image 2": true,
-              "cpu": true
-            },
             "renameByName": {
               "name": "Container",
               "Value #A": "CPU %",
