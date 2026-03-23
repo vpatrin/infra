@@ -1,0 +1,137 @@
+{
+  "uid": "logs",
+  "title": "Logs",
+  "description": "Container and systemd logs via Loki",
+  "schemaVersion": 39,
+  "version": 1,
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "tags": ["logs"],
+  "links": [
+    { "title": "Platform Health", "url": "/d/platform-health", "type": "link", "icon": "dashboard" },
+    { "title": "PostgreSQL", "url": "/d/postgres", "type": "link", "icon": "database" },
+    { "title": "Coupette", "url": "/d/coupette", "type": "link", "icon": "apps" }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "container",
+        "label": "Container",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "loki" },
+        "query": { "label": "container", "stream": "", "type": 1 },
+        "current": { "text": "All", "value": "$__all" },
+        "includeAll": true,
+        "allValue": ".+",
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "search",
+        "label": "Search",
+        "type": "textbox",
+        "current": { "text": "", "value": "" }
+      },
+      {
+        "name": "level",
+        "label": "Level",
+        "type": "custom",
+        "current": { "text": "All", "value": "" },
+        "options": [
+          { "text": "All", "value": "", "selected": true },
+          { "text": "Error", "value": "error|fatal" },
+          { "text": "Warn", "value": "warn" },
+          { "text": "Info", "value": "info" }
+        ],
+        "query": "error,warn,info"
+      },
+      {
+        "name": "job",
+        "label": "Job",
+        "type": "custom",
+        "current": { "text": "All", "value": "$__all" },
+        "includeAll": true,
+        "allValue": "pg-backup.*|disk-alert.*|coupette-.*",
+        "options": [
+          { "text": "All", "value": "$__all", "selected": true },
+          { "text": "Backup", "value": "pg-backup.*" },
+          { "text": "Disk Alert", "value": "disk-alert.*" },
+          { "text": "Scraper", "value": "coupette-scraper.*" },
+          { "text": "Availability", "value": "coupette-availability.*" }
+        ],
+        "query": "pg-backup.*,disk-alert.*,coupette-scraper.*,coupette-availability.*"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Container Logs",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false,
+      "id": 1
+    },
+    {
+      "type": "logs",
+      "title": "$container",
+      "gridPos": { "h": 20, "w": 24, "x": 0, "y": 1 },
+      "id": 2,
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "{container=~\"$container\"} |~ \"(?i)$search\" |~ \"(?i)$level\"",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Scheduled Jobs",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 },
+      "collapsed": true,
+      "id": 3,
+      "panels": [
+        {
+          "type": "logs",
+          "title": "Job Logs",
+          "description": "Backups, alerts, scraper, availability (via journald)",
+          "gridPos": { "h": 12, "w": 24, "x": 0, "y": 22 },
+          "id": 4,
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "{unit=~\"$job\"}",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": true,
+            "showCommonLabels": false,
+            "wrapLogMessage": true,
+            "prettifyLogMessage": false,
+            "enableLogDetails": true,
+            "sortOrder": "Descending",
+            "dedupStrategy": "none"
+          }
+        }
+      ]
+    }
+  ]
+}

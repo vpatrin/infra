@@ -55,22 +55,6 @@ prometheus.scrape "node" {
 }
 
 // =============================================================================
-// Container metrics (per-container CPU, memory, network, disk I/O)
-// =============================================================================
-
-prometheus.exporter.cadvisor "containers" {
-  docker_host  = "unix:///var/run/docker.sock"
-  docker_only  = true
-  store_container_labels = true
-}
-
-prometheus.scrape "cadvisor" {
-  targets         = prometheus.exporter.cadvisor.containers.targets
-  forward_to      = [prometheus.remote_write.default.receiver]
-  scrape_interval = "15s"
-}
-
-// =============================================================================
 // PostgreSQL metrics (connections, query latency, table sizes, dead tuples)
 // =============================================================================
 
