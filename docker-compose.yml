@@ -131,7 +131,7 @@ services:
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
-      - "--storage.tsdb.retention.time=7d"
+      - "--storage.tsdb.retention.time=30d"
       - "--web.enable-remote-write-receiver"
     volumes:
       - ./services/prometheus:/etc/prometheus:ro

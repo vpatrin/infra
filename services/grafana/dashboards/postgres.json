@@ -9,7 +9,7 @@
   "graphTooltip": 1,
   "refresh": "30s",
   "time": {
-    "from": "now-1h",
+    "from": "now-30d",
     "to": "now"
   },
   "tags": ["postgresql", "database"],
@@ -24,7 +24,7 @@
     {
       "type": "stat",
       "title": "PostgreSQL",
-      "gridPos": { "h": 6, "w": 4, "x": 0, "y": 1 },
+      "gridPos": { "h": 6, "w": 3, "x": 0, "y": 1 },
       "id": 40,
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
@@ -64,7 +64,7 @@
     {
       "type": "stat",
       "title": "Connections",
-      "gridPos": { "h": 6, "w": 5, "x": 4, "y": 1 },
+      "gridPos": { "h": 6, "w": 4, "x": 3, "y": 1 },
       "id": 2,
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
@@ -103,13 +103,12 @@
     {
       "type": "gauge",
       "title": "Cache Hit Ratio",
-      "gridPos": { "h": 6, "w": 5, "x": 9, "y": 1 },
+      "gridPos": { "h": 6, "w": 4, "x": 7, "y": 1 },
       "id": 12,
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum(rate(pg_stat_database_blks_hit{datname!~\"template.*|postgres\"}[5m])) / (sum(rate(pg_stat_database_blks_hit{datname!~\"template.*|postgres\"}[5m])) + sum(rate(pg_stat_database_blks_read{datname!~\"template.*|postgres\"}[5m])))",
-          "legendFormat": "",
           "refId": "A"
         }
       ],
@@ -134,9 +133,79 @@
       }
     },
     {
-      "type": "bargauge",
+      "type": "stat",
+      "title": "Deadlocks",
+      "description": "Deadlocks in the last hour. Should always be 0.",
+      "gridPos": { "h": 6, "w": 3, "x": 11, "y": 1 },
+      "id": 50,
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(increase(pg_stat_database_deadlocks{datname!~\"template.*|postgres\"}[1h]))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Longest Tx",
+      "description": "Longest running transaction in seconds. Red if stuck > 60s.",
+      "gridPos": { "h": 6, "w": 3, "x": 14, "y": 1 },
+      "id": 51,
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "max(pg_stat_activity_max_tx_duration)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 30 },
+              { "color": "red", "value": 60 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "type": "stat",
       "title": "Database Sizes",
-      "gridPos": { "h": 6, "w": 10, "x": 14, "y": 1 },
+      "gridPos": { "h": 6, "w": 7, "x": 17, "y": 1 },
       "id": 31,
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
@@ -148,7 +217,6 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -161,12 +229,10 @@
         }
       },
       "options": {
-        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
-        "orientation": "horizontal",
-        "displayMode": "gradient",
-        "showUnfilled": true,
-        "namePlacement": "auto",
-        "valueMode": "color"
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" }
       }
     },
     {
@@ -179,14 +245,14 @@
     {
       "type": "timeseries",
       "title": "Transactions per second",
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 8 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
       "id": 11,
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
           "custom": {
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "lineWidth": 2,
             "lineInterpolation": "smooth",
             "showPoints": "never",
@@ -210,14 +276,14 @@
     {
       "type": "timeseries",
       "title": "Connections by state",
-      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 8 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
       "id": 4,
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
           "custom": {
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "lineWidth": 2,
             "lineInterpolation": "smooth",
             "showPoints": "never",
@@ -241,14 +307,14 @@
     {
       "type": "timeseries",
       "title": "Database size over time",
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 8 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
       "id": 32,
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
           "custom": {
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "lineWidth": 2,
             "lineInterpolation": "smooth",
             "showPoints": "never",
