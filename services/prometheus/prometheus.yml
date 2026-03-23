@@ -21,7 +21,7 @@ scrape_configs:
     static_configs:
       - targets: ["caddy:2019"]
 
-  # Container metrics
+  # Container metrics (standalone cAdvisor)
   - job_name: "cadvisor"
     static_configs:
       - targets: ["cadvisor:8080"]
