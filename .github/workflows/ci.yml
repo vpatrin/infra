@@ -3,6 +3,7 @@ name: CI
 on:
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -63,7 +64,10 @@ jobs:
     timeout-minutes: 2
     steps:
       - uses: actions/checkout@v6
-      - uses: hashicorp/setup-terraform@v3
+      - name: Install Terraform
+        run: |
+          wget -qO- https://releases.hashicorp.com/terraform/1.14.7/terraform_1.14.7_linux_amd64.zip | funzip > /usr/local/bin/terraform
+          chmod +x /usr/local/bin/terraform
       - name: Terraform init and validate
         working-directory: terraform
         run: |
