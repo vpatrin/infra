@@ -1,0 +1,36 @@
+- name: Run geerlingguy.security
+  ansible.builtin.include_role:
+    name: geerlingguy.security
+
+- name: Install ufw
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+
+- name: Set ufw default deny incoming
+  community.general.ufw:
+    direction: incoming
+    policy: deny
+
+- name: Set ufw default allow outgoing
+  community.general.ufw:
+    direction: outgoing
+    policy: allow
+
+- name: Allow required ports through ufw
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop: "{{ ufw_allowed_ports }}"
+
+- name: Enable ufw
+  community.general.ufw:
+    state: enabled
+
+- name: Configure fail2ban jail
+  ansible.builtin.template:
+    src: jail.local.j2
+    dest: /etc/fail2ban/jail.local
+    mode: "0644"
+  notify: Restart fail2ban

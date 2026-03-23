@@ -1,0 +1,7 @@
+# Copy to vault.yml and encrypt with: ansible-vault encrypt vault.yml
+# Or run: ./setup.sh (creates and encrypts automatically)
+#
+# vault_sops_age_key: <age secret key — enables sops decrypt of all .env.prod.enc files>
+# vault_admin_password: <sha-512 hash for admin user — generate with: mkpasswd --method=sha-512>
+# vault_admin_password_plain: <plaintext password — for ansible become (sudo)>
+# vault_deploy_ssh_public_key: <optional — ed25519 public key for deploy user CD access>

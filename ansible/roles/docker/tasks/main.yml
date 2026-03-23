@@ -1,0 +1,10 @@
+- name: Install Docker dependencies
+  ansible.builtin.apt:
+    name:
+      - python3-debian
+      - python3-docker
+    state: present
+
+- name: Run geerlingguy.docker
+  ansible.builtin.include_role:
+    name: geerlingguy.docker

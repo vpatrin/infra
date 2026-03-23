@@ -1,0 +1,32 @@
+# Phase 1: Bootstrap as root (Terraform puts your SSH key on root)
+# Creates admin user, hardens SSH (disables root login), installs Docker.
+- name: Bootstrap VPS
+  hosts: web
+  user: root
+  become: true
+
+  pre_tasks:
+    - name: Wait for cloud-init to finish
+      ansible.builtin.wait_for:
+        path: /var/lib/cloud/instance/boot-finished
+        timeout: 300
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+  roles:
+    - base
+    - security
+    - docker
+
+# Phase 2: Configure as admin user (root login is now disabled)
+# Sets up deploy user, repos, Docker network, runs deploy_infra.sh.
+- name: Configure platform
+  hosts: web
+  user: "{{ admin_user }}"
+  become: true
+
+  roles:
+    - infra

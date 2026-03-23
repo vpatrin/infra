@@ -1,0 +1,60 @@
+# Non-secret configuration for all hosts
+# Single source of truth — no role defaults files.
+
+# --- System ---
+hostname: web-01
+timezone: UTC
+swap_size: 2G
+swap_swappiness: 10
+
+# --- Users ---
+admin_user: victor
+deploy_user: deploy
+ansible_become_password: "{{ vault_admin_password_plain }}"
+
+# --- SSH ---
+ssh_port: 22
+# geerlingguy.security expects this exact variable name
+security_ssh_port: "{{ ssh_port }}"
+security_ssh_password_authentication: "no"
+security_ssh_permit_root_login: "no"
+security_ssh_permit_empty_password: "no"
+# Removed in OpenSSH 9.9 (Debian 13) — replaced by KbdInteractiveAuthentication.
+# Empty string tells geerlingguy.security to skip this directive.
+security_ssh_challenge_response_auth: ""
+security_autoupdate_enabled: true
+security_autoupdate_reboot: false
+security_fail2ban_enabled: true
+
+# --- Firewall ---
+ufw_allowed_ports:
+  - "22"
+  - "80"
+  - "443"
+
+# --- Fail2ban ---
+fail2ban_maxretry: 3
+fail2ban_bantime: 3600
+fail2ban_findtime: 600
+
+# --- Docker (geerlingguy.docker) ---
+docker_edition: ce
+docker_install_compose_plugin: true
+docker_users:
+  - "{{ admin_user }}"
+  - "{{ deploy_user }}"
+docker_daemon_options:
+  log-driver: "json-file"
+  log-opts:
+    max-size: "10m"
+    max-file: "3"
+
+# --- Repos ---
+infra_repo: https://github.com/vpatrin/infra.git
+coupette_repo: https://github.com/vpatrin/coupette.git
+infra_dir: /home/deploy/infra
+coupette_dir: /home/deploy/projects/coupette
+coupette_frontend_dir: /srv/coupette
+
+# --- sops ---
+sops_version: "3.12.2"
