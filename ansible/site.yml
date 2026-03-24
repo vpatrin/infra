@@ -22,7 +22,7 @@
     - docker
 
 # Phase 2: Configure as admin user (root login is now disabled)
-# Sets up deploy user, repos, Docker network, runs deploy_infra.sh.
+# Sets up deploy user, repos, Docker network. CD handles deploys.
 - name: Configure platform
   hosts: web
   user: "{{ admin_user }}"
