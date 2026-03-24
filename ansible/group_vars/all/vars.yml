@@ -2,13 +2,14 @@
 # Single source of truth — no role defaults files.
 
 # --- System ---
-hostname: web-01
+hostname: "{{ inventory_hostname }}"
 timezone: UTC
 swap_size: 2G
 swap_swappiness: 10
 
 # --- Users ---
-admin_user: victor
+admin_user: admin
+admin_ssh_pubkey_path: ~/.ssh/id_ed25519.pub
 deploy_user: deploy
 ansible_become_password: "{{ vault_admin_password_plain }}"
 
@@ -19,9 +20,6 @@ security_ssh_port: "{{ ssh_port }}"
 security_ssh_password_authentication: "no"
 security_ssh_permit_root_login: "no"
 security_ssh_permit_empty_password: "no"
-# Removed in OpenSSH 9.9 (Debian 13) — replaced by KbdInteractiveAuthentication.
-# Empty string tells geerlingguy.security to skip this directive.
-security_ssh_challenge_response_auth: ""
 security_autoupdate_enabled: true
 security_autoupdate_reboot: false
 security_fail2ban_enabled: true
