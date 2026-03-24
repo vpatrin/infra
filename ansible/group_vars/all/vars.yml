@@ -51,7 +51,7 @@ docker_daemon_options:
 infra_repo: https://github.com/vpatrin/infra.git
 coupette_repo: https://github.com/vpatrin/coupette.git
 infra_dir: /home/deploy/infra
-coupette_dir: /home/deploy/projects/coupette
+coupette_dir: /home/deploy/coupette
 coupette_frontend_dir: /srv/coupette
 
 # --- sops ---
