@@ -55,7 +55,7 @@
 - name: Create admin user
   ansible.builtin.user:
     name: "{{ admin_user }}"
-    password: "{{ vault_admin_password }}"
+    password: "{{ vault_admin_password_plain | password_hash('sha512') }}"
     groups: sudo
     append: true
     shell: /bin/bash
