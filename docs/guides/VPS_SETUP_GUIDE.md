@@ -571,15 +571,9 @@ Host web-01-deploy
 Repos live under the `deploy` user's home. Scripts and systemd unit paths reference these locations.
 
 ```bash
-# Create directory structure
-sudo -u deploy mkdir -p /home/deploy/projects
-
 # Clone repos (both public — no auth needed)
 sudo -u deploy git clone https://github.com/vpatrin/infra.git /home/deploy/infra
-sudo -u deploy git clone https://github.com/vpatrin/coupette.git /home/deploy/projects/coupette
-
-# Update /opt/coupette symlink
-sudo ln -sfn /home/deploy/projects/coupette /opt/coupette
+sudo -u deploy git clone https://github.com/vpatrin/coupette.git /home/deploy/coupette
 
 # Frontend static files — owned by deploy, served by Caddy
 sudo mkdir -p /srv/coupette
@@ -591,8 +585,7 @@ sudo chown deploy:deploy /srv/coupette
 | Path | Owner | Purpose |
 | --- | --- | --- |
 | `/home/deploy/infra/` | `deploy` | infra repo |
-| `/home/deploy/projects/coupette/` | `deploy` | coupette repo |
-| `/opt/coupette` | symlink | → `/home/deploy/projects/coupette` |
+| `/home/deploy/coupette/` | `deploy` | coupette repo |
 | `/srv/coupette/` | `deploy` | frontend static files (served by Caddy) |
 | `/home/victor/` | `victor` | personal admin, unchanged |
 
