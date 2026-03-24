@@ -1,7 +1,31 @@
+# --- SSH hardening (geerlingguy.security + drop-in config) ---
+- name: Validate SSH user variables
+  ansible.builtin.assert:
+    that:
+      - admin_user is defined and admin_user | length > 0
+      - deploy_user is defined and deploy_user | length > 0
+    fail_msg: "admin_user and deploy_user must be defined for AllowUsers"
+
 - name: Run geerlingguy.security
   ansible.builtin.include_role:
     name: geerlingguy.security
 
+- name: Deploy SSH hardening config
+  ansible.builtin.template:
+    src: sshd-hardening.conf.j2
+    dest: /etc/ssh/sshd_config.d/hardening.conf
+    mode: "0644"
+  notify: Restart sshd
+
+- name: Validate full sshd config
+  ansible.builtin.command:
+    cmd: sshd -t
+  changed_when: false
+
+- name: Apply sshd restart now (before anything else can fail)
+  ansible.builtin.meta: flush_handlers
+
+# --- Firewall (ufw — default deny, whitelist TCP ports) ---
 - name: Install ufw
   ansible.builtin.apt:
     name: ufw
@@ -28,6 +52,124 @@
   community.general.ufw:
     state: enabled
 
+# --- Disable unused kernel modules (CIS 1.1.1.x, 3.5.x) ---
+- name: Blacklist unused kernel modules
+  ansible.builtin.copy:
+    content: |
+      install cramfs /bin/true
+      install freevxfs /bin/true
+      install hfs /bin/true
+      install hfsplus /bin/true
+      install jffs2 /bin/true
+      install squashfs /bin/true
+      install udf /bin/true
+      install dccp /bin/true
+      install sctp /bin/true
+      install rds /bin/true
+      install tipc /bin/true
+    dest: /etc/modprobe.d/hardening.conf
+    mode: "0644"
+
+# --- Restrict su to sudo group (CIS 5.7, ANSSI-BP-028 R39) ---
+- name: Restrict su to sudo group
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/su
+    regexp: '^#?\s*auth\s+required\s+pam_wheel.so'
+    line: 'auth required pam_wheel.so use_uid group=sudo'
+
+# --- File permissions (CIS 6.1.x) ---
+- name: Set restrictive permissions on sensitive files
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: /etc/shadow, mode: "0640" }
+    - { path: /etc/shadow-, mode: "0640" }
+    - { path: /etc/gshadow, mode: "0640" }
+    - { path: /etc/gshadow-, mode: "0640" }
+
+# --- Filesystem hardening (CIS 1.1.x) ---
+# Prevent execution of uploaded payloads from temp directories.
+- name: Mount /tmp as tmpfs with noexec
+  ansible.posix.mount:
+    path: /tmp
+    src: tmpfs
+    fstype: tmpfs
+    opts: defaults,noexec,nosuid,nodev,size=512m
+    state: mounted
+
+- name: Mount /dev/shm with noexec
+  ansible.posix.mount:
+    path: /dev/shm
+    src: tmpfs
+    fstype: tmpfs
+    opts: defaults,noexec,nosuid,nodev
+    state: mounted
+
+# --- Kernel / network hardening (CIS 3.3.x, 3.4.x, ANSSI-BP-028) ---
+- name: Apply sysctl hardening
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/99-hardening.conf
+    reload: true
+  loop:
+    # Docker requires ip_forward — CIS says 0 but Docker breaks without it.
+    - { name: net.ipv4.ip_forward, value: "1" }
+    # Network — anti-spoofing
+    - { name: net.ipv4.conf.all.rp_filter, value: "1" }
+    - { name: net.ipv4.conf.default.rp_filter, value: "1" }
+    # Network — ICMP redirects (not a router)
+    - { name: net.ipv4.conf.all.accept_redirects, value: "0" }
+    - { name: net.ipv4.conf.default.accept_redirects, value: "0" }
+    - { name: net.ipv4.conf.all.send_redirects, value: "0" }
+    - { name: net.ipv4.conf.default.send_redirects, value: "0" }
+    - { name: net.ipv6.conf.all.accept_redirects, value: "0" }
+    - { name: net.ipv6.conf.default.accept_redirects, value: "0" }
+    # Network — SYN flood protection
+    - { name: net.ipv4.tcp_syncookies, value: "1" }
+    - { name: net.ipv4.tcp_rfc1337, value: "1" }
+    # Network — source routing
+    - { name: net.ipv4.conf.all.accept_source_route, value: "0" }
+    - { name: net.ipv4.conf.default.accept_source_route, value: "0" }
+    # Network — log spoofed packets
+    - { name: net.ipv4.conf.all.log_martians, value: "1" }
+    - { name: net.ipv4.icmp_echo_ignore_broadcasts, value: "1" }
+    # Kernel — restrict info leakage
+    - { name: kernel.dmesg_restrict, value: "1" }
+    - { name: kernel.kptr_restrict, value: "2" }
+    # Kernel — restrict ptrace (prevents process snooping)
+    - { name: kernel.yama.ptrace_scope, value: "2" }
+    # Kernel — disable unprivileged eBPF
+    - { name: kernel.unprivileged_bpf_disabled, value: "1" }
+    - { name: net.core.bpf_jit_harden, value: "2" }
+    # Filesystem — prevent core dumps from SUID, protect links
+    - { name: fs.suid_dumpable, value: "0" }
+    - { name: fs.protected_hardlinks, value: "1" }
+    - { name: fs.protected_symlinks, value: "1" }
+    - { name: fs.protected_fifos, value: "2" }
+    - { name: fs.protected_regular, value: "2" }
+
+# --- Audit logging (CIS 4.1.x, ANSSI-BP-028 R73) ---
+- name: Install auditd
+  ansible.builtin.apt:
+    name: auditd
+    state: present
+
+- name: Deploy audit rules
+  ansible.builtin.template:
+    src: audit-hardening.rules.j2
+    dest: /etc/audit/rules.d/hardening.rules
+    mode: "0640"
+  notify: Restart auditd
+
+- name: Enable auditd
+  ansible.builtin.service:
+    name: auditd
+    state: started
+    enabled: true
+
+# --- Fail2ban (SSH brute-force protection) ---
 - name: Configure fail2ban jail
   ansible.builtin.template:
     src: jail.local.j2
