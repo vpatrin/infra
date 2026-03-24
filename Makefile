@@ -1,4 +1,4 @@
-.PHONY: help up down dev-homepage logs status validate-caddy reload-caddy deploy tunnel create-secret edit-secret vault-encrypt vault-decrypt
+.PHONY: help up down dev-homepage logs status validate-caddy reload-caddy deploy tunnel create-secret edit-secret encrypt-vault decrypt-vault
 
 COMPOSE := docker compose -f docker-compose.yml -f docker-compose.dev.yml
 
