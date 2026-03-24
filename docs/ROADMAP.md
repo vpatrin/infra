@@ -112,8 +112,8 @@ Coupette's RAG pipeline needs structured metrics and log aggregation. `docker lo
 - [x] `roles/base` — swap, timezone, hostname, apt packages, admin user
 - [x] `roles/security` — SSH hardening, fail2ban, ufw (wraps `geerlingguy.security`)
 - [x] `roles/docker` — Docker + Compose plugin, daemon.json log rotation (wraps `geerlingguy.docker`)
-- [x] `roles/infra` — deploy user, clone repos, sops, `internal` network, external volumes, `deploy_infra.sh` (also handles systemd units)
-- [x] Ansible vault — sops age key, deploy SSH public key (timer secrets handled by sops via `deploy_infra.sh`)
+- [x] `roles/infra` — deploy user, clone repos, sops, `internal` network, external volumes (deploy-ready state, CD handles deploys)
+- [x] Ansible vault — admin password, deploy SSH public key
 - [x] CI gate — `ansible-lint` on PR
 
 ### DR runbook + validation
