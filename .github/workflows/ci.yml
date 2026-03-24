@@ -82,7 +82,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Install ansible-lint
-        run: pip install ansible-lint
+        run: pip install ansible-lint==26.3.0
       - name: Install Galaxy roles and collections
         working-directory: ansible
         run: ansible-galaxy install -r requirements.yml
