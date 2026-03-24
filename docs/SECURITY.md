@@ -307,6 +307,13 @@ Backups cover PostgreSQL only. All other volumes are considered recoverable — 
 
 ---
 
+## Accepted Risks
+
+- **Deploy user in Docker group is root-equivalent:** required for `docker compose` — mitigated by SSH key in vault, fail2ban, AllowUsers, and auditd on the Docker socket. Goes away with K3s migration (Phase 7).
+- **Deploy user has scoped sudo to write systemd units:** `tee` to 4 specific unit file paths. Doesn't expand blast radius beyond Docker group membership. Scoped to `pg-backup` and `disk-alert` units only.
+
+---
+
 ## References
 
 - [CIS Debian Linux Benchmark](https://www.cisecurity.org/benchmark/debian_linux) — Level 1 and Level 2 controls

@@ -482,7 +482,7 @@ sops --version
 
 ## 15. Deploy User
 
-A dedicated `deploy` user runs CI workloads (GitHub Actions). It is separate from `victor` (personal admin) — principle of least privilege. If the deploy key is compromised, revoke it without touching the admin account.
+A dedicated `deploy` user runs CI workloads (GitHub Actions). It is separate from `admin` (personal admin) — principle of least privilege. If the deploy key is compromised, revoke it without touching the admin account.
 
 ```bash
 sudo adduser --disabled-password --gecos '' deploy
@@ -494,7 +494,7 @@ sudo chmod 711 /home/deploy
 
 Adding `deploy` to the `docker` group allows it to run `docker compose` commands without root.
 
-`chmod 711` allows other users (e.g. `victor` running systemd timers) to traverse `/home/deploy/` without being able to list its contents. Required because systemd units run as `victor` but reference scripts and secrets in `/home/deploy/infra/`.
+`chmod 711` allows other users (e.g. `admin` running systemd timers) to traverse `/home/deploy/` without being able to list its contents. Required because systemd units run as `admin` but reference scripts and secrets in `/home/deploy/infra/`.
 
 ### Scoped sudo for systemd
 
@@ -562,7 +562,7 @@ Host web-01-deploy
     IdentityFile ~/.ssh/github_actions_deploy
 ```
 
-> Your personal `id_ed25519` is unchanged. `victor` and `deploy` are independent users with independent keys.
+> Your personal `id_ed25519` is unchanged. `admin` and `deploy` are independent users with independent keys.
 
 ---
 
@@ -587,9 +587,9 @@ sudo chown deploy:deploy /srv/coupette
 | `/home/deploy/infra/` | `deploy` | infra repo |
 | `/home/deploy/coupette/` | `deploy` | coupette repo |
 | `/srv/coupette/` | `deploy` | frontend static files (served by Caddy) |
-| `/home/victor/` | `victor` | personal admin, unchanged |
+| `/home/admin/` | `admin` | personal admin, unchanged |
 
-> `victor` can still run deploy scripts manually — both users have access to the repos via their respective SSH sessions.
+> `admin` can still run deploy scripts manually — both users have access to the repos via their respective SSH sessions.
 
 ---
 

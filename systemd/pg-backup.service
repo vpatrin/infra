@@ -11,4 +11,4 @@ EnvironmentFile=/home/deploy/infra/secrets/aws-infra-backup.env
 EnvironmentFile=/home/deploy/infra/secrets/monitor-backups.env
 ExecStart=/home/deploy/infra/scripts/postgres_backup.sh
 ExecStartPost=-/home/deploy/infra/scripts/push-monitor.sh ${PUSH_URL}
-User=victor
+User=admin

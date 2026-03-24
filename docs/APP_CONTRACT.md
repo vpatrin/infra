@@ -138,7 +138,7 @@ All timers use `Persistent=true` — if the VPS is down during the scheduled tim
 
 ### Deploy user
 
-A dedicated `deploy` system user owns all repos and runs CI workloads. It has no sudo except for scoped systemd commands. Human admin work uses `victor`.
+A dedicated `deploy` system user owns all repos and runs CI workloads. It has no sudo except for scoped systemd commands. Human admin work uses `admin`.
 
 ### SSH deploy key
 

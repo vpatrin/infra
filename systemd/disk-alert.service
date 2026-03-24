@@ -7,4 +7,4 @@ Wants=network-online.target
 Type=oneshot
 EnvironmentFile=/home/deploy/infra/secrets/telegram-alerts-bot.env
 ExecStart=/home/deploy/infra/scripts/disk-alert.sh
-User=victor
+User=admin
