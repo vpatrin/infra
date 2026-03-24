@@ -21,8 +21,10 @@ security_ssh_password_authentication: "no"
 security_ssh_permit_root_login: "no"
 security_ssh_permit_empty_password: "no"
 security_autoupdate_enabled: true
-security_autoupdate_reboot: false
+security_autoupdate_reboot: true
+security_autoupdate_reboot_time: "07:00"
 security_fail2ban_enabled: true
+security_fail2ban_custom_configuration_template: "{{ playbook_dir }}/roles/security/templates/jail.local.j2"
 
 # --- Firewall ---
 ufw_allowed_ports:
