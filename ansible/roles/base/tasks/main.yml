@@ -37,6 +37,16 @@
     purge: true
   when: removed_packages.stdout_lines | length > 0
 
+- name: Check if reboot is required
+  ansible.builtin.stat:
+    path: /var/run/reboot-required
+  register: reboot_required
+
+- name: Reboot to apply kernel upgrade
+  ansible.builtin.reboot:
+    reboot_timeout: 300
+  when: reboot_required.stat.exists
+
 - name: Install base packages
   ansible.builtin.apt:
     name:
@@ -46,6 +56,7 @@
       - wget
       - awscli
       - needrestart
+      - lynis
     state: present
 
 - name: Set needrestart to automatic mode
