@@ -6,8 +6,13 @@ Provisions a Debian 13 (trixie) VPS from scratch. One playbook, two phases: boot
 
 ```bash
 cd ansible
-./setup.sh              # one-time: vault password, admin password, age key
+pip install passlib                          # required for password_hash on macOS
 ansible-galaxy install -r requirements.yml   # pulls geerlingguy roles
+
+# Create vault (see vault.yml.example for template):
+cp group_vars/all/vault.yml.example group_vars/all/vault.yml
+# Edit vault.yml with real values, then:
+ansible-vault encrypt group_vars/all/vault.yml
 
 # First run against a fresh VPS (unknown host key):
 ANSIBLE_HOST_KEY_CHECKING=false ansible-playbook site.yml
@@ -16,14 +21,14 @@ ANSIBLE_HOST_KEY_CHECKING=false ansible-playbook site.yml
 ansible-playbook site.yml
 ```
 
-See [setup.sh](setup.sh) for details. Requires `ansible`, `mkpasswd`, `sops` on your laptop.
+Requires `ansible` and `passlib` on your laptop. Vault password file at `~/.ansible_vault_pass`.
 
 ## Playbook structure
 
 ```text
 site.yml
   Phase 1 (root):    base → security → docker
-  Phase 2 (victor):  infra
+  Phase 2 (admin):   infra
 ```
 
 Phase 1 runs as root (the only user on a fresh Hetzner VPS). It creates the admin user, hardens SSH to disable root login, and installs Docker. Phase 2 reconnects as the admin user and sets up the deploy pipeline.
@@ -32,7 +37,7 @@ Phase 1 runs as root (the only user on a fresh Hetzner VPS). It creates the admi
 
 ### `base`
 
-System bootstrap: sets hostname, timezone, configures swap (2G, swappiness 10), installs base apt packages (`sudo`, `curl`, `git`, `wget`, `awscli`, `needrestart`), purges leftover configs from removed packages, creates the admin user with SSH key, and creates a locked deploy user (no password, no sudo).
+System bootstrap: sets hostname, timezone, configures swap (2G, swappiness 10), installs base apt packages (`sudo`, `curl`, `git`, `wget`, `awscli`, `needrestart`, `lynis`), purges leftover configs from removed packages, reboots if a kernel upgrade is pending, creates the admin user with SSH key, and creates a locked deploy user (no password, no sudo).
 
 ### `security`
 
@@ -41,7 +46,7 @@ Multi-layer hardening following CIS benchmarks and ANSSI-BP-028 guidelines:
 - **SSH** — delegates to [geerlingguy.security](https://github.com/geerlingguy/ansible-role-security) for baseline SSH config (disable root login, password auth, empty passwords, auto-updates), then layers a custom `sshd_config.d/hardening.conf` drop-in with stricter ciphers and key exchange.
 - **Firewall** — ufw: deny incoming, allow outgoing, open ports 22/80/443 only.
 - **Fail2ban** — custom jail config (3 retries, 1h ban, 10m find window).
-- **Kernel modules** — blacklists unused filesystems (cramfs, hfs, squashfs, etc.) and protocols (dccp, sctp, rds, tipc, usb-storage).
+- **Kernel modules** — blacklists unused filesystems (cramfs, hfs, squashfs, etc.) and protocols (dccp, sctp, rds, tipc).
 - **Filesystem** — mounts `/tmp` and `/dev/shm` as tmpfs with `noexec,nosuid,nodev`. Restricts permissions on shadow files.
 - **Sysctl** — network anti-spoofing, SYN flood protection, disables ICMP redirects/source routing, restricts dmesg/kptr/ptrace/eBPF, protects hardlinks/symlinks/FIFOs.
 - **Auditd** — logs privilege escalation, user/group changes, and network config modifications.
@@ -53,12 +58,12 @@ Installs Python Docker dependencies (`python3-debian`, `python3-docker`), then d
 
 ### `infra`
 
-Platform deployment (runs as admin user, not root):
+Platform setup (runs as admin user, not root). Brings the VPS to a deploy-ready state — CD handles actually running the services.
 
-- Adds deploy user to the docker group, installs its SSH key for CD.
+- Adds admin to the deploy group (cross-user file access), installs deploy user's SSH key for CD.
 - Configures scoped sudo for deploy — limited to `systemctl daemon-reload/enable/start` and writing specific systemd units (`pg-backup`, `disk-alert`).
-- Installs sops, clones infra and coupette repos, creates the Docker `internal` network and persistent volumes (`shared-postgres_pgdata`, `uptime-kuma_uptime-kuma-data`).
-- Writes the SOPS age key to the deploy user's home, then runs `deploy_infra.sh` to bring up all services.
+- Installs sops, clones infra and coupette repos, creates the frontend static files directory.
+- Creates the Docker `internal` network and external volumes (`shared-postgres_pgdata`, `uptime-kuma_uptime-kuma-data`) — platform prerequisites for compose stacks.
 
 ## Galaxy dependencies
 
@@ -73,21 +78,29 @@ These roles handle the vendor-specific plumbing (APT repos, GPG keys, package na
 
 ## Vault secrets
 
-Created by `setup.sh` and encrypted with `ansible-vault`. See [vault.yml.example](group_vars/all/vault.yml.example).
+Encrypted with `ansible-vault`. See [vault.yml.example](group_vars/all/vault.yml.example).
 
 | Secret | Purpose |
 |--------|---------|
-| `vault_sops_age_key` | Bootstrap secret — enables sops decrypt of all .env.prod.enc files |
-| `vault_admin_password` | SHA-512 hash for admin user (sudo + Hetzner console break-glass) |
-| `vault_admin_password_plain` | Plaintext for ansible become (sudo) |
-| `vault_deploy_ssh_public_key` | Optional — deploy user SSH key for CD (follow-up issue) |
+| `vault_admin_password_plain` | Admin password — hashed at runtime for user creation, plaintext for ansible become (sudo) |
+| `vault_deploy_ssh_public_key` | Deploy user SSH public key for CD access |
 
 ## After playbook completes
 
-1. Update DNS in Porkbun → new VPS IP
-2. Wait for Caddy to auto-issue TLS certs
-3. Restore Postgres from S3 (manual)
-4. Reconfigure CD with new IP (separate issue)
+1. Add SSH host alias to `~/.ssh/config` on your laptop:
+
+   ```text
+   Host web-01
+       HostName <vps-ip>
+       User admin
+       IdentityFile ~/.ssh/id_ed25519
+   ```
+
+2. Update `SSH_DEPLOY_HOST` GitHub Actions secret with new VPS IP
+3. Update DNS in Porkbun → new VPS IP
+4. Wait for Caddy to auto-issue TLS certs
+5. Trigger CD: `gh workflow run deploy` on infra, then coupette
+6. Restore Postgres from S3 backup (manual)
 
 ## Security hardening
 
