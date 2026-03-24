@@ -1,15 +1,47 @@
 # Phase 1: Bootstrap as root (Terraform puts your SSH key on root).
-# Creates admin user, hardens SSH (disables root login), installs Docker.
-# One-shot — root login is disabled after this phase. Re-runs use Phase 2 only.
+# Minimal — only creates admin user + SSH key so we can disable root login.
+# On re-runs root SSH fails — the play detects this and skips gracefully.
 - name: Bootstrap VPS
   hosts: web
   user: root
+  gather_facts: false
 
   pre_tasks:
-    - name: Wait for cloud-init to finish
-      ansible.builtin.wait_for:
-        path: /var/lib/cloud/instance/boot-finished
-        timeout: 300
+    - name: Test root SSH access
+      ansible.builtin.wait_for_connection:
+        timeout: 3
+      register: root_ssh
+      ignore_errors: true
+
+    - name: Skip bootstrap if root SSH is disabled
+      ansible.builtin.meta: end_play
+      when: root_ssh is failed
+
+    - name: Gather facts
+      ansible.builtin.setup:
+
+  roles:
+    - role: bootstrap
+      tags: bootstrap
+
+# Phase 2: Configure as admin user (runs every time).
+# Full provisioning: system config, hardening, Docker, platform setup.
+- name: Configure platform
+  hosts: web
+  user: "{{ admin_user }}"
+  become: true
+  gather_facts: false
+  vars:
+    ansible_become_password: "{{ vault_admin_password_plain }}"
+
+  pre_tasks:
+    - name: Wait for SSH as admin
+      ansible.builtin.wait_for_connection:
+        timeout: 120
+        sleep: 5
+
+    - name: Gather facts
+      ansible.builtin.setup:
 
     - name: Update apt cache
       ansible.builtin.apt:
@@ -23,21 +55,5 @@
       tags: security
     - role: docker
       tags: docker
-
-# Phase 2: Configure as admin user (root login is now disabled)
-# Sets up deploy user, repos, Docker network. CD handles deploys.
-- name: Configure platform
-  hosts: web
-  user: "{{ admin_user }}"
-  become: true
-  vars:
-    ansible_become_password: "{{ vault_admin_password_plain }}"
-
-  pre_tasks:
-    - name: Verify SSH connectivity as admin
-      ansible.builtin.wait_for_connection:
-        timeout: 30
-
-  roles:
     - role: infra
       tags: infra

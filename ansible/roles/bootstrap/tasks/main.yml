@@ -1,0 +1,31 @@
+# Minimal root-only tasks: create admin user so we can disable root SSH.
+# Everything else runs in Phase 2 via become.
+- name: Wait for cloud-init to finish
+  ansible.builtin.wait_for:
+    path: /var/lib/cloud/instance/boot-finished
+    timeout: 300
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install sudo
+  ansible.builtin.apt:
+    name: sudo
+    state: present
+
+- name: Create admin user
+  ansible.builtin.user:
+    name: "{{ admin_user }}"
+    password: "{{ vault_admin_password_plain | password_hash('sha512', 65534 | random(seed=inventory_hostname)) }}"
+    groups: sudo
+    append: true
+    shell: /bin/bash
+    create_home: true
+  no_log: true
+
+- name: Set up SSH key for admin user
+  ansible.posix.authorized_key:
+    user: "{{ admin_user }}"
+    key: "{{ lookup('file', admin_ssh_pubkey_path) }}"

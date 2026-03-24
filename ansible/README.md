@@ -14,30 +14,46 @@ cp group_vars/all/vault.yml.example group_vars/all/vault.yml
 # Edit vault.yml with real values, then:
 ansible-vault encrypt group_vars/all/vault.yml
 
-# First run against a fresh VPS (unknown host key):
-ANSIBLE_HOST_KEY_CHECKING=false ansible-playbook site.yml
-
-# Subsequent runs (host key already accepted):
+# Run:
 ansible-playbook site.yml
 ```
 
 Requires `ansible` and `passlib` on your laptop. Vault password file at `~/.ansible_vault_pass`.
 
+## Re-running
+
+After initial provisioning, root SSH is disabled. Re-runs detect this automatically — Phase 1 skips itself, Phase 2 runs everything:
+
+```bash
+# Full re-run (safe — Phase 1 auto-skips, all roles re-apply via Phase 2):
+ansible-playbook site.yml
+
+# Single role (faster):
+ansible-playbook site.yml --tags security
+ansible-playbook site.yml --tags infra
+```
+
+No need to change `ansible_user` in the inventory — the playbook handles the root → admin transition automatically.
+
 ## Playbook structure
 
 ```text
 site.yml
-  Phase 1 (root):    base → security → docker
-  Phase 2 (admin):   infra
+  Phase 1 (root, one-shot):  bootstrap (create admin user + SSH key)
+  Phase 2 (admin, every run): base → security → docker → infra
 ```
 
-Phase 1 runs as root (the only user on a fresh Hetzner VPS). It creates the admin user, hardens SSH to disable root login, and installs Docker. Phase 2 reconnects as the admin user and sets up the deploy pipeline.
+Phase 1 is minimal — it only creates the admin user so root login can be disabled. All real provisioning runs in Phase 2 as admin with `become: true`. This means security hardening, packages, and Docker config are re-applied on every run.
 
 ## Roles
 
+### `bootstrap`
+
+Minimal root-only role (Phase 1). Waits for cloud-init, installs sudo, creates the admin user with SSH key. That's it — just enough to get off root.
+
 ### `base`
 
-System bootstrap: sets hostname, timezone, configures swap (2G, swappiness 10), installs base apt packages (`sudo`, `curl`, `git`, `wget`, `awscli`, `needrestart`, `lynis`), purges leftover configs from removed packages, reboots if a kernel upgrade is pending, creates the admin user with SSH key, and creates a locked deploy user (no password, no sudo).
+System configuration: sets hostname, timezone, configures swap (2G, swappiness 10), installs base apt packages (`sudo`, `curl`, `git`, `wget`, `awscli`, `needrestart`, `lynis`), purges leftover configs from removed packages, reboots if a kernel upgrade is pending, ensures admin and deploy user config.
 
 ### `security`
 

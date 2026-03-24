@@ -9,7 +9,12 @@
   ansible.posix.authorized_key:
     user: "{{ deploy_user }}"
     key: "{{ vault_deploy_ssh_public_key }}"
-  when: vault_deploy_ssh_public_key is defined
+  when: vault_deploy_ssh_public_key is defined and vault_deploy_ssh_public_key | length > 0
+
+- name: Warn if deploy SSH key is not configured
+  ansible.builtin.debug:
+    msg: "WARNING: vault_deploy_ssh_public_key not set — CD will not work until configured"
+  when: vault_deploy_ssh_public_key is not defined or vault_deploy_ssh_public_key | length == 0
 
 - name: Configure scoped sudo for deploy user
   ansible.builtin.copy:

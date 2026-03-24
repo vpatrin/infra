@@ -25,11 +25,20 @@
 - name: Apply sshd restart now (before anything else can fail)
   ansible.builtin.meta: flush_handlers
 
-# --- Firewall (ufw — default deny, whitelist TCP ports) ---
+# --- Firewall (ufw — allow rules first, then default deny, then enable) ---
+# Order matters: if ufw is already enabled from a previous run, setting
+# default deny before allow rules creates a window where SSH is blocked.
 - name: Install ufw
   ansible.builtin.apt:
     name: ufw
     state: present
+
+- name: Allow required ports through ufw
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop: "{{ ufw_allowed_ports }}"
 
 - name: Set ufw default deny incoming
   community.general.ufw:
@@ -41,13 +50,6 @@
     direction: outgoing
     policy: allow
 
-- name: Allow required ports through ufw
-  community.general.ufw:
-    rule: allow
-    port: "{{ item }}"
-    proto: tcp
-  loop: "{{ ufw_allowed_ports }}"
-
 - name: Enable ufw
   community.general.ufw:
     state: enabled
@@ -56,19 +58,19 @@
 - name: Blacklist unused kernel modules
   ansible.builtin.copy:
     content: |
-      install cramfs /bin/true
-      install freevxfs /bin/true
-      install hfs /bin/true
-      install hfsplus /bin/true
-      install jffs2 /bin/true
-      install squashfs /bin/true
-      install udf /bin/true
-      install dccp /bin/true
-      install sctp /bin/true
-      install rds /bin/true
-      install tipc /bin/true
-      install usb-storage /bin/true
-      install firewire-core /bin/true
+      install cramfs /usr/bin/true
+      install freevxfs /usr/bin/true
+      install hfs /usr/bin/true
+      install hfsplus /usr/bin/true
+      install jffs2 /usr/bin/true
+      install squashfs /usr/bin/true
+      install udf /usr/bin/true
+      install dccp /usr/bin/true
+      install sctp /usr/bin/true
+      install rds /usr/bin/true
+      install tipc /usr/bin/true
+      install usb-storage /usr/bin/true
+      install firewire-core /usr/bin/true
     dest: /etc/modprobe.d/hardening.conf
     mode: "0644"
 
