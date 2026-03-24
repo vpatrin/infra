@@ -67,6 +67,8 @@
       install sctp /bin/true
       install rds /bin/true
       install tipc /bin/true
+      install usb-storage /bin/true
+      install firewire-core /bin/true
     dest: /etc/modprobe.d/hardening.conf
     mode: "0644"
 
@@ -149,6 +151,10 @@
     - { name: fs.protected_symlinks, value: "1" }
     - { name: fs.protected_fifos, value: "2" }
     - { name: fs.protected_regular, value: "2" }
+    # Lynis KRNL-6000 — additional hardening
+    - { name: dev.tty.ldisc_autoload, value: "0" }
+    - { name: kernel.sysrq, value: "0" }
+    - { name: net.ipv4.conf.default.log_martians, value: "1" }
 
 # --- Audit logging (CIS 4.1.x, ANSSI-BP-028 R73) ---
 - name: Install auditd
@@ -168,11 +174,3 @@
     name: auditd
     state: started
     enabled: true
-
-# --- Fail2ban (SSH brute-force protection) ---
-- name: Configure fail2ban jail
-  ansible.builtin.template:
-    src: jail.local.j2
-    dest: /etc/fail2ban/jail.local
-    mode: "0644"
-  notify: Restart fail2ban
