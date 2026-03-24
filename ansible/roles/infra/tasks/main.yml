@@ -14,13 +14,15 @@
 - name: Configure scoped sudo for deploy user
   ansible.builtin.copy:
     content: |
-      deploy ALL=(ALL) NOPASSWD: /usr/bin/systemctl daemon-reload, \
-        /usr/bin/systemctl enable pg-backup.timer disk-alert.timer, \
-        /usr/bin/systemctl start pg-backup.timer disk-alert.timer, \
-        /usr/bin/tee /etc/systemd/system/pg-backup.service, \
-        /usr/bin/tee /etc/systemd/system/pg-backup.timer, \
-        /usr/bin/tee /etc/systemd/system/disk-alert.service, \
-        /usr/bin/tee /etc/systemd/system/disk-alert.timer
+      deploy ALL=(ALL) NOPASSWD: /usr/bin/systemctl daemon-reload
+      deploy ALL=(ALL) NOPASSWD: /usr/bin/systemctl enable pg-backup.timer
+      deploy ALL=(ALL) NOPASSWD: /usr/bin/systemctl enable disk-alert.timer
+      deploy ALL=(ALL) NOPASSWD: /usr/bin/systemctl start pg-backup.timer
+      deploy ALL=(ALL) NOPASSWD: /usr/bin/systemctl start disk-alert.timer
+      deploy ALL=(ALL) NOPASSWD: /usr/bin/tee /etc/systemd/system/pg-backup.service
+      deploy ALL=(ALL) NOPASSWD: /usr/bin/tee /etc/systemd/system/pg-backup.timer
+      deploy ALL=(ALL) NOPASSWD: /usr/bin/tee /etc/systemd/system/disk-alert.service
+      deploy ALL=(ALL) NOPASSWD: /usr/bin/tee /etc/systemd/system/disk-alert.timer
     dest: /etc/sudoers.d/deploy
     mode: "0440"
     validate: visudo -cf %s

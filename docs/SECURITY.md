@@ -2,7 +2,7 @@
 
 Platform-level security posture. Application-level security (auth, JWT, rate limiting) lives in each app repo.
 
-**Lynis hardening score: 80/100** (baseline Debian 13: 64). Hardening is codified in the Ansible `security` role and validated on every fresh provision.
+**Lynis: 80/100** (baseline Debian 13: 64) | **ssh-audit: clean** (post-quantum KEX, AEAD-only, ETM MACs) | **testssl.sh: A+** (96/100). Hardening is codified in the Ansible `security` role and validated on every fresh provision.
 
 ---
 
@@ -197,6 +197,18 @@ Development `.env` files live on disk (gitignored). Each service has a committed
 | ansible-lint | Ansible playbook quality | PR |
 | `docker compose config` | Compose syntax validation | PR |
 | Dependabot | Docker image + GitHub Actions updates | Weekly |
+
+---
+
+## Security Auditing
+
+Run after provisioning or major changes to validate hardening.
+
+| Tool | Layer | How to run | Target |
+| ---- | ----- | ---------- | ------ |
+| [Lynis](https://cisofy.com/lynis/) | OS hardening | `sudo lynis audit system` (installed on VPS) | 80+ |
+| [ssh-audit](https://github.com/jtesta/ssh-audit) | SSH crypto | `ssh-audit <vps-ip>` (run from laptop) | No warnings |
+| [testssl.sh](https://testssl.sh/) | TLS/HTTPS | `docker run --rm drwetter/testssl.sh https://victorpatrin.dev` | A+ |
 
 ---
 
