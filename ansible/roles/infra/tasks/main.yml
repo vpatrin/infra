@@ -1,22 +1,4 @@
-- name: Create deploy user (no password, no sudo)
-  ansible.builtin.user:
-    name: "{{ deploy_user }}"
-    shell: /bin/bash
-    create_home: true
-    password: "!"
-    password_lock: true
-
-- name: Set deploy home group-readable (750)
-  ansible.builtin.file:
-    path: "/home/{{ deploy_user }}"
-    mode: "0750"
-
-- name: Add deploy user to docker group
-  ansible.builtin.user:
-    name: "{{ deploy_user }}"
-    groups: docker
-    append: true
-
+# --- Deploy user permissions ---
 - name: Add admin user to deploy group
   ansible.builtin.user:
     name: "{{ admin_user }}"
@@ -32,23 +14,23 @@
 - name: Configure scoped sudo for deploy user
   ansible.builtin.copy:
     content: |
-      deploy ALL=(ALL) NOPASSWD: /usr/bin/systemctl daemon-reload, /usr/bin/systemctl enable, /usr/bin/systemctl start, /usr/bin/tee /etc/systemd/system/*
+      deploy ALL=(ALL) NOPASSWD: /usr/bin/systemctl daemon-reload, \
+        /usr/bin/systemctl enable pg-backup.timer disk-alert.timer, \
+        /usr/bin/systemctl start pg-backup.timer disk-alert.timer, \
+        /usr/bin/tee /etc/systemd/system/pg-backup.service, \
+        /usr/bin/tee /etc/systemd/system/pg-backup.timer, \
+        /usr/bin/tee /etc/systemd/system/disk-alert.service, \
+        /usr/bin/tee /etc/systemd/system/disk-alert.timer
     dest: /etc/sudoers.d/deploy
     mode: "0440"
     validate: visudo -cf %s
 
+# --- Tooling ---
 - name: Install sops
   ansible.builtin.apt:
     deb: "https://github.com/getsops/sops/releases/download/v{{ sops_version }}/sops_{{ sops_version }}_amd64.deb"
 
-- name: Create deploy projects directory
-  ansible.builtin.file:
-    path: "/home/{{ deploy_user }}/projects"
-    state: directory
-    owner: "{{ deploy_user }}"
-    group: "{{ deploy_user }}"
-    mode: "0755"
-
+# --- Repos and static assets ---
 - name: Clone infra repo
   become: true
   become_user: "{{ deploy_user }}"
@@ -65,12 +47,6 @@
     dest: "{{ coupette_dir }}"
     version: main
 
-- name: Create /opt/coupette symlink
-  ansible.builtin.file:
-    src: "{{ coupette_dir }}"
-    dest: /opt/coupette
-    state: link
-
 - name: Create frontend static files directory
   ansible.builtin.file:
     path: "{{ coupette_frontend_dir }}"
@@ -79,6 +55,7 @@
     group: "{{ deploy_user }}"
     mode: "0755"
 
+# --- Docker platform prerequisites (external resources for compose stacks) ---
 - name: Create Docker internal network
   community.docker.docker_network:
     name: internal
@@ -89,25 +66,3 @@
   loop:
     - shared-postgres_pgdata
     - uptime-kuma_uptime-kuma-data
-
-  # Persists on disk — deploy_infra.sh and CD workflows source this on every deploy.
-- name: Write SOPS_AGE_KEY to deploy user environment
-  ansible.builtin.copy:
-    content: "SOPS_AGE_KEY={{ vault_sops_age_key }}"
-    dest: "/home/{{ deploy_user }}/.sops-age-key.env"
-    owner: "{{ deploy_user }}"
-    group: "{{ deploy_user }}"
-    mode: "0600"
-
-  # Runs as deploy user via become_user. deploy has scoped sudo (sudoers.d/deploy)
-  # for the systemctl/tee commands that deploy_infra.sh calls internally.
-- name: Run deploy_infra.sh
-  become: true
-  become_user: "{{ deploy_user }}"
-  ansible.builtin.shell:
-    cmd: |
-      set -a
-      . /home/{{ deploy_user }}/.sops-age-key.env
-      set +a
-      bash {{ infra_dir }}/scripts/deploy_infra.sh
-  changed_when: true
