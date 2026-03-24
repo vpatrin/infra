@@ -1,4 +1,4 @@
-.PHONY: help up down dev-homepage logs status validate-caddy reload-caddy deploy tunnel create-secret edit-secret
+.PHONY: help up down dev-homepage logs status validate-caddy reload-caddy deploy tunnel create-secret edit-secret vault-encrypt vault-decrypt
 
 COMPOSE := docker compose -f docker-compose.yml -f docker-compose.dev.yml
 
@@ -38,6 +38,9 @@ deploy: ## Trigger production deploy via GitHub Actions
 	gh workflow run deploy
 	@echo "Deploy triggered. Watch: gh run watch"
 
+# -----------------------------------------------------------------------
+# Secrets management (using Mozilla SOPS and Ansible Vault)
+# -----------------------------------------------------------------------
 create-secret: ## Encrypt a .env file: make create-secret FILE=secrets/aws-infra-backup.env
 	@test -n "$(FILE)" || { echo "Usage: make create-secret FILE=secrets/<name>.env"; exit 1; }
 	sops --encrypt --input-type dotenv --output-type json "$(FILE)" > "$(FILE).enc.tmp" && mv "$(FILE).enc.tmp" "$(FILE).enc" && rm "$(FILE)"
@@ -46,3 +49,9 @@ create-secret: ## Encrypt a .env file: make create-secret FILE=secrets/aws-infra
 edit-secret: ## Edit an encrypted secret: make edit-secret FILE=secrets/aws-infra-backup.env.enc
 	@test -n "$(FILE)" || { echo "Usage: make edit-secret FILE=secrets/<name>.env.enc"; exit 1; }
 	sops --input-type json --output-type json "$(FILE)"
+
+vault-encrypt: ## Encrypt Ansible vault
+	ansible-vault encrypt ansible/group_vars/all/vault.yml
+
+vault-decrypt: ## Decrypt Ansible vault
+	ansible-vault decrypt ansible/group_vars/all/vault.yml
