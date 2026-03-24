@@ -12,6 +12,29 @@
   community.general.timezone:
     name: "{{ timezone }}"
 
+- name: Upgrade all packages
+  ansible.builtin.apt:
+    upgrade: safe
+    update_cache: true
+
+- name: Remove unused packages and clean apt cache
+  ansible.builtin.apt:
+    autoremove: true
+    autoclean: true
+
+- name: Find removed packages with residual configs (PKGS-7346)
+  ansible.builtin.shell:
+    cmd: dpkg --list | grep '^rc' | awk '{print $2}'
+  register: removed_packages
+  changed_when: false
+
+- name: Purge removed package configs
+  ansible.builtin.apt:
+    name: "{{ removed_packages.stdout_lines }}"
+    state: absent
+    purge: true
+  when: removed_packages.stdout_lines | length > 0
+
 - name: Install base packages
   ansible.builtin.apt:
     name:
@@ -20,7 +43,14 @@
       - git
       - wget
       - awscli
+      - needrestart
     state: present
+
+- name: Set needrestart to automatic mode
+  ansible.builtin.lineinfile:
+    path: /etc/needrestart/needrestart.conf
+    regexp: '^#?\$nrconf\{restart\}'
+    line: "$nrconf{restart} = 'a';"
 
 - name: Create admin user
   ansible.builtin.user:
@@ -34,7 +64,20 @@
 - name: Set up SSH key for admin user
   ansible.posix.authorized_key:
     user: "{{ admin_user }}"
-    key: "{{ lookup('file', '~/.ssh/id_ed25519.pub') }}"
+    key: "{{ lookup('file', admin_ssh_pubkey_path) }}"
+
+- name: Create deploy user (no password, no sudo)
+  ansible.builtin.user:
+    name: "{{ deploy_user }}"
+    shell: /bin/bash
+    create_home: true
+    password: "!"
+    password_lock: true
+
+- name: Set deploy home group-readable (750)
+  ansible.builtin.file:
+    path: "/home/{{ deploy_user }}"
+    mode: "0750"
 
 - name: Check if swap file exists
   ansible.builtin.stat:
@@ -59,16 +102,16 @@
         cmd: mkswap /swapfile
       changed_when: true
 
+    - name: Ensure swap in fstab
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        regexp: '/swapfile'
+        line: '/swapfile none swap sw 0 0'
+
     - name: Enable swap file
       ansible.builtin.command:
         cmd: swapon /swapfile
       changed_when: true
-
-- name: Ensure swap in fstab
-  ansible.builtin.lineinfile:
-    path: /etc/fstab
-    regexp: '/swapfile'
-    line: '/swapfile none swap sw 0 0'
 
 - name: Set swappiness
   ansible.posix.sysctl:
@@ -76,4 +119,3 @@
     value: "{{ swap_swappiness }}"
     sysctl_file: /etc/sysctl.d/99-swappiness.conf
     reload: true
-
