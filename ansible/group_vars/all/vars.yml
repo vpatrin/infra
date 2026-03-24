@@ -3,7 +3,7 @@
 
 # --- System ---
 hostname: "{{ inventory_hostname }}"
-timezone: UTC
+timezone: Etc/UTC
 swap_size: 2G
 swap_swappiness: 10
 
