@@ -16,6 +16,9 @@
 # Ansible vault — created by setup.sh, encrypted locally
 ansible/group_vars/all/vault.yml
 
+# Ansible Galaxy roles — installed via: ansible-galaxy install -r requirements.yml
+ansible/roles/geerlingguy.*/
+
 # Environment variables — plaintext ignored, encrypted (.enc) committed
 **/*.env
 **/*.env.prod
