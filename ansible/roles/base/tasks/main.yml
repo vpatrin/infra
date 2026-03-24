@@ -1,3 +1,4 @@
+# --- System identity ---
 - name: Set hostname
   ansible.builtin.hostname:
     name: "{{ hostname }}"
@@ -12,6 +13,7 @@
   community.general.timezone:
     name: "{{ timezone }}"
 
+# --- Package management ---
 - name: Upgrade all packages
   ansible.builtin.apt:
     upgrade: safe
@@ -52,6 +54,7 @@
     regexp: '^#?\$nrconf\{restart\}'
     line: "$nrconf{restart} = 'a';"
 
+# --- Users ---
 - name: Create admin user
   ansible.builtin.user:
     name: "{{ admin_user }}"
@@ -79,6 +82,7 @@
     path: "/home/{{ deploy_user }}"
     mode: "0750"
 
+# --- Swap ---
 - name: Check if swap file exists
   ansible.builtin.stat:
     path: /swapfile
