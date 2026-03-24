@@ -4,6 +4,10 @@ A single VPS running Docker behind Caddy, with defense-in-depth security.
 Everything here is generic — no project-specific config. Just a Debian server,
 locked down and ready for containers.
 
+> **Note:** This guide is codified and improved as an Ansible playbook in [`ansible/`](../../ansible/).
+> The playbook automates everything below plus additional security hardening (sysctl, SSH crypto, /tmp noexec, auditd).
+> For DR or fresh provisioning, run `ansible-playbook site.yml`. This guide remains as reference for understanding *what* each step does and *why*.
+
 This guide assumes a fresh Hetzner Cloud server. Adjust provider-specific
 steps (console, firewall UI) for other providers.
 
@@ -593,3 +597,9 @@ sudo chown deploy:deploy /srv/coupette
 | `/home/victor/` | `victor` | personal admin, unchanged |
 
 > `victor` can still run deploy scripts manually — both users have access to the repos via their respective SSH sessions.
+
+---
+
+## Beyond this guide
+
+The Ansible playbook ([`ansible/`](../../ansible/)) codifies this guide and continues to improve the security posture beyond what's documented here. See [SECURITY.md](../SECURITY.md) for the current state.
