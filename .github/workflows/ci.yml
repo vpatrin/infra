@@ -86,6 +86,8 @@ jobs:
       - name: Install Galaxy roles and collections
         working-directory: ansible
         run: ansible-galaxy install -r requirements.yml
+      - name: Create dummy vault password for syntax-check
+        run: echo "ci-dummy" > ~/.ansible_vault_pass
       - name: Run ansible-lint
         working-directory: ansible
         run: ansible-lint
