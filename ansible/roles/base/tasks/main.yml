@@ -25,7 +25,8 @@
 
 - name: Find removed packages with residual configs (PKGS-7346)
   ansible.builtin.shell:
-    cmd: dpkg --list | grep '^rc' | awk '{print $2}'
+    cmd: set -o pipefail && dpkg --list | grep '^rc' | awk '{print $2}'
+    executable: /bin/bash
   register: removed_packages
   changed_when: false
   failed_when: false
