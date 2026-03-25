@@ -16,7 +16,7 @@ All deploys are manual: SSH into web-01, run scripts, copy files. Secrets live o
 
 Automated CD via GitHub Actions with a dedicated `deploy` user, SSH deploy key, idempotent deploy scripts, and sops + age for secrets management.
 
-**Deploy user:** `deploy` system user with scoped sudo (systemd commands only). Separate from `victor` (admin). Dedicated `github_actions_deploy` ed25519 key stored as GitHub Actions secret.
+**Deploy user:** `deploy` system user with scoped sudo (systemd commands only). Separate from `admin` (human SSH/sudo). Dedicated `github_actions_deploy` ed25519 key stored as GitHub Actions secret.
 
 **Deploy scripts:**
 - `deploy_infra.sh` — pull, compose up, Caddy validate + reload, sync systemd units. Triggered manually via workflow dispatch.

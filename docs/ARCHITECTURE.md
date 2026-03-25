@@ -7,7 +7,7 @@ Single Hetzner VPS running all services behind a Caddy reverse proxy. One server
 - **Provider**: Hetzner CX22
 - **OS**: Debian 13
 - **Host**: `web-01`
-- **User**: `victor` (root SSH disabled)
+- **Users**: `admin` (SSH, sudo) + `deploy` (CD, scoped sudo) — root SSH disabled
 - **Swap**: 2GB at `/swapfile`, swappiness=10
 - **DNS**: `victorpatrin.dev` + wildcard `*.victorpatrin.dev` → VPS IP (Porkbun)
 

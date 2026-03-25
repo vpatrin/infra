@@ -4,6 +4,10 @@ A single VPS running Docker behind Caddy, with defense-in-depth security.
 Everything here is generic — no project-specific config. Just a Debian server,
 locked down and ready for containers.
 
+> **Note:** This guide is codified and improved as an Ansible playbook in [`ansible/`](../../ansible/).
+> The playbook automates everything below plus additional security hardening (sysctl, SSH crypto, /tmp noexec, auditd).
+> For DR or fresh provisioning, run `ansible-playbook site.yml`. This guide remains as reference for understanding *what* each step does and *why*.
+
 This guide assumes a fresh Hetzner Cloud server. Adjust provider-specific
 steps (console, firewall UI) for other providers.
 
@@ -478,7 +482,7 @@ sops --version
 
 ## 15. Deploy User
 
-A dedicated `deploy` user runs CI workloads (GitHub Actions). It is separate from `victor` (personal admin) — principle of least privilege. If the deploy key is compromised, revoke it without touching the admin account.
+A dedicated `deploy` user runs CI workloads (GitHub Actions). It is separate from `admin` (personal admin) — principle of least privilege. If the deploy key is compromised, revoke it without touching the admin account.
 
 ```bash
 sudo adduser --disabled-password --gecos '' deploy
@@ -490,7 +494,7 @@ sudo chmod 711 /home/deploy
 
 Adding `deploy` to the `docker` group allows it to run `docker compose` commands without root.
 
-`chmod 711` allows other users (e.g. `victor` running systemd timers) to traverse `/home/deploy/` without being able to list its contents. Required because systemd units run as `victor` but reference scripts and secrets in `/home/deploy/infra/`.
+`chmod 711` allows other users (e.g. `admin` running systemd timers) to traverse `/home/deploy/` without being able to list its contents. Required because systemd units run as `admin` but reference scripts and secrets in `/home/deploy/infra/`.
 
 ### Scoped sudo for systemd
 
@@ -558,7 +562,7 @@ Host web-01-deploy
     IdentityFile ~/.ssh/github_actions_deploy
 ```
 
-> Your personal `id_ed25519` is unchanged. `victor` and `deploy` are independent users with independent keys.
+> Your personal `id_ed25519` is unchanged. `admin` and `deploy` are independent users with independent keys.
 
 ---
 
@@ -567,15 +571,9 @@ Host web-01-deploy
 Repos live under the `deploy` user's home. Scripts and systemd unit paths reference these locations.
 
 ```bash
-# Create directory structure
-sudo -u deploy mkdir -p /home/deploy/projects
-
 # Clone repos (both public — no auth needed)
 sudo -u deploy git clone https://github.com/vpatrin/infra.git /home/deploy/infra
-sudo -u deploy git clone https://github.com/vpatrin/coupette.git /home/deploy/projects/coupette
-
-# Update /opt/coupette symlink
-sudo ln -sfn /home/deploy/projects/coupette /opt/coupette
+sudo -u deploy git clone https://github.com/vpatrin/coupette.git /home/deploy/coupette
 
 # Frontend static files — owned by deploy, served by Caddy
 sudo mkdir -p /srv/coupette
@@ -587,9 +585,14 @@ sudo chown deploy:deploy /srv/coupette
 | Path | Owner | Purpose |
 | --- | --- | --- |
 | `/home/deploy/infra/` | `deploy` | infra repo |
-| `/home/deploy/projects/coupette/` | `deploy` | coupette repo |
-| `/opt/coupette` | symlink | → `/home/deploy/projects/coupette` |
+| `/home/deploy/coupette/` | `deploy` | coupette repo |
 | `/srv/coupette/` | `deploy` | frontend static files (served by Caddy) |
-| `/home/victor/` | `victor` | personal admin, unchanged |
+| `/home/admin/` | `admin` | personal admin, unchanged |
 
-> `victor` can still run deploy scripts manually — both users have access to the repos via their respective SSH sessions.
+> `admin` can still run deploy scripts manually — both users have access to the repos via their respective SSH sessions.
+
+---
+
+## Beyond this guide
+
+The Ansible playbook ([`ansible/`](../../ansible/)) codifies this guide and continues to improve the security posture beyond what's documented here. See [SECURITY.md](../SECURITY.md) for the current state.

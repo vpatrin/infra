@@ -2,6 +2,8 @@
 
 Platform-level security posture. Application-level security (auth, JWT, rate limiting) lives in each app repo.
 
+**Lynis: 80/100** (baseline Debian 13: 64) | **ssh-audit: clean** (post-quantum KEX, AEAD-only, ETM MACs) | **testssl.sh: A+** (96/100). Hardening is codified in the Ansible `security` role and validated on every fresh provision.
+
 ---
 
 ## Network
@@ -102,9 +104,79 @@ Every container in `docker-compose.yml` follows these security defaults:
 
 ## SSH
 
-- Key-only authentication (`PasswordAuthentication no`, `PermitRootLogin no`)
-- Single non-root user: `victor`
-- Fail2ban for SSH brute-force protection
+Configured via geerlingguy.security + `/etc/ssh/sshd_config.d/hardening.conf` (Ansible `security` role).
+
+| Control | Value | Source |
+| ------- | ----- | ------ |
+| Key-only auth | `PasswordAuthentication no`, `PermitRootLogin no` | CIS 5.3.1, 5.3.2 |
+| Post-quantum KEX | `mlkem768x25519-sha256`, curve25519 | [ssh-audit.com](https://www.sshaudit.com/hardening_guides.html), ANSSI-BP-028 R67 |
+| AEAD ciphers only | chacha20-poly1305, aes256-gcm, aes128-gcm | CIS 5.3.14 |
+| ETM MACs only | hmac-sha2-512-etm, hmac-sha2-256-etm | CIS 5.3.15 |
+| AllowUsers | `admin deploy` | ANSSI-BP-028 R37 |
+| MaxAuthTries | 3 | CIS 5.3.5 |
+| Session timeout | ClientAliveInterval 300s, CountMax 2 | CIS 5.3.18 |
+| Verbose logging | LogLevel VERBOSE | ANSSI-BP-028 R67 |
+| Fail2ban | 3 retries, 1h ban, 10m window | CIS 5.3.5, practical choice |
+
+OpenSSH 10.0 (Debian 13) removed `ChallengeResponseAuthentication` — replaced by `KbdInteractiveAuthentication`.
+
+---
+
+## Kernel Hardening
+
+Sysctl parameters in `/etc/sysctl.d/99-hardening.conf` (Ansible `security` role). Not `/etc/sysctl.conf` — [deprecated in Debian 13](https://blog.gudynas.lt/2025/10/04/debian-13-trixie-sysctl-tutorial/).
+
+| Parameter | Value | Source |
+| --------- | ----- | ------ |
+| net.ipv4.conf.all.rp_filter | 1 | CIS 3.3.7 — anti-spoofing |
+| net.ipv4.conf.all.accept_redirects | 0 | CIS 3.3.2 — ICMP redirect MITM prevention |
+| net.ipv4.conf.all.send_redirects | 0 | CIS 3.3.1 — not a router |
+| net.ipv4.tcp_syncookies | 1 | CIS 3.3.8 — SYN flood protection |
+| kernel.dmesg_restrict | 1 | ANSSI-BP-028 Enhanced — prevent info leakage |
+| kernel.kptr_restrict | 2 | ANSSI-BP-028 Enhanced — hide kernel pointers |
+| kernel.yama.ptrace_scope | 2 | ANSSI-BP-028 Enhanced — restrict ptrace to root |
+| kernel.unprivileged_bpf_disabled | 1 | dev-sec — block eBPF exploits |
+| fs.suid_dumpable | 0 | CIS 1.5.1 — no core dumps from SUID |
+| fs.protected_hardlinks/symlinks | 1 | CIS 1.6.1 — link-based attack prevention |
+
+`net.ipv4.ip_forward` stays `1` — required for Docker networking (CIS recommends `0` but Docker breaks without it).
+
+### Kernel module blacklist (CIS 1.1.1.x, 3.5.x)
+
+Unused filesystem and network protocol modules are blacklisted via `/etc/modprobe.d/hardening.conf`: cramfs, freevxfs, hfs, hfsplus, jffs2, squashfs, udf, dccp, sctp, rds, tipc. Reduces kernel attack surface — none of these are needed on a Docker VPS.
+
+### Access control
+
+| Control | Source |
+| ------- | ------ |
+| `su` restricted to sudo group via `pam_wheel.so` | CIS 5.7, ANSSI-BP-028 R39 |
+| `/etc/shadow`, `/etc/gshadow` set to `0640` | CIS 6.1.x |
+
+---
+
+## Filesystem Hardening
+
+Mount options applied by Ansible `security` role.
+
+| Mount | Options | Source |
+| ----- | ------- | ------ |
+| /tmp | noexec,nosuid,nodev (tmpfs 512m) | CIS 1.1.2-1.1.5 — blocks execution from temp dirs |
+| /dev/shm | noexec,nosuid,nodev | CIS 1.1.8-1.1.10 — shared memory abuse prevention |
+
+---
+
+## Audit Logging
+
+`auditd` with immutable rules in `/etc/audit/rules.d/hardening.rules` (Ansible `security` role).
+
+| Audited path | Source |
+| ------------ | ------ |
+| /etc/passwd, shadow, group, gshadow | CIS 4.1.4 — identity file tampering |
+| /etc/sudoers, sudoers.d/ | CIS 4.1.8 — privilege escalation config |
+| /usr/bin/sudo, /usr/bin/su | CIS 4.1.11 — privileged command execution |
+| /var/run/docker.sock | Custom — unauthorized Docker API access |
+| /etc/ssh/sshd_config* | Custom — SSH config tampering |
+| `-e 2` (immutable rules) | CIS 4.1.18 — requires reboot to change |
 
 ---
 
@@ -122,8 +194,48 @@ Development `.env` files live on disk (gitignored). Each service has a committed
 | ---- | ----- | ------- |
 | gitleaks | Secrets in committed code | PR |
 | ShellCheck | Shell script safety | PR |
+| ansible-lint | Ansible playbook quality | PR |
 | `docker compose config` | Compose syntax validation | PR |
 | Dependabot | Docker image + GitHub Actions updates | Weekly |
+
+---
+
+## Security Auditing
+
+Run after provisioning or major changes to validate hardening.
+
+| Tool | Layer | How to run | Target |
+| ---- | ----- | ---------- | ------ |
+| [Lynis](https://cisofy.com/lynis/) | OS hardening | `sudo lynis audit system` (installed on VPS) | 80+ |
+| [ssh-audit](https://github.com/jtesta/ssh-audit) | SSH crypto | `ssh-audit <vps-ip>` (run from laptop) | No warnings |
+| [testssl.sh](https://testssl.sh/) | TLS/HTTPS | `docker run --rm drwetter/testssl.sh https://victorpatrin.dev` | A+ |
+
+---
+
+## Automatic Updates & Maintenance Window
+
+Security patches are applied automatically. The maintenance window is **6:00–7:00 UTC** — the only time services or the kernel may restart.
+
+### How it works
+
+| Event | Handler | Impact | When |
+| ----- | ------- | ------ | ---- |
+| Library/package security patch | `unattended-upgrades` installs, `needrestart` auto-restarts affected services | Brief service blip (~seconds) | ~6:00–7:00 UTC (apt-daily-upgrade.timer + 60m random delay) |
+| Kernel security update | `unattended-upgrades` installs, auto-reboot at 07:00 UTC | Full reboot, ~60s downtime, containers restart via `unless-stopped` | 07:00 UTC |
+| Manual `apt install/upgrade` | `needrestart` auto-restarts affected services immediately | Brief service blip | Whenever you run apt |
+
+### Configuration (Ansible `security` role via geerlingguy.security)
+
+- `security_autoupdate_enabled: true` — unattended-upgrades active
+- `security_autoupdate_reboot: true` — auto-reboot after kernel updates
+- `security_autoupdate_reboot_time: "07:00"` — reboot after apt finishes (~6:00–7:00 UTC)
+- `needrestart` mode `'a'` (automatic) — restarts services without prompting after apt
+
+### Accepted risks
+
+- **Brief downtime during maintenance window (~6:00–7:00 UTC):** containers restart automatically, but there's a brief window where services are unavailable. Acceptable for a solo-dev VPS with no SLA.
+- **Manual apt during the day:** if you SSH in and run `apt upgrade`, needrestart may restart services immediately. Be aware when running apt manually.
+- **No drain/health-check before restart:** unlike K3s with `kured`, there's no graceful pod draining. Services stop and start. At this scale, this is fine.
 
 ---
 
@@ -175,8 +287,8 @@ Backups cover PostgreSQL only. All other volumes are considered recoverable — 
 
 ### 2026-03-18 — Deploy user isolation (#44)
 
-**Context:** CI deploys ran as `victor` (admin user) — overprivileged for automated workloads.
-**Action:** Created dedicated `deploy` system user with scoped sudo (systemd commands only). Dedicated ed25519 SSH deploy key for GitHub Actions. Admin (`victor`) and automation (`deploy`) are now separate users with separate privilege sets.
+**Context:** CI deploys ran as the admin user — overprivileged for automated workloads.
+**Action:** Created dedicated `deploy` system user with scoped sudo (systemd commands only). Dedicated ed25519 SSH deploy key for GitHub Actions. Admin (`admin`) and automation (`deploy`) are now separate users with separate privilege sets.
 
 ### 2026-03-19 — Observability stack security (#75)
 
@@ -187,3 +299,26 @@ Backups cover PostgreSQL only. All other volumes are considered recoverable — 
 
 **Context:** All sites shared a single CSP policy. Coupette needed `unsafe-eval` for a Telegram widget, but other sites shouldn't have it.
 **Action:** Moved CSP to per-site configuration in Caddyfile. Each domain block defines its own CSP policy — only `coupette.club` allows `unsafe-eval`.
+
+### 2026-03-23 — Ansible server hardening
+
+**Context:** VPS provisioning was manual (VPS_SETUP_GUIDE.md). No kernel sysctl hardening, no SSH crypto pinning, no filesystem mount hardening, no audit logging.
+**Action:** Ansible playbook codifies full VPS setup. Added: sysctl hardening (28 parameters from CIS/ANSSI/dev-sec/Lynis), SSH crypto pinning (post-quantum KEX, AEAD-only ciphers, ETM MACs, AllowUsers), `/tmp` and `/dev/shm` noexec mounts, `auditd` with immutable rules covering identity files, sudoers, Docker socket, and SSH config. Validated with Lynis audit: baseline Debian 13 scores 64/100, after hardening 80/100 (+16). Remaining suggestions triaged — most are noise at single-VPS scale (GRUB password, separate partitions, password aging on key-only users). Sources: CIS Debian Linux Benchmark, ANSSI-BP-028 v2.0, dev-sec.io baselines, ssh-audit.com, Lynis 3.1.4.
+
+---
+
+## Accepted Risks
+
+- **Deploy user in Docker group is root-equivalent:** required for `docker compose` — mitigated by SSH key in vault, fail2ban, AllowUsers, and auditd on the Docker socket. Goes away with K3s migration (Phase 7).
+- **Deploy user has scoped sudo to write systemd units:** `tee` to 4 specific unit file paths. Doesn't expand blast radius beyond Docker group membership. Scoped to `pg-backup` and `disk-alert` units only.
+
+---
+
+## References
+
+- [CIS Debian Linux Benchmark](https://www.cisecurity.org/benchmark/debian_linux) — Level 1 and Level 2 controls
+- [ANSSI-BP-028 v2.0](https://cyber.gouv.fr/publications/configuration-recommendations-gnulinux-system) — French cybersecurity agency Linux hardening guide
+- [dev-sec.io Linux Baseline](https://dev-sec.io/baselines/linux/) — Ansible/InSpec hardening framework
+- [dev-sec.io SSH Baseline](https://dev-sec.io/baselines/ssh/)
+- [ssh-audit.com hardening guides](https://www.sshaudit.com/hardening_guides.html) — Algorithm-specific SSH configuration
+- [OVH debian-cis](https://github.com/ovh/debian-cis) — CIS benchmark scripts for Debian

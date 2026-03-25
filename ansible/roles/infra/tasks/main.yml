@@ -1,0 +1,93 @@
+# --- Deploy user permissions ---
+- name: Add admin user to deploy group
+  ansible.builtin.user:
+    name: "{{ admin_user }}"
+    groups: "{{ deploy_user }}"
+    append: true
+
+- name: Install deploy SSH public key
+  ansible.posix.authorized_key:
+    user: "{{ deploy_user }}"
+    key: "{{ vault_deploy_ssh_public_key }}"
+  when: vault_deploy_ssh_public_key is defined and vault_deploy_ssh_public_key | length > 0
+
+- name: Warn if deploy SSH key is not configured
+  ansible.builtin.debug:
+    msg: "WARNING: vault_deploy_ssh_public_key not set — CD will not work until configured"
+  when: vault_deploy_ssh_public_key is not defined or vault_deploy_ssh_public_key | length == 0
+
+- name: Configure scoped sudo for deploy user
+  ansible.builtin.copy:
+    content: |
+      {{ deploy_user }} ALL=(ALL) NOPASSWD: /usr/bin/systemctl daemon-reload
+      {{ deploy_user }} ALL=(ALL) NOPASSWD: /usr/bin/systemctl enable pg-backup.timer
+      {{ deploy_user }} ALL=(ALL) NOPASSWD: /usr/bin/systemctl enable disk-alert.timer
+      {{ deploy_user }} ALL=(ALL) NOPASSWD: /usr/bin/systemctl start pg-backup.timer
+      {{ deploy_user }} ALL=(ALL) NOPASSWD: /usr/bin/systemctl start disk-alert.timer
+      {{ deploy_user }} ALL=(ALL) NOPASSWD: /usr/bin/tee /etc/systemd/system/pg-backup.service
+      {{ deploy_user }} ALL=(ALL) NOPASSWD: /usr/bin/tee /etc/systemd/system/pg-backup.timer
+      {{ deploy_user }} ALL=(ALL) NOPASSWD: /usr/bin/tee /etc/systemd/system/disk-alert.service
+      {{ deploy_user }} ALL=(ALL) NOPASSWD: /usr/bin/tee /etc/systemd/system/disk-alert.timer
+    dest: "/etc/sudoers.d/{{ deploy_user }}"
+    mode: "0440"
+    validate: visudo -cf %s
+
+# --- Tooling ---
+- name: Check sops version
+  ansible.builtin.command:
+    cmd: sops --version
+  register: sops_installed
+  changed_when: false
+  failed_when: false
+
+- name: Download sops .deb
+  ansible.builtin.get_url:
+    url: "https://github.com/getsops/sops/releases/download/v{{ sops_version }}/sops_{{ sops_version }}_amd64.deb"
+    dest: "/tmp/sops_{{ sops_version }}_amd64.deb"
+    checksum: "sha256:{{ sops_sha256 }}"
+    mode: "0644"
+  when: sops_version not in (sops_installed.stdout | default(''))
+
+- name: Install sops
+  ansible.builtin.apt:
+    deb: "/tmp/sops_{{ sops_version }}_amd64.deb"
+  when: sops_version not in (sops_installed.stdout | default(''))
+
+# --- Repos and static assets ---
+- name: Clone infra repo
+  become: true
+  become_user: "{{ deploy_user }}"
+  ansible.builtin.git:
+    repo: "{{ infra_repo }}"
+    dest: "{{ infra_dir }}"
+    version: main
+    update: false
+
+- name: Clone coupette repo
+  become: true
+  become_user: "{{ deploy_user }}"
+  ansible.builtin.git:
+    repo: "{{ coupette_repo }}"
+    dest: "{{ coupette_dir }}"
+    version: main
+    update: false
+
+- name: Create frontend static files directory
+  ansible.builtin.file:
+    path: "{{ coupette_frontend_dir }}"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0755"
+
+# --- Docker platform prerequisites (external resources for compose stacks) ---
+- name: Create Docker internal network
+  community.docker.docker_network:
+    name: internal
+
+- name: Create external Docker volumes
+  community.docker.docker_volume:
+    name: "{{ item }}"
+  loop:
+    - shared-postgres_pgdata
+    - uptime-kuma_uptime-kuma-data

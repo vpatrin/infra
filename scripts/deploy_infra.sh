@@ -83,11 +83,11 @@ done
 
 if [[ "${CHANGED}" -eq 1 ]]; then
     sudo systemctl daemon-reload
-    timers=("${UNITS_SRC}"/*.timer)
-    if [[ ${#timers[@]} -gt 0 ]]; then
-        sudo systemctl enable "${timers[@]##*/}"
-        sudo systemctl start "${timers[@]##*/}"
-    fi
+    for timer in "${UNITS_SRC}"/*.timer; do
+        name="$(basename "${timer}")"
+        sudo systemctl enable "${name}"
+        sudo systemctl start "${name}"
+    done
     echo "  systemd units reloaded"
 else
     echo "  systemd units unchanged"

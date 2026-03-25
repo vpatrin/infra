@@ -1,0 +1,11 @@
+---
+exclude_paths:
+  # Vault-encrypted files can't be parsed by ansible-lint
+  - group_vars/all/vault.yml
+  # Vendored Galaxy roles — not our code
+  - roles/geerlingguy.docker
+  - roles/geerlingguy.security
+
+skip_list:
+  # Single-repo roles — role prefixes add noise without value
+  - var-naming[no-role-prefix]

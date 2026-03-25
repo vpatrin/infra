@@ -108,7 +108,7 @@ If `make restart` is run on infra, app backends may lose postgres connectivity f
 
 ## Working Directory
 
-Coupette is deployed to `/opt/coupette` on the VPS. Systemd timer units use `WorkingDirectory=/opt/coupette`. The deploy script writes an `.image-tag` file there that timers read to pull the correct container image version.
+Coupette is deployed to `/home/deploy/coupette` on the VPS. Systemd timer units use `WorkingDirectory=/home/deploy/coupette`. The deploy script writes an `.image-tag` file there that timers read to pull the correct container image version.
 
 ## Timer Scheduling
 
@@ -133,13 +133,12 @@ All timers use `Persistent=true` — if the VPS is down during the scheduled tim
 | Path | Owner | Purpose |
 | --- | --- | --- |
 | `/home/deploy/infra/` | `deploy` | infra repo |
-| `/home/deploy/projects/coupette/` | `deploy` | coupette repo |
-| `/opt/coupette` | symlink | → `/home/deploy/projects/coupette` |
+| `/home/deploy/coupette/` | `deploy` | coupette repo |
 | `/srv/coupette/` | `deploy` | frontend static files (served by Caddy) |
 
 ### Deploy user
 
-A dedicated `deploy` system user owns all repos and runs CI workloads. It has no sudo except for scoped systemd commands. Human admin work uses `victor`.
+A dedicated `deploy` system user owns all repos and runs CI workloads. It has no sudo except for scoped systemd commands. Human admin work uses `admin`.
 
 ### SSH deploy key
 

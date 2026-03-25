@@ -1,0 +1,5 @@
+# Copy to vault.yml and encrypt with: ansible-vault encrypt vault.yml
+# Or run: ./setup.sh (creates and encrypts automatically)
+
+vault_admin_password_plain: <plaintext password — for ansible become (sudo)>
+vault_deploy_ssh_public_key: <optional — ed25519 public key for deploy user CD access>

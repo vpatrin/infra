@@ -1,0 +1,140 @@
+# --- System identity ---
+- name: Set hostname
+  ansible.builtin.hostname:
+    name: "{{ hostname }}"
+
+- name: Add hostname to /etc/hosts
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: '^127\.0\.1\.1'
+    line: "127.0.1.1 {{ hostname }}"
+
+- name: Set timezone
+  community.general.timezone:
+    name: "{{ timezone }}"
+
+# --- Package management ---
+- name: Upgrade all packages
+  ansible.builtin.apt:
+    upgrade: safe
+
+- name: Remove unused packages and clean apt cache
+  ansible.builtin.apt:
+    autoremove: true
+    autoclean: true
+
+- name: Find removed packages with residual configs (PKGS-7346)
+  ansible.builtin.shell:
+    cmd: set -o pipefail && dpkg --list | grep '^rc' | awk '{print $2}'
+    executable: /bin/bash
+  register: removed_packages
+  changed_when: false
+  failed_when: false
+
+- name: Purge removed package configs
+  ansible.builtin.apt:
+    name: "{{ removed_packages.stdout_lines }}"
+    state: absent
+    purge: true
+  when: removed_packages.stdout_lines | length > 0
+
+- name: Check if reboot is required
+  ansible.builtin.stat:
+    path: /var/run/reboot-required
+  register: reboot_required
+
+- name: Reboot to apply kernel upgrade
+  ansible.builtin.reboot:
+    reboot_timeout: 300
+  when: reboot_required.stat.exists
+
+- name: Install base packages
+  ansible.builtin.apt:
+    name:
+      - sudo
+      - curl
+      - git
+      - wget
+      - awscli
+      - needrestart
+      - lynis
+    state: present
+
+- name: Set needrestart to automatic mode
+  ansible.builtin.lineinfile:
+    path: /etc/needrestart/needrestart.conf
+    regexp: '^#?\$nrconf\{restart\}'
+    line: "$nrconf{restart} = 'a';"
+
+# --- Users ---
+# Admin user is created in the bootstrap role (Phase 1, as root).
+# Re-running this is safe — user module is idempotent.
+- name: Ensure admin user config
+  ansible.builtin.user:
+    name: "{{ admin_user }}"
+    password: "{{ vault_admin_password_plain | password_hash('sha512', 65534 | random(seed=inventory_hostname)) }}"
+    groups: sudo
+    append: true
+    shell: /bin/bash
+    create_home: true
+  no_log: true
+
+- name: Ensure SSH key for admin user
+  ansible.posix.authorized_key:
+    user: "{{ admin_user }}"
+    key: "{{ lookup('file', admin_ssh_pubkey_path) }}"
+
+- name: Create deploy user (no password, no sudo)
+  ansible.builtin.user:
+    name: "{{ deploy_user }}"
+    shell: /bin/bash
+    create_home: true
+    password: "!"
+    password_lock: true
+
+- name: Set deploy home group-readable (750)
+  ansible.builtin.file:
+    path: "/home/{{ deploy_user }}"
+    mode: "0750"
+
+# --- Swap ---
+- name: Check if swap file exists
+  ansible.builtin.stat:
+    path: /swapfile
+  register: swap_file
+
+- name: Create swap file
+  when: not swap_file.stat.exists
+  block:
+    - name: Allocate swap file
+      ansible.builtin.command:
+        cmd: fallocate -l "{{ swap_size }}" /swapfile
+      changed_when: true
+
+    - name: Set swap file permissions
+      ansible.builtin.file:
+        path: /swapfile
+        mode: "0600"
+
+    - name: Format swap file
+      ansible.builtin.command:
+        cmd: mkswap /swapfile
+      changed_when: true
+
+    - name: Enable swap file
+      ansible.builtin.command:
+        cmd: swapon /swapfile
+      changed_when: true
+
+- name: Ensure swap in fstab
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    regexp: '/swapfile'
+    line: '/swapfile none swap sw 0 0'
+
+- name: Set swappiness
+  ansible.posix.sysctl:
+    name: vm.swappiness
+    value: "{{ swap_swappiness }}"
+    sysctl_file: /etc/sysctl.d/99-swappiness.conf
+    reload: true
