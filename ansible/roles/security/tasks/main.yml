@@ -116,7 +116,7 @@
     name: "{{ item.name }}"
     value: "{{ item.value }}"
     sysctl_file: /etc/sysctl.d/99-hardening.conf
-    reload: true
+    reload: false
   loop:
     # Docker requires ip_forward — CIS says 0 but Docker breaks without it.
     - { name: net.ipv4.ip_forward, value: "1" }
@@ -157,6 +157,11 @@
     - { name: dev.tty.ldisc_autoload, value: "0" }
     - { name: kernel.sysrq, value: "0" }
     - { name: net.ipv4.conf.default.log_martians, value: "1" }
+
+- name: Reload sysctl
+  ansible.builtin.command:
+    cmd: sysctl --system
+  changed_when: false
 
 # --- Audit logging (CIS 4.1.x, ANSSI-BP-028 R73) ---
 - name: Install auditd
