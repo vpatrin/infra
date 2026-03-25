@@ -22,12 +22,18 @@
       {{ deploy_user }} ALL=(ALL) NOPASSWD: /usr/bin/systemctl daemon-reload
       {{ deploy_user }} ALL=(ALL) NOPASSWD: /usr/bin/systemctl enable pg-backup.timer
       {{ deploy_user }} ALL=(ALL) NOPASSWD: /usr/bin/systemctl enable disk-alert.timer
+      {{ deploy_user }} ALL=(ALL) NOPASSWD: /usr/bin/systemctl enable --now coupette-scraper.timer
+      {{ deploy_user }} ALL=(ALL) NOPASSWD: /usr/bin/systemctl enable --now coupette-availability.timer
       {{ deploy_user }} ALL=(ALL) NOPASSWD: /usr/bin/systemctl start pg-backup.timer
       {{ deploy_user }} ALL=(ALL) NOPASSWD: /usr/bin/systemctl start disk-alert.timer
       {{ deploy_user }} ALL=(ALL) NOPASSWD: /usr/bin/tee /etc/systemd/system/pg-backup.service
       {{ deploy_user }} ALL=(ALL) NOPASSWD: /usr/bin/tee /etc/systemd/system/pg-backup.timer
       {{ deploy_user }} ALL=(ALL) NOPASSWD: /usr/bin/tee /etc/systemd/system/disk-alert.service
       {{ deploy_user }} ALL=(ALL) NOPASSWD: /usr/bin/tee /etc/systemd/system/disk-alert.timer
+      {{ deploy_user }} ALL=(ALL) NOPASSWD: /usr/bin/tee /etc/systemd/system/coupette-scraper.service
+      {{ deploy_user }} ALL=(ALL) NOPASSWD: /usr/bin/tee /etc/systemd/system/coupette-scraper.timer
+      {{ deploy_user }} ALL=(ALL) NOPASSWD: /usr/bin/tee /etc/systemd/system/coupette-availability.service
+      {{ deploy_user }} ALL=(ALL) NOPASSWD: /usr/bin/tee /etc/systemd/system/coupette-availability.timer
     dest: "/etc/sudoers.d/{{ deploy_user }}"
     mode: "0440"
     validate: visudo -cf %s
