@@ -32,7 +32,7 @@ ufw_allowed_ports:
   - "443"
 
 # --- Fail2ban ---
-fail2ban_maxretry: 3
+fail2ban_maxretry: 5
 fail2ban_bantime: 3600
 fail2ban_findtime: 600
 
