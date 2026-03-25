@@ -29,6 +29,7 @@
     cmd: dpkg --list | grep '^rc' | awk '{print $2}'
   register: removed_packages
   changed_when: false
+  failed_when: false
 
 - name: Purge removed package configs
   ansible.builtin.apt:
