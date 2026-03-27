@@ -68,6 +68,7 @@ infra/
 │   └── prometheus/                # Metrics scrape config
 ├── docs/
 │   ├── ARCHITECTURE.md            # VPS, network, services, backups, deployment
+│   ├── DISASTER_RECOVERY.md       # DR runbook — scenarios, restore, DNS switch
 │   ├── OBSERVABILITY.md           # Grafana, Loki, Prometheus, Alloy
 │   ├── APP_CONTRACT.md            # Platform contract for app repos
 │   ├── SECURITY.md                # Platform security posture + hardening log
@@ -75,16 +76,22 @@ infra/
 │   ├── decisions/                 # Architecture decision records
 │   │   ├── 0001-hetzner-single-vps.md
 │   │   ├── ...
-│   │   └── 0008-observability-stack.md
+│   │   └── 0010-hetzner-dns.md
 │   └── guides/                    # Reusable how-to guides
 │       ├── COMPOSE_GUIDE.md
 │       ├── DOCKERFILE_GUIDE.md
 │       ├── CADDY_GUIDE.md
 │       ├── GITHUB_SETUP_GUIDE.md
 │       └── VPS_SETUP_GUIDE.md
+├── terraform/                     # Production IaC: DNS, firewall
+│   ├── .envrc.example             # Hetzner + S3 credentials template
+│   └── README.md
+├── ansible/                       # VPS provisioning (DR only)
+│   ├── site.yml                   # Two-phase playbook
+│   └── roles/                     # base, security, docker, infra
 ├── .github/
 │   ├── workflows/
-│   │   ├── ci.yml                 # PR checks: compose, shellcheck, gitleaks
+│   │   ├── ci.yml                 # PR checks: compose, shellcheck, terraform, ansible, gitleaks
 │   │   ├── deploy.yml             # Production deploy (workflow dispatch)
 │   │   └── dependabot-auto-merge.yml
 │   └── dependabot.yml
