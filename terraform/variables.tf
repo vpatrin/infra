@@ -1,35 +1,10 @@
 # =============================================================================
-# Server
+# VPS IP (used as default for DNS A records)
 # =============================================================================
 
-variable "server_name" {
-  description = "Server hostname"
+variable "vps_ip" {
+  description = "IPv4 address of the production VPS (set via .tfvars or -var)"
   type        = string
-  default     = "web-01"
-}
-
-variable "server_type" {
-  description = "Hetzner server type"
-  type        = string
-  default     = "cx23"
-}
-
-variable "location" {
-  description = "Hetzner datacenter location"
-  type        = string
-  default     = "hel1"
-}
-
-variable "image" {
-  description = "OS image"
-  type        = string
-  default     = "debian-13"
-}
-
-variable "ssh_key_name" {
-  description = "Name of the SSH key in Hetzner Cloud (must match exactly)"
-  type        = string
-  default     = "victor-laptop"
 }
 
 # =============================================================================
@@ -39,7 +14,7 @@ variable "ssh_key_name" {
 variable "firewall_name" {
   description = "Name of the cloud firewall"
   type        = string
-  default     = "web-firewall"
+  default     = "allow-ssh-http-https"
 }
 
 variable "ingress_ports" {
@@ -49,17 +24,31 @@ variable "ingress_ports" {
 }
 
 # =============================================================================
-# Protection & backups
+# DNS
 # =============================================================================
 
-variable "backups" {
-  description = "Enable automated Hetzner backups (~€0.70/month)"
-  type        = bool
-  default     = true
-}
-
-variable "delete_protection" {
-  description = "Prevent accidental server deletion and rebuild"
-  type        = bool
-  default     = true
+variable "dns_zones" {
+  description = "DNS zones and their RRSets (values = null uses vps_ip)"
+  type = map(object({
+    rrsets = list(object({
+      name   = string
+      type   = string
+      values = optional(list(string))
+      ttl    = number
+    }))
+  }))
+  default = {
+    "victorpatrin.dev" = {
+      rrsets = [
+        { name = "@", type = "A", values = null, ttl = 600 },
+        { name = "*", type = "A", values = null, ttl = 600 },
+      ]
+    }
+    "coupette.club" = {
+      rrsets = [
+        { name = "@", type = "A", values = null, ttl = 600 },
+        { name = "*", type = "A", values = null, ttl = 600 },
+      ]
+    }
+  }
 }

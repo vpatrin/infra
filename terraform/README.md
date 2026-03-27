@@ -1,45 +1,18 @@
-# Terraform — Hetzner VPS Provisioning
+# Terraform — Hetzner Cloud
 
-Provisions a Hetzner Cloud VPS for disaster recovery. **Does NOT manage web-01** — this config creates new servers only.
+Manages production cloud resources as code. State is permanent — tracks DNS and firewall.
+
+Server provisioning (DR or benchmarks) is done via `hcloud` CLI or Console — see `docs/DISASTER_RECOVERY.md`.
 
 ## Credentials
 
 | Credential | Scope | Where to get it |
 |------------|-------|-----------------|
-| `HCLOUD_TOKEN` | **Project** — controls which servers you manage | Hetzner Console → Project → Security → API Tokens |
+| `HCLOUD_TOKEN` | **Project** — controls servers, firewall, and DNS | Hetzner Console → Project → Security → API Tokens |
 | `AWS_ACCESS_KEY_ID` | **Account** — works across all projects | Hetzner Console → Object Storage → S3 Credentials |
 | `AWS_SECRET_ACCESS_KEY` | **Account** — same as above | Hetzner Console → Object Storage → S3 Credentials |
 
-Switching projects = swap `HCLOUD_TOKEN` only. S3 credentials stay the same.
-
-## Variables
-
-Override any variable with `-var="name=value"` on `plan` or `apply`.
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `server_name` | `web-01` | Server hostname |
-| `server_type` | `cx23` | Hetzner plan (cx22, cx23, cx32...) |
-| `location` | `hel1` | Datacenter (hel1=Helsinki, nbg1=Nuremberg, fsn1=Falkenstein) |
-| `image` | `debian-13` | OS image |
-| `ssh_key_name` | `victor-laptop` | SSH key name in Hetzner Console (must match exactly) |
-| `firewall_name` | `web-firewall` | Cloud firewall name |
-| `ingress_ports` | `["22", "80", "443"]` | Allowed inbound TCP ports |
-| `backups` | `true` | Hetzner automated weekly snapshots (~€0.70/month) |
-| `delete_protection` | `true` | Prevent accidental server deletion |
-
-Examples:
-
-```bash
-# Production replacement (defaults)
-terraform plan
-
-# DR test (throwaway, no protection)
-terraform plan -var="delete_protection=false" -var="backups=false"
-
-# Different server size
-terraform plan -var="server_type=cx32"
-```
+Set credentials in `.envrc` (gitignored). See `.envrc.example` for the template.
 
 ## Setup
 
@@ -53,69 +26,90 @@ direnv allow
 terraform init
 ```
 
+## Resources
+
+- **Cloud firewall** (TCP 22, 80, 443 inbound) — auto-applies to any server with label `role=web`
+- **DNS zones** (`victorpatrin.dev`, `coupette.club`) with A records pointing to the VPS IP
+
+## Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `vps_ip` | *(required)* | Production VPS IPv4 — set in `.tfvars` or `-var` |
+| `firewall_name` | `allow-ssh-http-https` | Cloud firewall name |
+| `ingress_ports` | `["22", "80", "443"]` | Allowed inbound TCP ports |
+| `dns_zones` | *(see variables.tf)* | DNS zones + records (A records default to `vps_ip`) |
+
 ## Usage
 
 ```bash
-terraform plan              # preview
-terraform apply             # create
-terraform output ip         # get IP for Ansible
-terraform destroy           # tear down (DR test only)
-```
+cd terraform
 
-**DR test vs real replacement:**
+# First time
+terraform init
+terraform plan -var="vps_ip=<web-01-ip>"
+terraform apply -var="vps_ip=<web-01-ip>"
 
-- **DR test:** use `-var="delete_protection=false" -var="backups=false"`. Destroy when done.
-- **Real DR:** use defaults (protection on). After Ansible + data restore + DNS update, the server becomes production. **Never destroy it** — `delete_protection` prevents accidental deletion.
-
-## New project (DR test)
-
-To spin up the full app in a new Hetzner project:
-
-**One-time setup (console):**
-1. Create new Hetzner Cloud project (e.g. "DR Test")
-2. Upload your SSH public key (`~/.ssh/id_ed25519.pub`) in the new project — name it `victor-laptop` (must match `ssh_key_name` variable)
-3. Generate API token in the new project
-
-**Terraform:**
-4. Update `HCLOUD_TOKEN` in `.envrc` with the new project token
-5. `direnv allow`
-6. Plan and apply:
-
-```bash
-terraform plan -var="delete_protection=false" -var="backups=false"
+# Or use a .tfvars file (gitignored)
+echo 'vps_ip = "<web-01-ip>"' > terraform.tfvars
+terraform plan
 terraform apply
-terraform output ip
+
+# Drift check
+terraform plan
 ```
 
-**Then:**
-8. Run Ansible against the new IP
-9. Restore Postgres from S3
-10. Update DNS in Porkbun → new IP
+## Import existing DNS zones
 
-**Cleanup:**
+After first `init`, import the manually-created zones:
+
 ```bash
-terraform destroy
-# Switch HCLOUD_TOKEN back to production in .envrc
+terraform import -var="vps_ip=<web-01-ip>" 'hcloud_zone.zones["victorpatrin.dev"]' <zone-id>
+terraform import -var="vps_ip=<web-01-ip>" 'hcloud_zone.zones["coupette.club"]' <zone-id>
+
+# Verify — should show no changes (or only drift to correct)
+terraform plan -var="vps_ip=<web-01-ip>"
 ```
 
-## What this provisions
+Get zone IDs from `hcloud dns zone list` or the Hetzner Console.
 
-- Hetzner CX23 server (Debian 13)
-- Cloud firewall (TCP 22, 80, 443 inbound)
-- Your SSH public key added to the server (so you can `ssh root@<ip>` immediately after creation)
-- Automated backups + delete/rebuild protection (overridable)
+## Firewall auto-attachment
+
+The firewall uses `apply_to` with label selector `role=web`. Any server with that label automatically gets the firewall rules. To create a server with firewall access:
+
+```bash
+hcloud server create --name web-02 --type cx23 --image debian-13 \
+  --location hel1 --ssh-key victor-laptop --label role=web
+```
+
+Servers without the `role=web` label are isolated from the internet (no inbound ports open).
+
+## DNS migration (Porkbun → Hetzner DNS)
+
+One-time setup after first `apply`:
+
+1. `terraform output nameservers` — get the Hetzner nameservers
+2. Verify records before switching NS:
+   ```bash
+   dig @hydrogen.ns.hetzner.com victorpatrin.dev A
+   dig @hydrogen.ns.hetzner.com coupette.club A
+   ```
+3. At Porkbun, replace nameservers with the Hetzner NS (both domains)
+4. Wait for propagation:
+   ```bash
+   dig victorpatrin.dev NS    # should show Hetzner NS
+   dig victorpatrin.dev A     # should show VPS IP
+   dig coupette.club A        # should show VPS IP
+   ```
+
+**Rollback:** set Porkbun nameservers back to `curitiba/fortaleza/maceio/salvador.ns.porkbun.com`.
 
 ## What this does NOT manage
 
-- web-01 (existing production server) — never import it. Running `apply` in the production project creates a second server alongside web-01 (you'll be billed for both).
-- DNS (manual Porkbun update)
-- Object Storage buckets (created manually, account-wide)
-- Server configuration (Ansible handles that)
+- **Servers** — created via `hcloud` CLI or Console (DR, benchmarks, staging). Firewall applies automatically via label.
+- **S3 buckets** — Terraform state (Hetzner Object Storage) and Postgres backups (AWS S3) are created manually. One-time setup.
+- **Server configuration** — Ansible handles that after server creation.
 
-## State
+## State backend
 
-Terraform tracks what it created (server ID, IP, firewall ID) in a state file. This file is stored remotely in Hetzner Object Storage so it's not lost if your laptop dies.
-
-**Bucket:** `s3://victorpatrin-terraform-state/` (account-wide, accessible from any project)
-
-State is written to `infra/terraform.tfstate`. After `terraform destroy`, the state shows zero resources but the file remains — next `apply` starts fresh.
+State is stored in Hetzner Object Storage (`victorpatrin-terraform-state` bucket), key: `infra/terraform.tfstate`.
