@@ -8,7 +8,7 @@ terraform {
   required_providers {
     hcloud = {
       source  = "hetznercloud/hcloud"
-      version = "~> 1.49"
+      version = "~> 1.54"
     }
   }
 
@@ -32,36 +32,7 @@ terraform {
 
 provider "hcloud" {
   # Authenticated via HCLOUD_TOKEN env var (project-scoped)
-}
-
-# =============================================================================
-# SSH key (must already exist in the Hetzner project)
-# =============================================================================
-
-data "hcloud_ssh_key" "default" {
-  name = var.ssh_key_name
-}
-
-# =============================================================================
-# Server
-# =============================================================================
-
-resource "hcloud_server" "web" {
-  name        = var.server_name
-  server_type = var.server_type
-  location    = var.location
-  image       = var.image
-
-  ssh_keys = [data.hcloud_ssh_key.default.id]
-
-  backups            = var.backups
-  delete_protection  = var.delete_protection
-  rebuild_protection = var.delete_protection
-
-  labels = {
-    role = "web"
-    env  = "production"
-  }
+  # Also used for DNS (Hetzner Cloud Console DNS)
 }
 
 # =============================================================================
@@ -80,9 +51,46 @@ resource "hcloud_firewall" "web" {
       source_ips = ["0.0.0.0/0", "::/0"]
     }
   }
+
+  apply_to {
+    label_selector = "role=web"
+  }
 }
 
-resource "hcloud_firewall_attachment" "web" {
-  firewall_id = hcloud_firewall.web.id
-  server_ids  = [hcloud_server.web.id]
+# =============================================================================
+# DNS — Hetzner Cloud Console DNS (zones + RRSets for all managed domains)
+# =============================================================================
+
+resource "hcloud_zone" "zones" {
+  for_each = var.dns_zones
+  name     = each.key
+  mode     = "primary"
+}
+
+resource "hcloud_zone_rrset" "records" {
+  for_each = {
+    for entry in local.dns_rrsets_flat : "${entry.zone}/${entry.name}/${entry.type}" => entry
+  }
+
+  zone    = hcloud_zone.zones[each.value.zone].name
+  name    = each.value.name
+  type    = each.value.type
+  ttl     = each.value.ttl
+  records = each.value.records
+}
+
+locals {
+  dns_rrsets_flat = flatten([
+    for zone, config in var.dns_zones : [
+      for rrset in config.rrsets : {
+        zone = zone
+        name = rrset.name
+        type = rrset.type
+        ttl  = rrset.ttl
+        records = [
+          for ip in(rrset.values != null ? rrset.values : [var.vps_ip]) : { value = ip }
+        ]
+      }
+    ]
+  ])
 }

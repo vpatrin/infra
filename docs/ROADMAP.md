@@ -98,11 +98,11 @@ Coupette's RAG pipeline needs structured metrics and log aggregation. `docker lo
 
 ### Terraform
 
-- [x] Hetzner VPS (Debian 13) + SSH key registration
-- [x] Hetzner firewall rules (22, 80, 443)
+- [x] DNS zones, cloud firewall (production IaC, permanent state)
+- [x] Firewall auto-applies to any server with label `role=web`
 - [x] State backend in Hetzner Object Storage (bucket created manually)
 - [x] CI gate — `terraform validate` + `fmt -check` on PR
-- [x] Outputs VPS IP for Ansible inventory
+- [ ] `terraform import` — adopt manually-created DNS zones + firewall into state
 
 *(#101, PR #117)*
 
@@ -116,10 +116,20 @@ Coupette's RAG pipeline needs structured metrics and log aggregation. `docker lo
 - [x] Ansible vault — admin password, deploy SSH public key
 - [x] CI gate — `ansible-lint` on PR
 
+### DNS as code
+
+- [x] Hetzner DNS zones for `victorpatrin.dev` and `coupette.club` (created manually, Terraform config ready)
+- [x] A records (`@` + `*`) pointing to VPS IP
+- [x] Switch nameservers at Porkbun → Hetzner NS
+- [x] Verify propagation — both domains resolve correctly
+- [x] ADR: `decisions/0010-hetzner-dns.md`
+- [x] Terraform config — `hcloud_zone` + `hcloud_zone_rrset` (native hcloud provider, no separate token)
+- [ ] `terraform import` — adopt manually-created zones into Terraform state
+
 ### DR runbook + validation
 
-- [ ] `docs/DISASTER_RECOVERY.md` — DR spec, scenarios, runbook, app contract
-- [ ] DR test — spin up real web-02, run full flow, verify traffic serves, tear down
+- [x] `docs/DISASTER_RECOVERY.md` — scenarios, step-by-step runbook, DR test procedure
+- [ ] DR test — spin up real web-02, run full flow, verify, tear down
 
 ## Phase 6 — Kubernetes
 

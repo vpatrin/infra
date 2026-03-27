@@ -9,7 +9,7 @@ Single Hetzner VPS running all services behind a Caddy reverse proxy. One server
 - **Host**: `web-01`
 - **Users**: `admin` (SSH, sudo) + `deploy` (CD, scoped sudo) — root SSH disabled
 - **Swap**: 2GB at `/swapfile`, swappiness=10
-- **DNS**: `victorpatrin.dev` + wildcard `*.victorpatrin.dev` → VPS IP (Porkbun)
+- **DNS**: `victorpatrin.dev` + `coupette.club` → VPS IP (Hetzner DNS, managed by Terraform). Porkbun remains the domain registrar.
 
 ## Topology
 

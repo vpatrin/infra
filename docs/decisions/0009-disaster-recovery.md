@@ -34,15 +34,17 @@ Option 3: Terraform + Ansible + offsite backups.
 MANUAL (one-time or rare)
   AWS S3 bucket creation
   Hetzner Object Storage bucket creation
-  Porkbun DNS update (A record → new VPS IP)
   ~/.ansible_vault_pass (from password manager)
   Postgres restore from S3 (verified before DNS cutover)
 
-TERRAFORM (laptop → Hetzner API)
-  VPS (Debian 13, CX22)
-  Cloud firewall (22, 80, 443)
-  SSH key registration
+HCLOUD CLI (laptop → Hetzner API)
+  VPS (Debian 13, CX23) with role=web label
+  → firewall auto-attaches via label selector
   → outputs: VPS IP
+
+TERRAFORM (laptop → Hetzner API)
+  Cloud firewall (22, 80, 443) — label-based, auto-attaches
+  DNS zones + A records — update vps_ip to switch traffic
 
 ANSIBLE (laptop → fresh VPS)
   OS: swap, timezone, locale, log rotation

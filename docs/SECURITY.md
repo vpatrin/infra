@@ -1,8 +1,44 @@
 # Security
 
-Platform-level security posture. Application-level security (auth, JWT, rate limiting) lives in each app repo.
+Platform-level security posture for `victorpatrin.dev`. Application-level security (auth, JWT, rate limiting) lives in each app repo. All hardening is codified in the Ansible `security` role and validated on every fresh provision.
 
-**Lynis: 80/100** (baseline Debian 13: 64) | **ssh-audit: clean** (post-quantum KEX, AEAD-only, ETM MACs) | **testssl.sh: A+** (96/100). Hardening is codified in the Ansible `security` role and validated on every fresh provision.
+| Audit tool | Score | What it checks |
+| ---------- | ----- | -------------- |
+| Lynis | **80/100** (baseline: 64) | OS hardening — sysctl, permissions, services, kernel |
+| ssh-audit | **Clean** | SSH crypto — KEX, ciphers, MACs, host keys |
+| testssl.sh | **A+** (96/100) | TLS — certificates, protocols, cipher suites |
+
+---
+
+## Accepted Risks
+
+- **Deploy user in Docker group is root-equivalent:** required for `docker compose` — mitigated by SSH key in vault, fail2ban, AllowUsers, and auditd on the Docker socket. Goes away with K3s migration (Phase 7).
+- **Deploy user has scoped sudo to write systemd units:** `tee` to specific unit file paths (`pg-backup`, `disk-alert`, `coupette-scraper`, `coupette-availability`). Doesn't expand blast radius beyond Docker group membership.
+- **Docker socket mounted into Alloy (read-only):** grants read access to the Docker API — can list containers, inspect images, read env vars. Mitigated by `read_only: true`, `cap_drop: ALL`, internal-only network, and `no-new-privileges`. Required for container log tailing. Goes away with K3s migration (journal/CRI logs replace Docker socket).
+- **Caddy admin API on `0.0.0.0:2019`:** reachable from any container on the `internal` network, not just Alloy. Read-only config endpoint used for health checks and Prometheus scraping. No write operations exposed. Will be locked to Alloy-only via NetworkPolicy on K3s.
+- **cAdvisor runs without `cap_drop: ALL`:** requires `pid: host` and `cgroup: host` for container metrics collection. Mitigated by `read_only: true`, `no-new-privileges`, 128m memory limit, and internal-only network access.
+- **Umami uses floating tag (`postgresql-latest`):** no digest pin — a push to the tag could pull a breaking change. Pinning was attempted but the digest-pinned image lacked ARM64 support. Acceptable at this scale; Umami is stateless and recoverable.
+- **Brief downtime during maintenance window (~6:00–7:00 UTC):** containers restart automatically, but there's a brief window where services are unavailable. Acceptable for a solo-dev VPS with no SLA.
+- **No drain/health-check before restart:** unlike K3s with `kured`, there's no graceful pod draining. Services stop and start. At this scale, this is fine.
+
+---
+
+## Automatic Updates & Maintenance Window
+
+Security patches are applied automatically. The maintenance window is **6:00–7:00 UTC** — the only time services or the kernel may restart.
+
+| Event | Handler | Impact | When |
+| ----- | ------- | ------ | ---- |
+| Library/package security patch | `unattended-upgrades` installs, `needrestart` auto-restarts affected services | Brief service blip (~seconds) | ~6:00–7:00 UTC (apt-daily-upgrade.timer + 60m random delay) |
+| Kernel security update | `unattended-upgrades` installs, auto-reboot at 07:00 UTC | Full reboot, ~60s downtime, containers restart via `unless-stopped` | 07:00 UTC |
+| Manual `apt install/upgrade` | `needrestart` auto-restarts affected services immediately | Brief service blip | Whenever you run apt |
+
+Configuration (Ansible `security` role via geerlingguy.security):
+
+- `security_autoupdate_enabled: true` — unattended-upgrades active
+- `security_autoupdate_reboot: true` — auto-reboot after kernel updates
+- `security_autoupdate_reboot_time: "07:00"` — reboot after apt finishes (~6:00–7:00 UTC)
+- `needrestart` mode `'a'` (automatic) — restarts services without prompting after apt
 
 ---
 
@@ -72,18 +108,25 @@ Every container in `docker-compose.yml` follows these security defaults:
 | Caddy | `NET_BIND_SERVICE` | Bind to ports 80/443 |
 | PostgreSQL | `SETUID`, `SETGID`, `DAC_READ_SEARCH`, `CHOWN`, `FOWNER` | Init data directory ownership (external volume) |
 | Umami | (none) | Read-only filesystem + tmpfs |
-| Uptime Kuma | (none) | Runs as root, no privilege drop |
-| Loki | (none) | Log storage only |
-| Prometheus | (none) | Metrics storage only |
+| Uptime Kuma | `CHOWN`, `DAC_OVERRIDE` | Create data directories on fresh volumes |
+| Loki | (none) | Read-only, log storage only |
+| Prometheus | (none) | Read-only, metrics storage only |
+| cAdvisor | (none) | No `cap_drop` — needs host access (`pid: host`, `cgroup: host`) |
 | Alloy | `DAC_READ_SEARCH`, `DAC_OVERRIDE` | Read Docker socket + host filesystems for metrics |
-| Grafana | (none) | Runs as uid 472, dirs pre-set at build time |
+| Grafana | (none) | Read-only, runs as uid 472 |
 
 ### Additional hardening
 
 | Service | Control | Purpose |
 | ------- | ------- | ------- |
+| Caddy | `read_only: true` | Immutable filesystem |
 | Umami | `read_only: true` + `tmpfs: /tmp` | Immutable filesystem |
-| PostgreSQL | `shm_size: 256mb` | Shared memory for query processing |
+| Loki | `read_only: true` | Immutable filesystem |
+| Prometheus | `read_only: true` | Immutable filesystem |
+| cAdvisor | `read_only: true`, `pid: host`, `cgroup: host` | Host metrics access, immutable filesystem |
+| Alloy | `read_only: true` | Immutable filesystem |
+| Grafana | `read_only: true` | Immutable filesystem |
+| PostgreSQL | `shm_size: 256mb` | Shared memory for parallel queries, sorting, hash joins |
 | All infra services | `logging: max-size 10m, max-file 3` | Prevent log-based disk exhaustion |
 
 ### Memory budget
@@ -95,10 +138,11 @@ Every container in `docker-compose.yml` follows these security defaults:
 | Umami | 512m | Analytics, stateless |
 | Uptime Kuma | 256m | Monitoring, SQLite-backed |
 | Loki | 512m | Log aggregation |
-| Prometheus | 512m | Metrics storage (7d retention) |
+| Prometheus | 512m | Metrics storage (30d retention) |
 | Alloy | 256m | Log + metrics collector |
+| cAdvisor | 128m | Container metrics collector |
 | Grafana | 256m | Dashboards + visualization |
-| **Total reserved** | **3.5g** | Of 4GB VPS (leaves ~0.5GB for apps + OS) |
+| **Total reserved** | **3.6g** | Of 4GB VPS (leaves ~0.4GB for apps + OS) |
 
 ---
 
@@ -116,7 +160,7 @@ Configured via geerlingguy.security + `/etc/ssh/sshd_config.d/hardening.conf` (A
 | MaxAuthTries | 3 | CIS 5.3.5 |
 | Session timeout | ClientAliveInterval 300s, CountMax 2 | CIS 5.3.18 |
 | Verbose logging | LogLevel VERBOSE | ANSSI-BP-028 R67 |
-| Fail2ban | 3 retries, 1h ban, 10m window | CIS 5.3.5, practical choice |
+| Fail2ban | 5 retries, 1h ban, 10m window | CIS 5.3.5, bumped from 3 to avoid Ansible lockout |
 
 OpenSSH 10.0 (Debian 13) removed `ChallengeResponseAuthentication` — replaced by `KbdInteractiveAuthentication`.
 
@@ -131,19 +175,30 @@ Sysctl parameters in `/etc/sysctl.d/99-hardening.conf` (Ansible `security` role)
 | net.ipv4.conf.all.rp_filter | 1 | CIS 3.3.7 — anti-spoofing |
 | net.ipv4.conf.all.accept_redirects | 0 | CIS 3.3.2 — ICMP redirect MITM prevention |
 | net.ipv4.conf.all.send_redirects | 0 | CIS 3.3.1 — not a router |
+| net.ipv4.conf.all.accept_source_route | 0 | CIS 3.3.4 — source routing disabled |
+| net.ipv4.conf.all.log_martians | 1 | CIS 3.3.4 — log spoofed packets |
+| net.ipv4.icmp_echo_ignore_broadcasts | 1 | CIS 3.3.6 — Smurf attack prevention |
 | net.ipv4.tcp_syncookies | 1 | CIS 3.3.8 — SYN flood protection |
+| net.ipv4.tcp_rfc1337 | 1 | RFC 1337 — TIME-WAIT assassination prevention |
+| net.ipv6.conf.all.accept_redirects | 0 | CIS 3.3.2 — IPv6 redirect prevention |
 | kernel.dmesg_restrict | 1 | ANSSI-BP-028 Enhanced — prevent info leakage |
 | kernel.kptr_restrict | 2 | ANSSI-BP-028 Enhanced — hide kernel pointers |
 | kernel.yama.ptrace_scope | 2 | ANSSI-BP-028 Enhanced — restrict ptrace to root |
 | kernel.unprivileged_bpf_disabled | 1 | dev-sec — block eBPF exploits |
+| net.core.bpf_jit_harden | 2 | dev-sec — harden BPF JIT compiler |
+| kernel.sysrq | 0 | Lynis KRNL-6000 — disable magic SysRq key |
+| dev.tty.ldisc_autoload | 0 | Lynis KRNL-6000 — disable tty line discipline autoload |
 | fs.suid_dumpable | 0 | CIS 1.5.1 — no core dumps from SUID |
-| fs.protected_hardlinks/symlinks | 1 | CIS 1.6.1 — link-based attack prevention |
+| fs.protected_hardlinks | 1 | CIS 1.6.1 — link-based attack prevention |
+| fs.protected_symlinks | 1 | CIS 1.6.1 — symlink attack prevention |
+| fs.protected_fifos | 2 | CIS 1.6.1 — FIFO attack prevention |
+| fs.protected_regular | 2 | CIS 1.6.1 — regular file attack prevention |
 
 `net.ipv4.ip_forward` stays `1` — required for Docker networking (CIS recommends `0` but Docker breaks without it).
 
 ### Kernel module blacklist (CIS 1.1.1.x, 3.5.x)
 
-Unused filesystem and network protocol modules are blacklisted via `/etc/modprobe.d/hardening.conf`: cramfs, freevxfs, hfs, hfsplus, jffs2, squashfs, udf, dccp, sctp, rds, tipc. Reduces kernel attack surface — none of these are needed on a Docker VPS.
+Unused filesystem and network protocol modules are blacklisted via `/etc/modprobe.d/hardening.conf`: cramfs, freevxfs, hfs, hfsplus, jffs2, squashfs, udf, dccp, sctp, rds, tipc, usb-storage, firewire-core. Reduces kernel attack surface — none of these are needed on a Docker VPS.
 
 ### Access control
 
@@ -182,7 +237,16 @@ Mount options applied by Ansible `security` role.
 
 ## Secrets Management
 
-Production secrets are encrypted with sops + age and committed as `.env.prod.enc` files per service. The deploy script decrypts them at deploy time using `SOPS_AGE_KEY` from the environment. Decrypted `.env.prod` files are created with `umask 077` (owner-only).
+Two encryption layers for different lifecycle stages:
+
+| Layer | Tool | Secrets | Decrypted by | When |
+| ----- | ---- | ------- | ------------ | ---- |
+| Provisioning | ansible-vault | Admin sudo password, deploy SSH public key | `ansible-playbook` on laptop | VPS setup/re-provision |
+| Deploy | sops + age | Service `.env.prod` files, Telegram tokens, AWS credentials | `deploy_infra.sh` on VPS | Every deploy |
+
+**sops + age**: production secrets committed as `.env.prod.enc` per service. Deploy script decrypts at deploy time using `SOPS_AGE_KEY` from the environment. Decrypted files created with `umask 077` (owner-only).
+
+**ansible-vault**: bootstrap secrets in `ansible/group_vars/all/vault.yml`. Encrypted with AES-256, decrypted by `~/.ansible_vault_pass` on the operator's laptop. Never touches CI or the VPS.
 
 Development `.env` files live on disk (gitignored). Each service has a committed `.env.example` with placeholder values.
 
@@ -195,7 +259,9 @@ Development `.env` files live on disk (gitignored). Each service has a committed
 | gitleaks | Secrets in committed code | PR |
 | ShellCheck | Shell script safety | PR |
 | ansible-lint | Ansible playbook quality | PR |
-| `docker compose config` | Compose syntax validation | PR |
+| `docker compose config` | Compose syntax validation (dev + prod) | PR |
+| `caddy validate` | Caddyfile syntax validation | PR |
+| `terraform fmt -check` + `validate` | Terraform formatting and syntax | PR |
 | Dependabot | Docker image + GitHub Actions updates | Weekly |
 
 ---
@@ -212,33 +278,6 @@ Run after provisioning or major changes to validate hardening.
 
 ---
 
-## Automatic Updates & Maintenance Window
-
-Security patches are applied automatically. The maintenance window is **6:00–7:00 UTC** — the only time services or the kernel may restart.
-
-### How it works
-
-| Event | Handler | Impact | When |
-| ----- | ------- | ------ | ---- |
-| Library/package security patch | `unattended-upgrades` installs, `needrestart` auto-restarts affected services | Brief service blip (~seconds) | ~6:00–7:00 UTC (apt-daily-upgrade.timer + 60m random delay) |
-| Kernel security update | `unattended-upgrades` installs, auto-reboot at 07:00 UTC | Full reboot, ~60s downtime, containers restart via `unless-stopped` | 07:00 UTC |
-| Manual `apt install/upgrade` | `needrestart` auto-restarts affected services immediately | Brief service blip | Whenever you run apt |
-
-### Configuration (Ansible `security` role via geerlingguy.security)
-
-- `security_autoupdate_enabled: true` — unattended-upgrades active
-- `security_autoupdate_reboot: true` — auto-reboot after kernel updates
-- `security_autoupdate_reboot_time: "07:00"` — reboot after apt finishes (~6:00–7:00 UTC)
-- `needrestart` mode `'a'` (automatic) — restarts services without prompting after apt
-
-### Accepted risks
-
-- **Brief downtime during maintenance window (~6:00–7:00 UTC):** containers restart automatically, but there's a brief window where services are unavailable. Acceptable for a solo-dev VPS with no SLA.
-- **Manual apt during the day:** if you SSH in and run `apt upgrade`, needrestart may restart services immediately. Be aware when running apt manually.
-- **No drain/health-check before restart:** unlike K3s with `kured`, there's no graceful pod draining. Services stop and start. At this scale, this is fine.
-
----
-
 ## Volume Security
 
 Stateful data lives in Docker volumes. Two volumes are `external: true` (pre-existing, not recreated on `docker compose down`):
@@ -248,7 +287,7 @@ Stateful data lives in Docker volumes. Two volumes are `external: true` (pre-exi
 | `shared-postgres_pgdata` | All databases (coupette, umami) | **High** — user data, product catalog, analytics |
 | `uptime-kuma_uptime-kuma-data` | Monitoring config + history | Medium — reconfigurable |
 | `grafana_data` | Dashboards + preferences | Low — dashboards should be provisioned as code |
-| `prometheus_data` | Metrics (7d retention) | Low — rebuilt from scrape targets |
+| `prometheus_data` | Metrics (30d retention) | Low — rebuilt from scrape targets |
 | `loki_data` | Logs (7d retention) | Low — rebuilt from Docker log tailing |
 | `alloy_data` | Collector WAL | Low — transient, rebuilt on restart |
 | `caddy_data` | TLS certificates | Low — auto-renewed |
@@ -278,7 +317,7 @@ Backups cover PostgreSQL only. All other volumes are considered recoverable — 
 ### 2026-03-17 — Push monitor credentials (#39)
 
 **Context:** Push monitor URLs (Uptime Kuma heartbeat endpoints) needed to be accessible to systemd timers without being in the repo.
-**Action:** Stored push URLs in `/etc/push-monitor/<job>.env` (root-owned, `0600`). Systemd units load via `EnvironmentFile`.
+**Action:** Stored push URLs in sops-encrypted `secrets/<monitor>.env.enc` files. Deploy script decrypts to `secrets/<monitor>.env` at deploy time. Systemd units load via `EnvironmentFile`.
 
 ### 2026-03-18 — sops + age secrets management (#45, #46)
 
@@ -300,17 +339,20 @@ Backups cover PostgreSQL only. All other volumes are considered recoverable — 
 **Context:** All sites shared a single CSP policy. Coupette needed `unsafe-eval` for a Telegram widget, but other sites shouldn't have it.
 **Action:** Moved CSP to per-site configuration in Caddyfile. Each domain block defines its own CSP policy — only `coupette.club` allows `unsafe-eval`.
 
-### 2026-03-23 — Ansible server hardening
+### 2026-03-23 — Ansible server hardening (#122)
 
 **Context:** VPS provisioning was manual (VPS_SETUP_GUIDE.md). No kernel sysctl hardening, no SSH crypto pinning, no filesystem mount hardening, no audit logging.
 **Action:** Ansible playbook codifies full VPS setup. Added: sysctl hardening (28 parameters from CIS/ANSSI/dev-sec/Lynis), SSH crypto pinning (post-quantum KEX, AEAD-only ciphers, ETM MACs, AllowUsers), `/tmp` and `/dev/shm` noexec mounts, `auditd` with immutable rules covering identity files, sudoers, Docker socket, and SSH config. Validated with Lynis audit: baseline Debian 13 scores 64/100, after hardening 80/100 (+16). Remaining suggestions triaged — most are noise at single-VPS scale (GRUB password, separate partitions, password aging on key-only users). Sources: CIS Debian Linux Benchmark, ANSSI-BP-028 v2.0, dev-sec.io baselines, ssh-audit.com, Lynis 3.1.4.
 
----
+### 2026-03-25 — Uptime Kuma permissions + fail2ban tuning (#123)
 
-## Accepted Risks
+**Context:** Uptime Kuma failed to start on fresh volumes — `cap_drop: ALL` prevented it from creating `data/upload/`. Fail2ban with `maxretry: 3` banned the operator after 3 Ansible runs (Phase 1 root SSH probe counts as a failed attempt).
+**Action:** Added `cap_add: [CHOWN, DAC_OVERRIDE]` to Uptime Kuma. Bumped fail2ban `maxretry` from 3 to 5.
 
-- **Deploy user in Docker group is root-equivalent:** required for `docker compose` — mitigated by SSH key in vault, fail2ban, AllowUsers, and auditd on the Docker socket. Goes away with K3s migration (Phase 7).
-- **Deploy user has scoped sudo to write systemd units:** `tee` to 4 specific unit file paths. Doesn't expand blast radius beyond Docker group membership. Scoped to `pg-backup` and `disk-alert` units only.
+### 2026-03-25 — Deploy user sudoers expansion (#124)
+
+**Context:** Coupette app deploy script needed `sudo tee` and `sudo systemctl` for its own systemd timers (scraper, availability), but the deploy user's scoped sudoers only allowed infra timers.
+**Action:** Added coupette-scraper and coupette-availability service/timer units to the deploy user's scoped sudoers in the Ansible `infra` role.
 
 ---
 
