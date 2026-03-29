@@ -3,17 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Victor Patrin — DevOps & Software Engineer</title>
-    <meta name="description" content="Senior DevOps & Software Engineer. Python, Kubernetes, GCP. Available for freelance consulting.">
+    <title>Victor Patrin — Senior Software Engineer</title>
+    <meta name="description" content="Senior Software Engineer. Python, Kubernetes, GCP, AI. Available for freelance and full-time roles.">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap');
+        @font-face {
+            font-family: 'JetBrains Mono';
+            font-style: normal;
+            font-weight: 100 800;
+            font-display: swap;
+            src: url('fonts/JetBrainsMono-variable.woff2') format('woff2');
+        }
 
         :root {
             --bg: #0a0a0a;
             --fg: #e8e8e8;
             --accent: #ff5722;
-            --muted: #666;
-            --border: #050505;
+            --muted: #888;
+            --border: #1e1e1e;
+            --green: #4caf50;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -22,64 +29,82 @@
             background: var(--bg);
             color: var(--fg);
             font-family: 'JetBrains Mono', monospace;
-            font-size: 15px;
+            font-size: 14px;
             line-height: 1.7;
             min-height: 100vh;
         }
 
         .container {
-            max-width: 720px;
+            max-width: 760px;
             margin: 0 auto;
-            padding: 80px 24px;
+            padding: 80px 24px 64px;
         }
 
-        .header { margin-bottom: 64px; }
+        /* ── Hero ── */
+        .hero { margin-bottom: 56px; }
 
-        .name {
-            font-size: 48px;
+
+        .hero-name {
+            font-size: 52px;
             font-weight: 800;
             letter-spacing: -2px;
-            line-height: 1.1;
-            margin-bottom: 8px;
+            line-height: 1.05;
+            margin-bottom: 12px;
         }
 
-        .name span { color: var(--accent); }
+        .hero-name span { color: var(--accent); }
 
-        .tagline {
-            color: var(--muted);
+        .hero-tagline {
             font-size: 14px;
-            margin-bottom: 24px;
+            color: var(--muted);
+            margin-bottom: 6px;
         }
 
-        .tagline::before {
+        .hero-tagline::before {
             content: "$ ";
             color: var(--accent);
         }
 
-        .links {
+        .hero-tagline-availability { margin-bottom: 0; }
+
+        .hero-links {
             display: flex;
-            gap: 24px;
+            flex-direction: row;
+            gap: 20px;
             flex-wrap: wrap;
+            margin-bottom: 16px;
         }
 
-        .links a {
-            color: var(--fg);
+        .hero-links a {
+            color: var(--accent);
             text-decoration: none;
             font-size: 13px;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 2px;
-            transition: border-color 0.2s;
+            transition: opacity 0.15s;
         }
 
-        .links a:hover {
-            border-color: var(--accent);
+        .hero-links a:hover { opacity: 0.7; }
+
+        /* ── About ── */
+
+        .summary p {
+            display: flex;
+            gap: 8px;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.8;
+            margin-bottom: 4px;
+        }
+
+        .summary-prompt {
             color: var(--accent);
+            flex-shrink: 0;
         }
 
+        /* ── Section headings ── */
         section { margin-bottom: 56px; }
 
         h2 {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 3px;
@@ -89,36 +114,13 @@
             border-bottom: 1px solid var(--border);
         }
 
-        .about p {
-            color: var(--fg);
-            font-size: 14px;
-            margin-bottom: 16px;
-        }
 
-        .highlight {
-            color: var(--accent);
-            font-weight: 700;
-        }
-
-        .stack-grid {
-            display: grid;
-            grid-template-columns: 120px 1fr;
-            gap: 8px 24px;
-            font-size: 13px;
-        }
-
-        .stack-label {
-            color: var(--muted);
-            text-align: right;
-        }
-
-        .stack-value { color: var(--fg); }
-
+        /* ── Projects ── */
         .project {
             border: 1px solid var(--border);
-            padding: 20px;
+            padding: 24px;
             margin-bottom: 12px;
-            transition: border-color 0.2s;
+            transition: border-color 0.15s;
         }
 
         .project:hover { border-color: var(--accent); }
@@ -127,78 +129,107 @@
             display: flex;
             justify-content: space-between;
             align-items: baseline;
-            margin-bottom: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .project-header-left {
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+            flex-wrap: wrap;
         }
 
         .project-name {
-            font-weight: 700;
+            font-weight: 800;
             font-size: 15px;
         }
 
-        .project-status {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+        .project-header-links {
+            display: flex;
+            gap: 12px;
         }
 
-        .project-status.live { color: #4caf50; }
-        .project-status.wip { color: var(--muted); }
+        .project-link {
+            font-size: 12px;
+            color: var(--muted);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: color 0.15s;
+        }
+
+        .project-link:hover { color: var(--accent); }
+
+        .project-link.soon {
+            color: var(--border);
+            cursor: default;
+            pointer-events: none;
+        }
+
+        .project-status {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .project-status.live {
+            color: var(--green);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .project-status.live::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--green);
+            flex-shrink: 0;
+            animation: blink-dot 2s ease-in-out infinite;
+        }
+
+        @keyframes blink-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.2; }
+        }
+
+        .project-status.soon { color: var(--muted); }
 
         .project-desc {
-            color: var(--muted);
             font-size: 13px;
+            color: var(--muted);
+            line-height: 1.6;
+            margin-bottom: 16px;
         }
 
         .project-stack {
             color: var(--accent);
             font-size: 11px;
-            margin-top: 8px;
-        }
-
-        .project-links {
-            display: flex;
-            gap: 16px;
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid #1a1a1a;
-        }
-
-        .project-link {
-            font-size: 12px;
-            color: var(--fg);
-            text-decoration: none;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 2px;
-            transition: border-color 0.2s, color 0.2s;
-        }
-
-        .project-link:hover {
-            border-color: var(--accent);
-            color: var(--accent);
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
         }
 
         .link-icon {
-            width: 14px;
-            height: 14px;
+            width: 13px;
+            height: 13px;
             vertical-align: -2px;
-            margin-right: 4px;
         }
 
-        .project-link.soon,
-        .project-link.soon:hover {
-            color: var(--muted);
-            border-bottom: 1px dashed var(--border);
-            cursor: default;
-        }
-
-        .exp-item { margin-bottom: 24px; }
+        /* ── Experience ── */
+        .exp-item { margin-bottom: 36px; }
 
         .exp-header {
             display: flex;
             justify-content: space-between;
             align-items: baseline;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 4px;
+            margin-bottom: 2px;
         }
 
         .exp-role {
@@ -213,50 +244,88 @@
 
         .exp-company {
             color: var(--accent);
-            font-size: 13px;
-            margin-bottom: 4px;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+
+        .exp-tagline {
+            font-size: 12px;
+            color: var(--muted);
+            font-style: italic;
+            margin-bottom: 10px;
         }
 
         .exp-desc {
-            color: var(--muted);
             font-size: 13px;
+            color: var(--muted);
+            line-height: 1.6;
         }
 
-        .available {
-            border: 1px solid var(--accent);
-            padding: 24px;
-            margin-bottom: 56px;
+        .exp-bullets,
+        .project-bullets {
+            list-style: none;
+        }
+
+        .exp-bullets li,
+        .project-bullets li {
+            font-size: 13px;
+            color: var(--muted);
+            padding-left: 16px;
             position: relative;
+            margin-bottom: 5px;
+            line-height: 1.6;
         }
 
-        .available::before {
-            content: "";
+        .exp-bullets li::before,
+        .project-bullets li::before {
+            content: ">";
             position: absolute;
-            top: -1px;
-            left: -1px;
-            right: -1px;
-            height: 3px;
-            background: var(--accent);
-        }
-
-        .available-title {
-            font-weight: 700;
-            font-size: 14px;
-            margin-bottom: 12px;
+            left: 0;
             color: var(--accent);
         }
 
-        .available p {
-            font-size: 13px;
-            color: var(--fg);
-            margin-bottom: 8px;
+        /* ── Education ── */
+        .edu-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-bottom: 12px;
         }
 
-        .available .services {
+        .edu-role {
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .edu-company {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .edu-date {
+            font-size: 12px;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        /* ── Interests ── */
+        .interests {
             color: var(--muted);
             font-size: 13px;
         }
 
+        .interests a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .interests a:hover {
+            text-decoration: underline;
+        }
+
+        /* ── Footer ── */
         footer {
             border-top: 1px solid var(--border);
             padding-top: 24px;
@@ -273,6 +342,7 @@
             text-decoration: none;
         }
 
+        /* ── Cursor ── */
         .cursor {
             display: inline-block;
             width: 10px;
@@ -283,117 +353,27 @@
             vertical-align: text-bottom;
         }
 
-        @keyframes blink {
-            50% { opacity: 0; }
-        }
+        @keyframes blink { 50% { opacity: 0; } }
 
+        /* ── Responsive ── */
         @media (max-width: 600px) {
-            .name { font-size: 32px; }
+            .hero-name { font-size: 36px; }
             .container { padding: 48px 16px; }
-            .stack-grid {
-                grid-template-columns: 1fr;
-                gap: 4px;
-            }
-            .stack-label { text-align: left; }
-            .exp-header { flex-direction: column; gap: 2px; }
         }
     </style>
     <script async src="https://analytics.victorpatrin.dev/script.js" data-website-id="d5d1ef06-ca93-4a2e-9de9-1e820456ed2d"></script>
 </head>
 <body>
     <div class="container">
-        <header class="header" id="header"></header>
-        <div class="available" id="available"></div>
-        <section class="about" id="about"></section>
-        <section id="stack-section"></section>
+        <header id="hero"></header>
+        <section id="about-section"></section>
         <section id="projects-section"></section>
         <section id="experience-section"></section>
         <section id="education-section"></section>
+        <section id="interests-section"></section>
         <footer id="footer"></footer>
     </div>
-
     <script src="content.js"></script>
-    <script>
-        document.getElementById("header").innerHTML = `
-            <h1 class="name">${content.name} <span>${content.surname}</span></h1>
-            <div class="tagline">${content.tagline}<span class="cursor"></span></div>
-            <div class="links">
-                ${content.links.map(l => `<a href="${l.url}" data-umami-event="click-${l.label}" target="_blank" rel="noopener">${l.label}</a>`).join("")}
-            </div>
-        `;
-
-        document.getElementById("available").innerHTML = `
-            <div class="available-title">${content.available.title}</div>
-            <p>${content.available.description}</p>
-            <div class="services">${content.available.services}</div>
-        `;
-
-        document.getElementById("about").innerHTML = `
-            <h2>About</h2>
-            ${content.about.map(p => `<p>${p}</p>`).join("")}
-        `;
-
-        document.getElementById("stack-section").innerHTML = `
-            <h2>Stack</h2>
-            <div class="stack-grid">
-                ${content.stack.map(s => `
-                    <span class="stack-label">${s.label}</span>
-                    <span class="stack-value">${s.value}</span>
-                `).join("")}
-            </div>
-        `;
-
-        document.getElementById("projects-section").innerHTML = `
-            <h2>Projects</h2>
-            ${content.projects.map(p => `
-                <div class="project" data-umami-event="project-view" data-umami-event-project="${p.name}">
-                    <div class="project-header">
-                        <span class="project-name">${p.name}</span>
-                        <span class="project-status ${p.status === "live" ? "live" : "wip"}">${p.status}</span>
-                    </div>
-                    <div class="project-desc">${p.desc}</div>
-                    <div class="project-stack">${p.stack}</div>
-                    <div class="project-links">
-                        ${(p.links || []).map(l => l.soon
-                            ? `<span class="project-link soon">${l.icon || ""}${l.label}</span>`
-                            : `<a class="project-link" href="${l.url}" data-umami-event="project-click-${p.name}-${l.label}" target="_blank" rel="noopener">${l.icon || ""}${l.label}</a>`
-                        ).join("")}
-                    </div>
-                </div>
-            `).join("")}
-        `;
-
-        document.getElementById("experience-section").innerHTML = `
-            <h2>Experience</h2>
-            ${content.experience.map(e => `
-                <div class="exp-item">
-                    <div class="exp-header">
-                        <span class="exp-role">${e.role}</span>
-                        <span class="exp-date">${e.date}</span>
-                    </div>
-                    <div class="exp-company">${e.company}</div>
-                    ${e.desc ? `<div class="exp-desc">${e.desc}</div>` : ""}
-                </div>
-            `).join("")}
-        `;
-
-        document.getElementById("education-section").innerHTML = `
-            <h2>Education</h2>
-            ${content.education.map(e => `
-                <div class="exp-item">
-                    <div class="exp-header">
-                        <span class="exp-role">${e.role}</span>
-                        <span class="exp-date">${e.date}</span>
-                    </div>
-                    <div class="exp-company">${e.company}</div>
-                </div>
-            `).join("")}
-        `;
-
-        document.getElementById("footer").innerHTML = `
-            <span>${content.footer.left}</span>
-            <span>${content.footer.location} — <a href="mailto:${content.footer.email}">${content.footer.email}</a></span>
-        `;
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>

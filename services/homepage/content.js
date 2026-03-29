@@ -3,63 +3,58 @@ const ICONS = {
   globe: '<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
   terminal: '<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>',
   github: '<svg class="link-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>',
+  download: '<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+  linkedin: '<svg class="link-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>',
+  email: '<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>',
 };
 
 const content = {
   name: "Victor",
   surname: "Patrin",
-  tagline: "senior devops & software engineer, montreal",
+  tagline: "backend, infra & AI · montreal",
 
   links: [
-    { label: "github", url: "https://github.com/vpatrin" },
-    { label: "linkedin", url: "https://www.linkedin.com/in/victorpatrin/" },
-    { label: "email", url: "mailto:victor.patrin@protonmail.com" },
+    { label: "github", url: "https://github.com/vpatrin", icon: ICONS.github },
+    { label: "linkedin", url: "https://www.linkedin.com/in/victorpatrin/", icon: ICONS.linkedin },
+    { label: "email", url: "mailto:victor.patrin@protonmail.com", icon: ICONS.email },
+    { label: "resume", url: "resume.pdf", icon: ICONS.download },
   ],
 
-  available: {
-    title: "Available for freelance — remote worldwide",
-    description:
-      "6+ years shipping backend systems, cloud infrastructure, and data pipelines at a Montreal AI startup. From intern to Senior Engineer, including a stint as interim tech lead. Currently taking on freelance projects and fractional DevOps consulting.",
-    services:
-      "Cloud migration / Kubernetes & GKE ops / CI-CD pipelines / Python backend dev / Data pipelines & ETL / Security & compliance",
-  },
+  availability: "open to senior eng roles — remote worldwide",
 
-  about: [
-    'French engineer based in Montreal since 2019. Dual Master\'s from <span class="highlight">Mines de Nancy</span> (engineering) and <span class="highlight">Université de Lorraine</span> (Information & Systems Security), with a foundation in advanced mathematics from classe préparatoire MPSI/MP.',
-    'Spent 6+ years at <span class="highlight">GENAIZ</span>, an AI startup — joined as a blockchain intern, left as Senior Engineer running DevOps and cloud ops. Built search engines from scratch, migrated a Node.js monolith to dockerized Python microservices, managed production GKE clusters, and designed a CI/CD system that replaced a costly third-party service. Served as interim tech lead during a period without CTO.',
-    "Previous experience in Berlin at a blockchain-for-IoT startup, implementing data anchoring on Ethereum, IOTA, and MultiChain.",
-  ],
-
-  stack: [
-    { label: "languages", value: "Python, Node.js" },
-    { label: "cloud", value: "GCP, GKE, Pub/Sub, Cloud Storage" },
-    { label: "devops", value: "Docker, Kubernetes, Helm, CI/CD" },
-    { label: "data", value: "PostgreSQL, MongoDB, ETL pipelines" },
-    { label: "security", value: "InfoSec, access control, web app security" },
-    { label: "infra", value: "Terraform, haproxy, Caddy, Let's Encrypt & cert-manager" },
-    { label: "other", value: "Blockchain, distributed systems, cryptography" },
+  summary: [
+    "Senior Software Engineer who ships entire products — backend, data pipelines, infrastructure, CI/CD, and AI integration. 6 years at an early-stage AI startup, progressing from intern to leading engineering and reporting directly to the CEO",
+    "Building and deploying everything from bare-metal Kubernetes clusters to RAG pipelines to client-facing applications",
   ],
 
   projects: [
     {
       name: "coupette",
       status: "live",
-      desc: "AI wine discovery engine for Quebec's 15,000+ SAQ wines. Telegram bot live, web app and SSH TUI coming. One FastAPI backend, multiple clients.",
-      stack: "FastAPI / PostgreSQL / python-telegram-bot / Docker",
+      desc: [
+        "AI sommelier for Quebec's SAQ catalog — bilingual (FR/EN) wine recommendations via a React frontend, a Telegram bot, and a FastAPI backend (PostgreSQL + pgvector)",
+        "Hybrid RAG pipeline: Claude intent routing → SQL filters → pgvector similarity → MMR re-ranking → Claude Haiku curation",
+        "LLM eval framework with a 5-dimension rubric and Claude Sonnet as judge — tracked quality improvement from 3.37 → 4.05/5",
+        "Multi-source scraper (SAQ sitemap, BeautifulSoup, Adobe Live Search) with robots.txt compliance",
+      ],
+      stack: "FastAPI / PostgreSQL + pgvector / Claude API / React / Docker",
       links: [
         { label: "github", url: "https://github.com/vpatrin/coupette", icon: ICONS.github },
         { label: "telegram", url: "https://t.me/AlerteVinBot", icon: ICONS.telegram },
         { label: "web", url: "https://coupette.club", icon: ICONS.globe },
-        { label: "ssh", soon: true, icon: ICONS.terminal },
       ],
     },
     {
-      name: "ssh-resume",
-      status: "soon",
-      desc: "Interactive resume accessible over SSH — browse experience, projects, and stack from your terminal",
-      stack: "Go / Bubbletea / Wish",
+      name: "infra",
+      status: "live",
+      desc: [
+        "Full production platform behind coupette.club — IaC end-to-end: Terraform (DNS, firewall), Ansible (server configuration, CIS hardening), disaster recovery runbook for full redeployment from scratch",
+        "Grafana/Loki/Prometheus observability stack + automated PostgreSQL backups to S3 (30-day retention)",
+        "CIS/ANSSI hardening (Lynis 80/100, testssl.sh A+), container hardening (cap_drop, read-only fs, no-new-privileges), secret management (sops/age)",
+      ],
+      stack: "Terraform / Ansible / Docker / Caddy / Grafana · Loki · Prometheus",
       links: [
-        { label: "ssh", soon: true, icon: ICONS.terminal },
+        { label: "github", url: "https://github.com/vpatrin/infra", icon: ICONS.github },
       ],
     },
   ],
@@ -67,45 +62,50 @@ const content = {
   experience: [
     {
       role: "Senior Software Engineer",
-      date: "2022 — 2025",
+      date: "Sep 2022 — Aug 2025",
       company: "GENAIZ, Montreal",
-      desc: "DevOps lead & cloud manager. Ran GKE clusters, VMs, Pub/Sub, GCS, and DNS. Built a CI/CD pipeline from scratch to replace a costly third-party service. Deployed full GENAIZ instances end-to-end for clients. Mentored junior devs. Served as interim tech lead during CTO absence.",
+      tagline: "AI-powered automation platform for life sciences, serving enterprise pharma clients",
+      desc: [
+        "Led engineering after the CTO's departure — ran sprint planning, product meetings, and daily standups, reported directly to the CEO, and coordinated delivery across a 4-person team",
+        "Saved ~$20K/year in licensing costs by building a custom Continuous Deployment system (GitLab CI + Helm) to replace Harness CD",
+        "Slashed cloud infrastructure costs by 50% (~$9K/year) by leading a GCP audit, decommissioning idle assets, and migrating from managed cloud storage to a self-hosted NFS server on Kubernetes",
+        "Owned all GCP infrastructure across 5 Kubernetes clusters (on GKE: dev/staging, prod, 2 dedicated client environments; on a bare-metal cluster for demos), running 15+ microservices — provisioning, scaling, health monitoring, and release coordination",
+        "Deployed the full GENAIZ platform for 3 enterprise pharma clients and built an on-premises bare-metal cluster from scratch for client demos, replacing a dedicated GKE environment",
+        "Part of the quality team leading CFR 21 Part 11 compliance — edited company security policies, drove compliance sprints (audit trails, access controls), and owned policy documentation",
+      ],
     },
     {
       role: "Software Engineer",
-      date: "2019 — 2022",
+      date: "Oct 2019 — Sep 2022",
       company: "GENAIZ, Montreal",
-      desc: "Built an in-house search engine with a pipeline of dockerized Python microservices. Migrated Node.js monolith to Python microservices architecture. Maintained production data pipelines on GCP. Worked with ML engineers to productionalize AI algorithms.",
+      desc: [
+        "Bridged ML research and production — worked with ML engineers to productionalize AI algorithms for pharma clients, including wrapping the NLP pipeline (tokenizer, doc2vec) into Dockerized Python microservices and integrating them into Vespa search",
+        "Reworked ETL pipelines to normalize unstructured pharma documents into a standard format, enabling downstream AI features",
+        "Drove migration of a Node.js monolith into ~8 Python microservices, enabling independent deployment and scaling per service",
+      ],
     },
     {
-      role: "Blockchain Intern → Junior Developer",
-      date: "2018 — 2019",
-      company: "ubirch GmbH, Berlin → Nancy (remote)",
-      desc: "Blockchain-for-IoT startup. Built a mobile app for cryptographic identity verification using Bluetooth BLE. Implemented data anchoring services on IOTA, Ethereum, and MultiChain.",
+      role: "Blockchain Intern",
+      date: "Apr — Oct 2019",
+      company: "GENAIZ, Montreal",
+      desc: ["Built an immutable audit trail anchoring event log hashes to Bitcoin transactions for tamper-proof verification"],
+    },
+    {
+      role: "Junior Developer",
+      date: "Jun 2018 — Mar 2019",
+      company: "ubirch GmbH, Berlin",
+      tagline: "Blockchain-for-IoT startup",
+      desc: ["Built a mobile app for cryptographic identity verification over Bluetooth BLE and implemented data anchoring on IOTA, Ethereum, and MultiChain networks"],
     },
   ],
 
   education: [
-    {
-      role: "MSc Information & Systems Security",
-      date: "2018 — 2019",
-      company: "Université de Lorraine, Nancy",
-    },
-    {
-      role: "MSc Science & Executive Engineering — CS & IT",
-      date: "2016 — 2019",
-      company: "Mines de Nancy",
-    },
-    {
-      role: "Classe Préparatoire MPSI/MP (Math, CS, Physics)",
-      date: "2013 — 2016",
-      company: "Lycée Gay-Lussac, Limoges",
-    },
+    { role: "M.Sc. Information & Systems Security", date: "2018 — 2019", company: "Université de Lorraine, France" },
+    { role: "Diplôme d'Ingénieur (M.Eng.)", date: "2016 — 2019", company: "Mines de Nancy, France" },
+    { role: "Classe Préparatoire MPSI/MP", date: "2013 — 2016", company: "Lycée Gay-Lussac, France" },
   ],
 
-  footer: {
-    left: "Built with raw HTML, served by Caddy on Debian 13",
-    email: "victor.patrin@protonmail.com",
-    location: "Montreal, QC",
-  },
+  interests: 'Ultra-endurance cycling · Wine tasting (<a href="https://www.wsetglobal.com/qualifications/wset-level-3-award-in-wines/" target="_blank" rel="noopener">WSET Level 3</a> candidate) · Philosophy',
+
+  footer: "made with too much coffee",
 };
