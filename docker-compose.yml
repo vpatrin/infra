@@ -110,7 +110,7 @@ services:
   # ============================================================================
 
   loki:
-    image: grafana/loki:3.6.7
+    image: grafana/loki:3.7.1
     container_name: loki
     command: -config.file=/etc/loki/loki.yaml
     volumes:
@@ -180,7 +180,7 @@ services:
         max-file: "3"
 
   alloy:
-    image: grafana/alloy:v1.14.1
+    image: grafana/alloy:v1.14.2
     container_name: alloy
     command:
       - "run"
@@ -220,7 +220,7 @@ services:
         max-file: "3"
 
   grafana:
-    image: grafana/grafana:12.4.1
+    image: grafana/grafana:12.4.2
     container_name: grafana
     volumes:
       - grafana_data:/var/lib/grafana
