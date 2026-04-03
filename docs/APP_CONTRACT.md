@@ -61,6 +61,26 @@ DB_HOST=shared-postgres
 DB_PORT=5432
 ```
 
+## Redis
+
+A Redis 7 instance runs as `coupette-redis` on the `internal` network. Used by coupette for ephemeral key-value storage (e.g. OAuth state).
+
+| Property | Value |
+|----------|-------|
+| Container name | `coupette-redis` |
+| Image | `redis:7-bookworm` |
+| Internal port | 6379 |
+| Persistence | None — in-memory only, no RDB snapshots, no AOF |
+| Data lifetime | Keys expire per app-set TTL (e.g. 10 min for OAuth state) |
+
+All data is ephemeral. A container restart wipes all keys — apps must handle cache misses gracefully.
+
+### Connection from app repos
+
+```bash
+REDIS_URL=redis://coupette-redis:6379
+```
+
 ## Caddy Routing
 
 Caddy is the only internet-facing container. It routes traffic to app backends by container name on the `internal` network.
@@ -101,8 +121,9 @@ If an app renames its container, changes its port, or changes metric names, the 
 Infra services must be healthy before app deploys can succeed:
 
 1. `shared-postgres` must be healthy (app backends connect on startup)
-2. `caddy` must be running (routes traffic to app containers)
-3. `internal` network must exist (all containers attach to it)
+2. `coupette-redis` must be running (app backend connects on startup)
+3. `caddy` must be running (routes traffic to app containers)
+4. `internal` network must exist (all containers attach to it)
 
 If `make restart` is run on infra, app backends may lose postgres connectivity for ~10-30 seconds. App health checks should tolerate this.
 
