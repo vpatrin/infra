@@ -118,6 +118,8 @@ services:
       retries: 3
       start_period: 5s
     restart: unless-stopped
+    mem_limit: 64m
+    read_only: true
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
     logging:
