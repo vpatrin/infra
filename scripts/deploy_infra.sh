@@ -111,7 +111,8 @@ check_health_inspect() {
 }
 
 # Services with compose healthchecks — reuse via docker inspect
-check_health_inspect "postgres"   "shared-postgres"
+check_health_inspect "postgres"      "shared-postgres"
+check_health_inspect "coupette-redis"
 check_health_inspect "caddy"
 check_health_inspect "umami"
 check_health_inspect "uptime-kuma"

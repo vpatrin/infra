@@ -48,7 +48,7 @@ www.coupette.club {
 
 coupette.club {
 	import security_headers
-	header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-eval' https://analytics.victorpatrin.dev https://telegram.org; connect-src 'self' https://analytics.victorpatrin.dev; frame-src https://oauth.telegram.org; img-src 'self' data:; font-src 'self' data:; style-src 'self' 'unsafe-inline'"
+	header Content-Security-Policy "default-src 'self'; script-src 'self' https://analytics.victorpatrin.dev https://telegram.org; connect-src 'self' https://analytics.victorpatrin.dev; frame-src https://oauth.telegram.org; img-src 'self' data:; font-src 'self' data:; style-src 'self' 'unsafe-inline'"
 	encode zstd gzip
 	# API requests proxied to backend container
 	handle /api/* {
