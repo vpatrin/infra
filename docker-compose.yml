@@ -109,6 +109,7 @@ services:
     image: redis:7-bookworm
     container_name: coupette-redis
     command: redis-server --save "" --appendonly no --bind 0.0.0.0
+    user: redis
     networks:
       - internal
     healthcheck:
