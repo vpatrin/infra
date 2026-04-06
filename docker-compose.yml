@@ -106,7 +106,7 @@ services:
         max-file: "3"
 
   coupette-redis:
-    image: redis:7-bookworm
+    image: redis:8-bookworm
     container_name: coupette-redis
     command: redis-server --save "" --appendonly no --bind 0.0.0.0
     user: redis
