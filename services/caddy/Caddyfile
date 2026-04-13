@@ -79,6 +79,21 @@ status.victorpatrin.dev {
 }
 
 # ==============================================================================
+# CCIL
+# ==============================================================================
+
+www.ccil.club {
+	redir https://ccil.club{uri} permanent
+}
+
+ccil.club {
+	import security_headers
+	header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-eval'; connect-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; worker-src 'self' blob:"
+	encode zstd gzip
+	reverse_proxy ccil:3000
+}
+
+# ==============================================================================
 # Catch-all — reject requests to unknown hostnames or bare IP
 # ==============================================================================
 

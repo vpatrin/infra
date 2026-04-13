@@ -9,7 +9,7 @@ Single Hetzner VPS running all services behind a Caddy reverse proxy. One server
 - **Host**: `web-01`
 - **Users**: `admin` (SSH, sudo) + `deploy` (CD, scoped sudo) — root SSH disabled
 - **Swap**: 2GB at `/swapfile`, swappiness=10
-- **DNS**: `victorpatrin.dev` + `coupette.club` → VPS IP (Hetzner DNS, managed by Terraform). Porkbun remains the domain registrar.
+- **DNS**: `victorpatrin.dev` + `coupette.club` → VPS IP (Hetzner DNS, managed by Terraform). `ccil.club` → VPS IP (Porkbun DNS). Porkbun remains the domain registrar for all domains.
 
 ## Topology
 
@@ -20,6 +20,7 @@ Internet
 Caddy (ports 80/443)
   ├── victorpatrin.dev          → static files (/srv/homepage)
   ├── coupette.club             → static SPA + reverse proxy to coupette-backend:8001
+  ├── ccil.club                  → reverse proxy to ccil:3000
   ├── analytics.victorpatrin.dev → reverse proxy to umami:3000
   └── status.victorpatrin.dev   → reverse proxy to uptime-kuma:3001
 
@@ -45,6 +46,7 @@ For full VPS setup instructions, see [guides/VPS_SETUP_GUIDE.md](guides/VPS_SETU
 | Prometheus | prometheus | 9090 | `127.0.0.1:9090` | — | infra |
 | Alloy | alloy | 12345 | `127.0.0.1:12345` | — | infra |
 | Grafana | grafana | 3000 | `127.0.0.1:3003` (dev) / `127.0.0.1:3002` (prod) | — | infra |
+| CCIL | ccil | 3000 | — | `ccil.club`, `ccil.victorpatrin.dev` | ccil |
 | Coupette backend | coupette-backend | 8001 | — | `coupette.club/api` | coupette |
 | Coupette bot | coupette-bot | — | — | — | coupette |
 | Coupette scraper | coupette-scraper | — | — | — (systemd timer) | coupette |
