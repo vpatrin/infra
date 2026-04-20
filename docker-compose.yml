@@ -152,7 +152,7 @@ services:
         max-file: "3"
 
   prometheus:
-    image: prom/prometheus:v3.11.0
+    image: prom/prometheus:v3.11.2
     container_name: prometheus
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
@@ -204,7 +204,7 @@ services:
         max-file: "3"
 
   alloy:
-    image: grafana/alloy:v1.15.0
+    image: grafana/alloy:v1.15.1
     container_name: alloy
     command:
       - "run"
@@ -244,7 +244,7 @@ services:
         max-file: "3"
 
   grafana:
-    image: grafana/grafana:12.4.2
+    image: grafana/grafana:12.4.3
     container_name: grafana
     volumes:
       - grafana_data:/var/lib/grafana
