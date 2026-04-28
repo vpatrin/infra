@@ -12,6 +12,7 @@
 
 # Claude (commit commands + docs, ignore local settings)
 .claude/settings.local.json
+.claude/settings.json
 
 # Ansible — vendored Galaxy roles and global cache
 ansible/roles/geerlingguy.*/
@@ -19,6 +20,4 @@ ansible/roles/geerlingguy.*/
 
 # Environment variables — plaintext ignored, encrypted (.enc) committed
 **/*.env
-**/*.env.prod
 !**/*.env.enc
-!**/*.env.prod.enc

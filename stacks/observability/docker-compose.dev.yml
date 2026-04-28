@@ -1,0 +1,12 @@
+services:
+  prometheus:
+    ports:
+      - "127.0.0.1:9090:9090"
+
+  alloy:
+    ports:
+      - "127.0.0.1:12345:12345"
+
+  grafana:
+    ports:
+      - "127.0.0.1:3003:3000"

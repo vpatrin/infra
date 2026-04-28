@@ -2,7 +2,7 @@
 
 Patterns and procedures for working with the Caddyfile in this repo. Caddy handles all TLS, routing, static file serving, and security headers.
 
-Config: `services/caddy/Caddyfile`
+Config: `stacks/caddy/Caddyfile`
 ADR: [0002-caddy-reverse-proxy.md](../decisions/0002-caddy-reverse-proxy.md)
 
 ## Caddyfile structure

@@ -23,15 +23,15 @@ Before auditing, silently:
 
 **Branch mode (default):**
 1. Run `git diff main --stat` and `git diff main` to see all changes
-2. Read `services/caddy/Caddyfile` for TLS and routing config
-3. Read `docker-compose.yml` for container security posture
+2. Read `stacks/caddy/Caddyfile` for TLS and routing config
+3. Read each `stacks/*/docker-compose.yml` for container security posture
 4. Read changed files in full — security bugs hide in context, not in diffs
 
 **Full repo mode (`--full`):**
-1. Read `services/caddy/Caddyfile` — TLS, routing, headers, rate limiting
-2. Read `docker-compose.yml` — all service definitions, network config, volume mounts, restart policies
-3. Read all shell scripts (`services/postgres/backups/*.sh`, `scripts/*.sh`) for injection risks
-4. Read systemd units (`services/postgres/backups/*.service`, `*.timer`) for privilege escalation
+1. Read `stacks/caddy/Caddyfile` — TLS, routing, headers, rate limiting
+2. Read each `stacks/*/docker-compose.yml` — all service definitions, network config, volume mounts, restart policies
+3. Read all shell scripts (`scripts/*.sh`) for injection risks
+4. Read systemd units (`systemd/*.service`, `systemd/*.timer`) for privilege escalation
 5. Read `.env.example` files to understand what secrets are expected
 6. Read `.gitignore` to verify `.env` files and secrets are excluded
 7. Read `docs/ARCHITECTURE.md` for server hardening context
@@ -43,9 +43,9 @@ Check every item that's relevant to the changed code. Skip items that don't appl
 
 ### Secrets management
 - [ ] No hardcoded secrets, API keys, tokens, or passwords in any file
-- [ ] `.env` files gitignored (root `.env` + `services/*/.env`)
+- [ ] `.env` files gitignored (`stacks/*/.env`, `stacks/*/*/.env`, `secrets/*.env`)
 - [ ] `.env.example` files contain only placeholder values, not real credentials
-- [ ] No secrets in Caddyfile, docker-compose.yml, or shell scripts
+- [ ] No secrets in Caddyfile, any compose file, or shell scripts
 - [ ] No secrets in systemd unit files (ExecStart args, Environment directives)
 
 ### Network exposure

@@ -27,9 +27,9 @@ Before responding, silently read what's relevant:
 - Read `docs/APP_CONTRACT.md` for port assignments and service contracts
 
 **Full repo mode (`--full`):**
-1. Read `docker-compose.yml` — all service definitions
-2. Read `services/caddy/Caddyfile` — routing and TLS
-3. Read all shell scripts in `services/` and `scripts/`
+1. Read each `stacks/*/docker-compose.yml` — all service definitions
+2. Read `stacks/caddy/Caddyfile` — routing and TLS
+3. Read all shell scripts in `scripts/`
 4. Read all systemd units
 5. Read `Makefile`
 6. Read all docs in `docs/`

@@ -1,8 +1,14 @@
 version: 2
 updates:
-  # Docker images in docker-compose.yml
+  # Docker images across all stack compose files
   - package-ecosystem: docker-compose
-    directory: /
+    directories:
+      - /stacks/caddy
+      - /stacks/postgres
+      - /stacks/umami
+      - /stacks/uptime-kuma
+      - /stacks/coupette-redis
+      - /stacks/observability
     schedule:
       interval: weekly
     groups:

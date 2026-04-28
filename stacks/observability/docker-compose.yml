@@ -1,0 +1,163 @@
+name: infra
+
+services:
+  loki:
+    image: grafana/loki:3.7.1
+    container_name: loki
+    command: -config.file=/etc/loki/loki.yaml
+    volumes:
+      - ./loki:/etc/loki:ro
+      - loki_data:/loki
+    networks:
+      - internal
+    restart: unless-stopped
+    mem_limit: 512m
+    read_only: true
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  prometheus:
+    image: prom/prometheus:v3.11.2
+    container_name: prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=30d"
+      - "--web.enable-remote-write-receiver"
+    volumes:
+      - ./prometheus:/etc/prometheus:ro
+      - prometheus_data:/prometheus
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --output-document=- http://localhost:9090/-/healthy || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+    mem_limit: 512m
+    read_only: true
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  cadvisor:
+    image: ghcr.io/google/cadvisor@sha256:5534ae91cbf3428998d60428d107cfdd97272d80658534ac6e54d8ce3b0c4d72
+    container_name: cadvisor
+    command:
+      - "--docker_only=true"
+      - "--housekeeping_interval=15s"
+      - "--disable_metrics=advtcp,cpu_topology,cpuset,hugetlb,memory_numa,process,referenced_memory,resctrl,sched,tcp,udp"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+    networks:
+      - internal
+    pid: host
+    cgroup: host
+    restart: unless-stopped
+    mem_limit: 128m
+    read_only: true
+    security_opt: [no-new-privileges:true]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  alloy:
+    image: grafana/alloy:v1.15.1
+    container_name: alloy
+    command:
+      - "run"
+      - "--server.http.listen-addr=0.0.0.0:12345"
+      - "--storage.path=/var/lib/alloy/data"
+      - "--disable-reporting"
+      - "--stability.level=generally-available"
+      - "/etc/alloy/config.alloy"
+    volumes:
+      - ./alloy:/etc/alloy:ro
+      - alloy_data:/var/lib/alloy/data
+      # loki.source.docker: container log tailing
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # loki.source.journal: systemd timer/service logs
+      - /var/log/journal:/var/log/journal:ro
+      # node_exporter (procfs_path): CPU, memory, load, network counters
+      - /proc:/host/proc:ro
+      # node_exporter (sysfs_path): hardware topology, device stats
+      - /sys:/host/sys:ro
+      # node_exporter (rootfs_path): disk capacity, usage, inodes
+      - /:/host/root:ro
+    env_file: ./alloy/.env
+    depends_on:
+      loki:
+        condition: service_started
+      prometheus:
+        condition: service_healthy
+    networks:
+      - internal
+    restart: unless-stopped
+    mem_limit: 256m
+    read_only: true
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    cap_add: [DAC_READ_SEARCH, DAC_OVERRIDE]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  grafana:
+    image: grafana/grafana:12.4.3
+    container_name: grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/etc/grafana/dashboards:ro
+    env_file: ./grafana/.env
+    depends_on:
+      loki:
+        condition: service_started
+      prometheus:
+        condition: service_healthy
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --output-document=- http://localhost:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    mem_limit: 256m
+    read_only: true
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  loki_data:
+  prometheus_data:
+  alloy_data:
+  grafana_data:
+
+networks:
+  internal:
+    external: true

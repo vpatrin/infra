@@ -22,7 +22,7 @@ Before responding, silently:
 2. Run `gh issue list --state all --limit 100` to see all issues (open and closed)
 3. Run `gh pr list --state merged --limit 50` to see what's been shipped
 4. Run `gh issue list --state open --milestone "<active milestone>"` to check milestone progress
-5. Read `docker-compose.yml` and list `services/` directory to verify what's actually in place
+5. List `stacks/` directory and read each `stacks/*/docker-compose.yml` to verify what's actually in place
 6. Run `git log --oneline -20` for recent activity and momentum
 
 ## Assessment criteria

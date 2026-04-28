@@ -2,6 +2,11 @@ name: Deploy
 
 on:
   workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch or tag to deploy"
+        required: false
+        default: main
 
 permissions:
   contents: read
@@ -19,10 +24,14 @@ jobs:
           host: ${{ secrets.SSH_DEPLOY_HOST }}
           username: ${{ secrets.SSH_DEPLOY_USER }}
           key: ${{ secrets.SSH_DEPLOY_KEY }}
-          envs: SOPS_AGE_KEY
+          envs: SOPS_AGE_KEY,DEPLOY_REF
           script: |
+            set -euo pipefail
             cd ~/infra
-            git pull
+            git fetch --all --prune --tags
+            git checkout "${DEPLOY_REF}"
+            git pull --ff-only origin "${DEPLOY_REF}"
             ./scripts/deploy_infra.sh
         env:
           SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+          DEPLOY_REF: ${{ inputs.ref }}

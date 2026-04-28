@@ -11,8 +11,8 @@ Before planning, silently:
 2. Check `git log --oneline -20` for recent work and current momentum
 3. Read relevant docs in `docs/` (ARCHITECTURE.md, APP_CONTRACT.md) for current state
 4. Check open issues (`gh issue list --state open --limit 30`) to avoid duplicating planned work
-5. Read `docker-compose.yml` to understand current service definitions
-6. Read `services/caddy/Caddyfile` to understand current routing
+5. Read each stack's `stacks/*/docker-compose.yml` to understand current service definitions
+6. Read `stacks/caddy/Caddyfile` to understand current routing
 7. Check `CLAUDE.md` for workflow conventions (branch types, PR size targets, commit style)
 
 ## Planning principles

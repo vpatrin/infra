@@ -47,48 +47,42 @@ App repos on the same VPS (own code, CI, releases — not managed here):
 ```
 infra/
 ├── CLAUDE.md
-├── docker-compose.yml             # All service definitions
-├── docker-compose.dev.yml         # Dev overrides (port bindings, build targets)
-├── docker-compose.prod.yml        # Production overrides (env_file → .env.prod)
-├── Makefile                       # Dev and ops commands
+├── Makefile                       # Dev and ops commands (per-stack)
 ├── README.md
 ├── scripts/                       # Operational scripts (deploy, backup, alerts)
 ├── systemd/                       # systemd unit files (timers + services)
-├── services/
-│   ├── caddy/Caddyfile            # Reverse proxy routing + TLS
-│   ├── homepage/                  # Static site for victorpatrin.dev
+├── stacks/                        # One folder per Docker stack (tool-named, flat)
+│   ├── caddy/
+│   │   ├── docker-compose.yml     # Reverse proxy
+│   │   ├── Caddyfile              # Routing + TLS
+│   │   └── homepage/              # Static site for victorpatrin.dev
 │   ├── postgres/
+│   │   ├── docker-compose.yml     # shared-postgres (saq_sommelier, umami DBs)
 │   │   ├── init-scripts/          # DB + user creation on first start
-│   │   └── .env.example
-│   ├── umami/
-│   │   └── .env.example
-│   ├── alloy/                     # Log + metrics collector config
-│   ├── grafana/                   # Dashboards + provisioning
-│   ├── loki/                      # Log aggregation config
-│   └── prometheus/                # Metrics scrape config
+│   │   ├── .env.example
+│   │   └── .env.enc               # SOPS-encrypted prod env
+│   ├── umami/                     # Analytics
+│   ├── uptime-kuma/               # Status page
+│   ├── coupette-redis/            # Redis for coupette app
+│   └── observability/             # loki + prometheus + cadvisor + alloy + grafana
+│       ├── docker-compose.yml
+│       ├── docker-compose.dev.yml # Loopback ports for local dev
+│       ├── docker-compose.prod.yml# Grafana 3002 binding for SSH tunnel
+│       ├── loki/, prometheus/, alloy/, grafana/
+│       └── (per-service env files where needed)
 ├── docs/
 │   ├── ARCHITECTURE.md            # VPS, network, services, backups, deployment
+│   ├── INVENTORY.md               # Host → stacks mapping (source of truth)
 │   ├── DISASTER_RECOVERY.md       # DR runbook — scenarios, restore, DNS switch
 │   ├── OBSERVABILITY.md           # Grafana, Loki, Prometheus, Alloy
 │   ├── APP_CONTRACT.md            # Platform contract for app repos
 │   ├── SECURITY.md                # Platform security posture + hardening log
 │   ├── ROADMAP.md                 # Phased infrastructure plan
 │   ├── decisions/                 # Architecture decision records
-│   │   ├── 0001-hetzner-single-vps.md
-│   │   ├── ...
-│   │   └── 0010-hetzner-dns.md
 │   └── guides/                    # Reusable how-to guides
-│       ├── COMPOSE_GUIDE.md
-│       ├── DOCKERFILE_GUIDE.md
-│       ├── CADDY_GUIDE.md
-│       ├── GITHUB_SETUP_GUIDE.md
-│       └── VPS_SETUP_GUIDE.md
 ├── terraform/                     # Production IaC: DNS, firewall
-│   ├── .envrc.example             # Hetzner + S3 credentials template
-│   └── README.md
 ├── ansible/                       # VPS provisioning (DR only)
-│   ├── site.yml                   # Two-phase playbook
-│   └── roles/                     # base, security, docker, infra
+├── secrets/                       # SOPS-encrypted infra-level env files (systemd timers)
 ├── .github/
 │   ├── workflows/
 │   │   ├── ci.yml                 # PR checks: compose, shellcheck, terraform, ansible, gitleaks
@@ -107,7 +101,7 @@ Before any change ships:
 
 - [ ] No secrets or credentials exposed in diff
 - [ ] Caddyfile syntax valid (`docker exec caddy caddy validate --config /etc/caddy/Caddyfile`)
-- [ ] `docker-compose.yml` syntax correct (`docker compose config --quiet`)
+- [ ] Each stack's compose syntax correct (`docker compose -f stacks/<name>/docker-compose.yml config --quiet`)
 - [ ] Shell scripts have `set -e`, quoted variables, clear echo messages
 - [ ] Makefile targets have `.PHONY` declarations and `##` help comments
 - [ ] Existing services not affected (volume mounts, network names, container names unchanged unless intentional)
@@ -127,12 +121,14 @@ Before any change ships:
 I handle all deployments manually. Do not run any deployment commands on prod without my explicit instruction.
 
 ```bash
-ssh web-01
-cd ~/infra
-git pull
-make reload-caddy  # No-downtime Caddyfile reload
-# OR
-make restart   # Full container restart (if docker-compose.yml changed)
+# Full deploy (recommended — idempotent, decrypts secrets, syncs systemd, runs health checks)
+make deploy                 # Triggers GitHub Action → SSH → scripts/deploy_infra.sh
+
+# Caddy-only reload (no downtime, for Caddyfile edits only)
+ssh web-01 "cd ~/infra && make reload-caddy"
+
+# Single-stack recycle (rare — requires manual decryption of that stack's .env.enc)
+ssh web-01 "cd ~/infra && make up-<stack>"
 ```
 
 ## Git
@@ -205,7 +201,7 @@ App repos (e.g. coupette) depend on infrastructure this repo provides:
 
 - An `internal` Docker network exists (external, shared across compose stacks). App repos attach to it for Caddy routing.
 - A `shared-postgres` container is running and reachable on the `internal` network.
-- Caddy routes are defined in `services/caddy/Caddyfile`. Adding a new app route requires a PR here.
+- Caddy routes are defined in `stacks/caddy/Caddyfile`. Adding a new app route requires a PR here.
 
 If any of these change, app deploy scripts must be updated in the same logical change.
 

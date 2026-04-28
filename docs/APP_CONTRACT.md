@@ -40,7 +40,7 @@ A PostgreSQL 16 container with pgvector runs as `shared-postgres` on the `intern
 | `saq_sommelier` | `saq_sommelier` | coupette |
 | `umami` | `umami` | umami |
 
-Databases and users are created by [init-scripts/01-init-databases.sh](../services/postgres/init-scripts/01-init-databases.sh) on first container start only. Credentials come from `services/postgres/.env`.
+Databases and users are created by [init-scripts/01-init-databases.sh](../stacks/postgres/init-scripts/01-init-databases.sh) on first container start only. Credentials come from `stacks/postgres/.env`.
 
 ### Required extensions
 
@@ -85,7 +85,7 @@ REDIS_URL=redis://coupette-redis:6379
 
 Caddy is the only internet-facing container. It routes traffic to app backends by container name on the `internal` network.
 
-Adding or modifying a route requires a PR to this repo — app repos do not touch the [Caddyfile](../services/caddy/Caddyfile).
+Adding or modifying a route requires a PR to this repo — app repos do not touch the [Caddyfile](../stacks/caddy/Caddyfile).
 
 ### Adding a new app route
 

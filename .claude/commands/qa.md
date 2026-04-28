@@ -28,10 +28,10 @@ Before reviewing, silently:
 4. Read the changed files to understand what's being modified
 
 **Full repo mode (`--full`):**
-1. Read `docker-compose.yml` — all service definitions
-2. Read `services/caddy/Caddyfile` — all routing rules
-3. Read all shell scripts (`services/postgres/backups/*.sh`, `scripts/*.sh`)
-4. Read all systemd units (`services/postgres/backups/*.service`, `*.timer`)
+1. Read each `stacks/*/docker-compose.yml` — all service definitions
+2. Read `stacks/caddy/Caddyfile` — all routing rules
+3. Read all shell scripts (`scripts/*.sh`)
+4. Read all systemd units (`systemd/*.service`, `systemd/*.timer`)
 5. Read `Makefile` for target definitions
 6. Read `docs/APP_CONTRACT.md` for service contracts and port assignments
 7. Read `docs/ARCHITECTURE.md` for operational context
@@ -47,7 +47,7 @@ For each config file type in scope, validate:
 - [ ] Static file serving paths (`/srv/homepage`, `/srv/coupette`) exist as volume mounts in compose
 - [ ] Directive ordering correct within site blocks
 
-### docker-compose.yml
+### stacks/*/docker-compose.yml
 - [ ] All `env_file` paths resolve to existing `.env.example` (and `.env` on VPS)
 - [ ] Volume mounts point to paths that exist in the repo (bind mounts) or are declared (named volumes)
 - [ ] Named volumes with `external: true` match the actual volume names on the VPS

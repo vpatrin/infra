@@ -20,8 +20,8 @@ Before auditing, silently:
 
 1. Run `git log --oneline -20` to understand recent activity
 2. Run `git diff main --stat` to see if there's uncommitted branch work
-3. Read `docker-compose.yml` for all service definitions
-4. Read `services/caddy/Caddyfile` for routing config
+3. Read each `stacks/*/docker-compose.yml` for all service definitions
+4. Read `stacks/caddy/Caddyfile` for routing config
 5. Read `docs/ARCHITECTURE.md` for operational context
 6. Read `docs/APP_CONTRACT.md` for service contracts and port assignments
 
@@ -31,7 +31,7 @@ Quick vital signs — not exhaustive.
 
 ### QA — config validation & consistency
 
-1. Read `docker-compose.yml` and `services/caddy/Caddyfile`
+1. Read each `stacks/*/docker-compose.yml` and `stacks/caddy/Caddyfile`
 2. Check: do Caddyfile reverse_proxy targets match compose service/container names?
 3. Check: do ports in Caddyfile match ports in compose?
 4. Check: are all volume mount paths valid?
@@ -49,7 +49,7 @@ Quick vital signs — not exhaustive.
 
 ### Ops — operational health & resilience
 
-1. Read `services/postgres/backups/backup.sh` and systemd units
+1. Read `scripts/postgres_backup.sh` and `systemd/pg-backup.{service,timer}`
 2. Check: backup script handles failures gracefully?
 3. Check: backup retention configured (30-day cleanup)?
 4. Check: systemd timer schedule correct?
@@ -63,15 +63,15 @@ Deep audit. Includes everything from the surface checklist plus:
 ### QA — extended
 
 Also read:
-- All shell scripts (`services/postgres/backups/*.sh`, `scripts/*.sh`)
-- All systemd units (`services/postgres/backups/*.service`, `*.timer`)
+- All shell scripts (`scripts/*.sh`)
+- All systemd units (`systemd/*.service`, `systemd/*.timer`)
 
 Additional checks:
 - Cross-service port/name/network consistency across ALL config files
 - Shell script hygiene (`set -e`, quoted variables, error handling)
 - Makefile completeness (all targets have `.PHONY` and `##` comments)
 - Documentation accuracy (do docs match the actual config?)
-- `docker-compose.yml` patterns consistent across services
+- `stacks/*/docker-compose.yml` patterns consistent across stacks
 
 ### Security — extended
 

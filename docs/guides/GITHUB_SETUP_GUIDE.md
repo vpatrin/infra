@@ -155,7 +155,7 @@ gh api -X POST repos/$REPO/rulesets --input - <<'EOF'
     {
       "type": "required_status_checks",
       "parameters": {
-        "strict_required_status_checks_policy": true,
+        "strict_required_status_checks_policy": false,
         "do_not_enforce_on_create": false,
         "required_status_checks": [
           { "context": "lint" },
@@ -182,9 +182,11 @@ What each rule does:
 - **`required_review_thread_resolution`** — can't merge with unresolved
   review comments.
 - **`required_status_checks`** — the PR can't merge until CI passes.
-  `strict` mode means the branch must be up-to-date with `main` first,
-  preventing "merge skew" where two PRs are individually green but break
-  when combined.
+  `strict` mode is intentionally off — it requires the branch to be
+  up-to-date with `main` before merging, which creates a painful cascade
+  when multiple PRs are open (e.g., Dependabot batches). After merging
+  one, every other PR becomes outdated and needs re-updating. For a solo
+  dev repo the merge-skew risk is negligible compared to the friction.
 
 **About bypass actors:** `actor_id: 5` with `RepositoryRole` = the Admin
 role. This lets repo admins bypass when needed (e.g., emergency hotfixes).

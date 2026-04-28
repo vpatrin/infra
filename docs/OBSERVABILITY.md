@@ -39,7 +39,7 @@ Alloy is the single collector. It reads Docker logs via the socket and host metr
 
 ### Alloy (collector)
 
-Config: `services/alloy/config.alloy`
+Config: `stacks/observability/alloy/config.alloy`
 
 **Logs:** Discovers all containers via Docker socket, tails their logs, pushes to Loki. Containers are labeled by name (strips the leading `/`).
 
@@ -49,7 +49,7 @@ Host mounts give Alloy read access to the entire filesystem. Mitigated by `read_
 
 ### Loki (log storage)
 
-Config: `services/loki/loki.yaml`
+Config: `stacks/observability/loki/loki.yaml`
 
 - Storage: TSDB on local filesystem (`loki_data` volume)
 - Retention: **7 days** (compactor prunes automatically every 10m)
@@ -60,7 +60,7 @@ Query with LogQL in Grafana. Example: `{container="caddy"} |= "error"`.
 
 ### Prometheus (metrics storage)
 
-Config: `services/prometheus/prometheus.yml`
+Config: `stacks/observability/prometheus/prometheus.yml`
 
 - Storage: local TSDB (`prometheus_data` volume)
 - Retention: **7 days**
@@ -80,21 +80,21 @@ Query with PromQL in Grafana. Example: `node_memory_MemAvailable_bytes / node_me
 
 ### Grafana (dashboards)
 
-Config: `services/grafana/provisioning/`
+Config: `stacks/observability/grafana/provisioning/`
 
 Datasources (provisioned as code, not editable in UI):
 - **Prometheus** — default datasource, `http://prometheus:9090`
 - **Loki** — `http://loki:3100`
 
-Dashboard provider reads JSON files from `services/grafana/dashboards/` (mounted read-only). Provisioned dashboards: Platform Overview (host resources, containers, logs, Caddy traffic) and PostgreSQL (connections, performance, table health, database size).
+Dashboard provider reads JSON files from `stacks/observability/grafana/dashboards/` (mounted read-only). Provisioned dashboards: Platform Overview (host resources, containers, logs, Caddy traffic) and PostgreSQL (connections, performance, table health, database size).
 
-Access: `localhost:3002` via SSH tunnel (`make tunnel`), or `localhost:3003` locally via `docker-compose.dev.yml`.
+Access: `localhost:3002` via SSH tunnel (`make tunnel`), or `localhost:3003` locally via `stacks/observability/docker-compose.dev.yml`.
 
 ## Adding an app
 
 **Logs:** Nothing to do. Alloy auto-discovers all containers via the Docker socket. Filter in Grafana with `{container="your-container-name"}`.
 
-**Metrics:** The app must expose a `/metrics` endpoint (Prometheus format). Then add a `scrape_configs` entry in `services/prometheus/prometheus.yml` pointing to `container-name:port` on the `internal` network. Prometheus picks up the new config on restart.
+**Metrics:** The app must expose a `/metrics` endpoint (Prometheus format). Then add a `scrape_configs` entry in `stacks/observability/prometheus/prometheus.yml` pointing to `container-name:port` on the `internal` network. Prometheus picks up the new config on restart.
 
 ## Retention and disk
 

@@ -60,24 +60,22 @@ Add the public key to `.sops.yaml` under `creation_rules`.
 ## Edit a secret
 
 ```bash
-sops services/postgres/.env.prod.enc
+sops stacks/postgres/.env.enc
 ```
 
 Opens in your editor decrypted. Save and close — sops re-encrypts automatically.
 
-## Add a new service
+## Add a new stack with secrets
 
-1. Create plaintext `services/<name>/.env.prod` (gitignored)
+1. Create plaintext `stacks/<name>/.env` (gitignored)
 
 2. Encrypt it:
 
    ```bash
-   sops --encrypt services/<name>/.env.prod > services/<name>/.env.prod.enc
+   sops --encrypt stacks/<name>/.env > stacks/<name>/.env.enc
    ```
 
-3. Add the service name to `ENCRYPTED_SERVICES` array in `deploy_infra.sh`
-
-4. Commit `.env.prod.enc`
+3. Commit `.env.enc`. The deploy script auto-discovers any `*.env.enc` under `stacks/` — no code change needed.
 
 ## Rotate a key
 
@@ -86,8 +84,8 @@ Opens in your editor decrypted. Save and close — sops re-encrypts automaticall
 3. Re-encrypt all files in place with the new recipients:
 
    ```bash
-   sops updatekeys services/postgres/.env.prod.enc
-   sops updatekeys services/umami/.env.prod.enc
+   sops updatekeys stacks/postgres/.env.enc
+   sops updatekeys stacks/umami/.env.enc
    ```
 
 4. If rotating the GitHub Actions key, update `SOPS_AGE_KEY` secret on GitHub

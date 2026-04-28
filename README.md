@@ -26,22 +26,19 @@ App repos on the same VPS:
 
 ```text
 infra/
-├── docker-compose.yml             # All service definitions
-├── docker-compose.dev.yml         # Dev overrides (port bindings)
-├── docker-compose.prod.yml        # Prod overrides (env_file, mem_limit, restart)
-├── Makefile                       # Dev and ops commands
+├── Makefile                       # Dev and ops commands (per-stack)
 ├── scripts/                       # Operational scripts (deploy, backup, alerts)
 ├── systemd/                       # systemd unit files (timers + services)
-├── services/
-│   ├── caddy/Caddyfile            # Reverse proxy routing + TLS
-│   ├── homepage/                  # Static site for victorpatrin.dev
-│   ├── postgres/
-│   │   └── init-scripts/          # DB + user creation on first start
-│   ├── umami/
-│   ├── alloy/                     # Log + metrics collector config
-│   ├── grafana/                   # Dashboards + provisioning
-│   ├── loki/                      # Log aggregation config
-│   └── prometheus/                # Metrics scrape config
+├── stacks/                        # One folder per Docker stack
+│   ├── caddy/                     # Reverse proxy + Caddyfile + homepage assets
+│   ├── postgres/                  # shared-postgres (saq_sommelier, umami DBs)
+│   ├── umami/                     # Analytics
+│   ├── uptime-kuma/               # Status page
+│   ├── coupette-redis/            # Redis for coupette app
+│   └── observability/             # loki + prometheus + cadvisor + alloy + grafana
+├── terraform/                     # DNS + firewall IaC
+├── ansible/                       # VPS provisioning (DR only)
+├── secrets/                       # SOPS-encrypted infra-level env files (systemd timers)
 ├── docs/
 │   ├── ARCHITECTURE.md            # VPS, network, services, backups, deployment
 │   ├── OBSERVABILITY.md           # Grafana, Loki, Prometheus, Alloy

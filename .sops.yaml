@@ -1,5 +1,5 @@
 creation_rules:
-  - path_regex: services/.+/\.env\.prod(\.enc)?$
+  - path_regex: stacks/.+/\.env(\.enc)?$
     age: &age_recipients
       # laptop (disaster recovery + local editing)
       - age1nv8y4wgg3zlj0f668tk5mhwe05fj5mw9rrqvr832h0gvmvq50ehs469ufn

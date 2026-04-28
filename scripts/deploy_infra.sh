@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+~#!/usr/bin/env bash
 set -euo pipefail
 
 # Idempotent infra deploy script.
@@ -6,27 +6,28 @@ set -euo pipefail
 # Called by GitHub Actions (manual dispatch) or directly: ./deploy_infra.sh
 
 INFRA_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-COMPOSE=(docker compose -f "${INFRA_DIR}/docker-compose.yml" -f "${INFRA_DIR}/docker-compose.prod.yml")
+STACKS_DIR="${INFRA_DIR}/stacks"
 UNITS_SRC="${INFRA_DIR}/systemd"
 UNITS_DST="/etc/systemd/system"
 
-# Check for sops installation for secret decryption before proceeding
+# Stacks in startup dependency order (data plane first, then edge, then apps).
+STACKS=(postgres coupette-redis caddy umami uptime-kuma observability)
+
+# Check for sops installation before proceeding
 command -v sops >/dev/null || { echo "ERROR: sops not found in PATH"; exit 1; }
 [[ -n "${SOPS_AGE_KEY:-}" ]] || { echo "ERROR: SOPS_AGE_KEY not set"; exit 1; }
 
-ENCRYPTED_SERVICES=(postgres umami grafana alloy)
 ENCRYPTED_SECRETS=(aws-infra-backup monitor-backups telegram-alerts-bot)
 
 echo "==> Decrypting secrets..."
 (
     umask 077  # owner-only from creation — no race window unlike chmod after write
 
-    # Service-level secrets (Docker Compose env files)
-    for svc in "${ENCRYPTED_SERVICES[@]}"; do
-        enc="${INFRA_DIR}/services/${svc}/.env.prod.enc"
-        [[ -f "${enc}" ]] || { echo "ERROR: ${enc} not found"; exit 1; }
-        sops --decrypt --output-type dotenv "${enc}" > "${INFRA_DIR}/services/${svc}/.env.prod"
-    done
+    # Stack-level secrets: any .env.enc under stacks/ (discovered dynamically)
+    while IFS= read -r -d '' enc; do
+        dec="${enc%.enc}"
+        sops --decrypt --output-type dotenv "${enc}" > "${dec}"
+    done < <(find "${STACKS_DIR}" -type f -name "*.env.enc" -print0)
 
     # Infra-level secrets (host systemd timers, push monitors)
     for secret in "${ENCRYPTED_SECRETS[@]}"; do
@@ -37,13 +38,13 @@ echo "==> Decrypting secrets..."
 )
 
 # Validate decrypted files are non-empty before proceeding
-for svc in "${ENCRYPTED_SERVICES[@]}"; do
-    env_file="${INFRA_DIR}/services/${svc}/.env.prod"
-    if [[ ! -s "${env_file}" ]]; then
-        echo "ERROR: ${env_file} is empty after decryption"
+while IFS= read -r -d '' enc; do
+    dec="${enc%.enc}"
+    if [[ ! -s "${dec}" ]]; then
+        echo "ERROR: ${dec} is empty after decryption"
         exit 1
     fi
-done
+done < <(find "${STACKS_DIR}" -type f -name "*.env.enc" -print0)
 for secret in "${ENCRYPTED_SECRETS[@]}"; do
     env_file="${INFRA_DIR}/secrets/${secret}.env"
     if [[ ! -s "${env_file}" ]]; then
@@ -52,14 +53,32 @@ for secret in "${ENCRYPTED_SECRETS[@]}"; do
     fi
 done
 
-echo "==> Validating compose config..."
-"${COMPOSE[@]}" config --quiet
+# Compose file args for a stack (base + optional prod override if present)
+compose_args() {
+    local stack="$1"
+    local base="${STACKS_DIR}/${stack}/docker-compose.yml"
+    local prod="${STACKS_DIR}/${stack}/docker-compose.prod.yml"
+    printf -- '-f\n%s\n' "${base}"
+    [[ -f "${prod}" ]] && printf -- '-f\n%s\n' "${prod}"
+}
+
+echo "==> Validating compose configs..."
+for stack in "${STACKS[@]}"; do
+    mapfile -t args < <(compose_args "${stack}")
+    docker compose "${args[@]}" config --quiet
+done
 
 echo "==> Pulling latest images..."
-"${COMPOSE[@]}" pull
+for stack in "${STACKS[@]}"; do
+    mapfile -t args < <(compose_args "${stack}")
+    docker compose "${args[@]}" pull
+done
 
 echo "==> Starting services..."
-"${COMPOSE[@]}" up -d
+for stack in "${STACKS[@]}"; do
+    mapfile -t args < <(compose_args "${stack}")
+    docker compose "${args[@]}" up -d
+done
 
 echo "==> Validating Caddyfile..."
 docker exec caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile

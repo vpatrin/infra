@@ -1,0 +1,41 @@
+name: infra
+
+services:
+  shared-postgres:
+    image: pgvector/pgvector:0.8.2-pg16
+    container_name: shared-postgres
+    # Postgres uses /dev/shm for parallel query workers, sorting, and hash joins.
+    # Docker default is 64mb — too small for pgvector workloads. 256mb matches pg defaults.
+    shm_size: 256mb
+    volumes:
+      - shared-postgres_pgdata:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    env_file: .env
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+    mem_limit: 1g
+    security_opt: [no-new-privileges:true]
+    # Drop everything, then re-add only what Postgres needs to init its data dir.
+    cap_drop: [ALL]
+    # TODO: re-evaluate these caps for production.
+    cap_add: [SETUID, SETGID, DAC_READ_SEARCH, CHOWN, FOWNER]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  shared-postgres_pgdata:
+    external: true
+
+networks:
+  internal:
+    external: true

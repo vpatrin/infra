@@ -52,7 +52,7 @@ For full VPS setup instructions, see [guides/VPS_SETUP_GUIDE.md](guides/VPS_SETU
 | Coupette scraper | coupette-scraper | — | — | — (systemd timer) | coupette |
 | Coupette frontend | — | — | — | `coupette.club` (static, served by Caddy) | coupette |
 
-Dev bindings are defined in `docker-compose.dev.yml` (loaded via `make up`). Only Caddy has host port bindings in the base compose. Production adds localhost bindings for SSH tunnel access to the observability stack (`docker-compose.prod.yml`).
+Dev bindings are defined in per-stack `docker-compose.dev.yml` files (loaded via `make up`). Only Caddy has host port bindings in the base compose. Production adds a localhost binding for SSH tunnel access to Grafana (`stacks/observability/docker-compose.prod.yml`).
 
 Only Caddy is internet-facing. Everything else is internal Docker network or localhost-only.
 
@@ -153,7 +153,7 @@ journalctl -u pg-backup.service --since "1 week ago"
 
 ## Logging
 
-Docker container logs are stored at `/var/lib/docker/containers/<id>/<id>-json.log`. Each service has log rotation configured in its `docker-compose.yml` (10MB max per file, 3 files retained = 30MB cap per service).
+Docker container logs are stored at `/var/lib/docker/containers/<id>/<id>-json.log`. Each service has log rotation configured in its stack's `docker-compose.yml` (10MB max per file, 3 files retained = 30MB cap per service).
 
 Alloy auto-discovers all containers and ships their logs to Loki for centralized querying (7d retention). See [OBSERVABILITY.md](OBSERVABILITY.md) for LogQL examples and adding app logs.
 

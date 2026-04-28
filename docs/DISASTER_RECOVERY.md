@@ -217,7 +217,7 @@ Additionally:
 |------|--------|-----------------|
 | Postgres (saq_sommelier, umami) | AWS S3 (daily, 30-day retention) | Download + `psql` restore |
 | TLS certificates (Caddy) | Not backed up | Auto-renewed by Caddy on startup |
-| Grafana dashboards | Not backed up | Re-provisioned from `services/grafana/` |
+| Grafana dashboards | Not backed up | Re-provisioned from `stacks/observability/grafana/` |
 | Prometheus metrics | Not backed up | Rebuilt from scrape targets (30d loss) |
 | Loki logs | Not backed up | Rebuilt from Docker log tailing (7d loss) |
 | Uptime Kuma config | Not backed up | Manual reconfiguration (~15 min) |
