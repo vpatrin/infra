@@ -64,7 +64,7 @@ deploy: ## Trigger production deploy via GitHub Actions (override branch with RE
 	@ref="$(or $(REF),main)"; \
 	echo "⚠️  This will deploy '$$ref' to production (web-01)."; \
 	read -p "Type 'approve' to continue: " confirm && [ "$$confirm" = "approve" ] || { echo "Aborted."; exit 1; }; \
-	gh workflow run deploy -f ref="$$ref"
+	gh workflow run deploy --ref "$$ref" -f ref="$$ref"
 	@echo "Deploy triggered. Watch: gh run watch"
 
 tunnel: ## SSH tunnel to Grafana (:3002)
