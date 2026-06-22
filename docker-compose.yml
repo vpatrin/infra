@@ -1,6 +1,6 @@
 services:
   caddy:
-    image: caddy:2.11.2
+    image: caddy:2.11.4
     container_name: caddy
     volumes:
       # Caddy configuration (directory mount for live reload)
@@ -31,7 +31,7 @@ services:
         max-file: "3"
 
   shared-postgres:
-    image: pgvector/pgvector:0.8.2-pg16
+    image: pgvector/pgvector:0.8.3-pg16
     container_name: shared-postgres
     # Postgres uses /dev/shm for parallel query workers, sorting, and hash joins.
     # Docker default is 64mb — too small for pgvector workloads. 256mb matches pg defaults.
@@ -84,7 +84,7 @@ services:
         max-file: "3"
 
   uptime-kuma:
-    image: louislam/uptime-kuma:2.2.1
+    image: louislam/uptime-kuma:2.4.0
     container_name: uptime-kuma
     volumes:
       - uptime-kuma_uptime-kuma-data:/app/data
@@ -134,7 +134,7 @@ services:
   # ============================================================================
 
   loki:
-    image: grafana/loki:3.7.1
+    image: grafana/loki:3.7.2
     container_name: loki
     command: -config.file=/etc/loki/loki.yaml
     volumes:
@@ -152,7 +152,7 @@ services:
         max-file: "3"
 
   prometheus:
-    image: prom/prometheus:v3.11.2
+    image: prom/prometheus:v3.12.0
     container_name: prometheus
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
@@ -204,7 +204,7 @@ services:
         max-file: "3"
 
   alloy:
-    image: grafana/alloy:v1.16.0
+    image: grafana/alloy:v1.17.0
     container_name: alloy
     command:
       - "run"
@@ -244,7 +244,7 @@ services:
         max-file: "3"
 
   grafana:
-    image: grafana/grafana:12.4.3
+    image: grafana/grafana:12.4.4
     container_name: grafana
     volumes:
       - grafana_data:/var/lib/grafana
